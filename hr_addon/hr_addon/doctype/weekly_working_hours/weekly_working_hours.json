@@ -22,7 +22,8 @@
   "total_work_hours",
   "column_break_14",
   "total_hours_time",
-  "amended_from"
+  "amended_from",
+  "company"
  ],
  "fields": [
   {
@@ -31,7 +32,6 @@
    "in_list_view": 1,
    "label": "Hour Title",
    "read_only": 1,
-   "reqd": 1,
    "set_only_once": 1,
    "unique": 1
   },
@@ -120,11 +120,17 @@
   {
    "fieldname": "column_break_14",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2022-05-05 02:19:01.399702",
+ "modified": "2022-05-05 17:00:55.997438",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Weekly Working Hours",
