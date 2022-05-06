@@ -39,7 +39,8 @@
    "fieldname": "employee",
    "fieldtype": "Link",
    "label": "Employee",
-   "options": "Employee"
+   "options": "Employee",
+   "reqd": 1
   },
   {
    "fetch_from": "employee.employee_name",
@@ -51,12 +52,14 @@
   {
    "fieldname": "valid_from",
    "fieldtype": "Date",
-   "label": "From Date"
+   "label": "From Date",
+   "reqd": 1
   },
   {
    "fieldname": "valid_to",
    "fieldtype": "Date",
-   "label": "To Date"
+   "label": "To Date",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_6",
@@ -73,7 +76,8 @@
    "fieldname": "shift",
    "fieldtype": "Link",
    "label": "Shift",
-   "options": "Shift Type"
+   "options": "Shift Type",
+   "reqd": 1
   },
   {
    "fieldname": "note",
@@ -90,9 +94,11 @@
    "fieldtype": "Section Break"
   },
   {
+   "default": "0",
    "fieldname": "total_work_hours",
    "fieldtype": "Float",
-   "label": "Total Work Hours"
+   "label": "Total Work Hours",
+   "read_only": 1
   },
   {
    "fieldname": "total_hours_time",
@@ -130,7 +136,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2022-05-05 17:00:55.997438",
+ "modified": "2022-05-06 02:24:51.687956",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Weekly Working Hours",
