@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-05-06 15:25:52.037042",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "log_date",
+  "attendance",
+  "status",
+  "employee_checkins",
+  "target_hours",
+  "hours_worked",
+  "number_of_breaks",
+  "break_hours"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "log_date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "attendance",
+   "fieldtype": "Link",
+   "label": "Attendance",
+   "options": "Attendance"
+  },
+  {
+   "fetch_from": "attendance.status",
+   "fetch_if_empty": 1,
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status"
+  },
+  {
+   "fieldname": "target_hours",
+   "fieldtype": "Time",
+   "label": "Target Hours"
+  },
+  {
+   "fieldname": "hours_worked",
+   "fieldtype": "Time",
+   "label": "Hours worked"
+  },
+  {
+   "fieldname": "number_of_breaks",
+   "fieldtype": "Int",
+   "label": "Number of Breaks"
+  },
+  {
+   "fieldname": "break_hours",
+   "fieldtype": "Time",
+   "label": "Break Hours"
+  },
+  {
+   "fieldname": "employee_checkins",
+   "fieldtype": "Table",
+   "label": "Employee Checkins",
+   "options": "Employee Checkins"
+  }
+ ],
+ "links": [],
+ "modified": "2022-05-06 15:39:53.125801",
+ "modified_by": "Administrator",
+ "module": "HR Addon",
+ "name": "Workday",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

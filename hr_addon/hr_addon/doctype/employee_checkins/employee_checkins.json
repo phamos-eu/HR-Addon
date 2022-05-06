@@ -1,0 +1,58 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2022-05-06 15:37:58.407050",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_checkin",
+  "log_type",
+  "log_time",
+  "skip_auto_attendance"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee_checkin",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee Checkin",
+   "options": "Employee Checkin"
+  },
+  {
+   "fetch_from": "employee_checkin.log_type",
+   "fetch_if_empty": 1,
+   "fieldname": "log_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Log Type",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee_checkin.time",
+   "fetch_if_empty": 1,
+   "fieldname": "log_time",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Log Time"
+  },
+  {
+   "fetch_from": "employee_checkin.skip_auto_attendance",
+   "fieldname": "skip_auto_attendance",
+   "fieldtype": "Data",
+   "label": "Skip Auto Attendance"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-05-06 15:54:04.142729",
+ "modified_by": "Administrator",
+ "module": "HR Addon",
+ "name": "Employee Checkins",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}
