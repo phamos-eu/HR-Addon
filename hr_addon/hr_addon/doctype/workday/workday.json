@@ -14,7 +14,8 @@
   "target_hours",
   "hours_worked",
   "number_of_breaks",
-  "break_hours"
+  "break_hours",
+  "company"
  ],
  "fields": [
   {
@@ -66,10 +67,16 @@
    "fieldtype": "Table",
    "label": "Employee Checkins",
    "options": "Employee Checkins"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
   }
  ],
  "links": [],
- "modified": "2022-05-06 15:39:53.125801",
+ "modified": "2022-05-06 22:56:47.504527",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
