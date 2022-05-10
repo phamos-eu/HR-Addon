@@ -76,8 +76,7 @@
    "fieldname": "shift",
    "fieldtype": "Link",
    "label": "Shift",
-   "options": "Shift Type",
-   "reqd": 1
+   "options": "Shift Type"
   },
   {
    "fieldname": "note",
@@ -136,7 +135,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2022-05-06 02:24:51.687956",
+ "modified": "2022-05-09 17:28:24.192027",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Weekly Working Hours",

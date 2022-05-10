@@ -7,13 +7,17 @@
  "engine": "InnoDB",
  "field_order": [
   "employee",
-  "log_date",
   "attendance",
+  "acolumn_break_1",
+  "log_date",
   "status",
+  "section_break_7",
   "employee_checkins",
+  "section_break_9",
   "target_hours",
   "hours_worked",
   "number_of_breaks",
+  "column_break_5",
   "break_hours",
   "company"
  ],
@@ -44,12 +48,12 @@
   },
   {
    "fieldname": "target_hours",
-   "fieldtype": "Time",
+   "fieldtype": "Float",
    "label": "Target Hours"
   },
   {
    "fieldname": "hours_worked",
-   "fieldtype": "Time",
+   "fieldtype": "Data",
    "label": "Hours worked"
   },
   {
@@ -59,7 +63,7 @@
   },
   {
    "fieldname": "break_hours",
-   "fieldtype": "Time",
+   "fieldtype": "Data",
    "label": "Break Hours"
   },
   {
@@ -73,10 +77,26 @@
    "fieldtype": "Link",
    "label": "Company",
    "options": "Company"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "acolumn_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [],
- "modified": "2022-05-06 22:56:47.504527",
+ "modified": "2022-05-10 17:24:13.330193",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",

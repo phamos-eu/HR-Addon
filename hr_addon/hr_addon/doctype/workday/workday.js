@@ -7,21 +7,31 @@ frappe.ui.form.on('Workday', {
 	// }
 	setup: function(frm){
 		frm.set_query("attendance",function(){
+			
 			return{
-				"filters": [['Attendance','employee','=',frm.doc.employee]]
+				"filters":[
+					['Attendance','employee','=',frm.doc.employee],
+					['Attendance','attendance_date','=',frm.doc.log_date]
+				]
 			};
 		});
 	},
 	attendance: function(frm){
 		//console.log(frm.doc);
-		let atdc = frm.doc.attendance;
-		if(atdc){
+		let aemployee = frm.doc.employee;
+		let adate = frm.doc.log_date;
+		if(aemployee){
 			frappe.call({
-				method:'hr_addon.hr_addon.api.utils.get_employee_checkin',
-				args:{attendance:atdc}
+				method:'hr_addon.hr_addon.api.utils.view_actual_employee_log',
+				args:{aemployee:aemployee,adate:adate}
 			}).done((r)=>{
 				frm.doc.employee_checkins = [];
-				$.each(r.message,function(i,e){
+				let alog = r.message;
+				//console.log(alog);
+				frm.set_value("hours_worked",(alog[0].ahour/3600).toFixed(2));
+				frm.set_value("break_hours",(alog[0].bhour/3600).toFixed(2));
+				frm.set_value("target_hours",alog[0].thour);
+				$.each(alog[0].items,function(i,e){
 					let nw_checkins = frm.add_child("employee_checkins");
 					nw_checkins.employee_checkin = e.name;
 					nw_checkins.log_type = e.log_type;
