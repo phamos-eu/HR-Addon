@@ -27,7 +27,7 @@ frappe.ui.form.on('Workday', {
 			}).done((r)=>{
 				frm.doc.employee_checkins = [];
 				let alog = r.message;
-				//console.log(alog);
+				console.log(alog);
 				frm.set_value("hours_worked",(alog[0].ahour/3600).toFixed(2));
 				frm.set_value("break_hours",(alog[0].bhour/3600).toFixed(2));
 				frm.set_value("target_hours",alog[0].thour);

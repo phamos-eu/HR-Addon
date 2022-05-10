@@ -1,5 +1,7 @@
+from __future__ import unicode_literals
 from time import time
 import frappe
+from frappe import _
 
 from frappe.utils.data import date_diff, time_diff_in_seconds
 
@@ -33,6 +35,10 @@ def get_employee_default_work_hour(employee,adate):
     WHERE w.employee='%s' AND d.day = DAYNAME('%s')
     """%(employee,adate), as_dict=1
     )
+    if (target_work_hours is None  or target_work_hours == []):
+        msg = f"<div>Warning, create target working hour for {employee} </div>"        
+        frappe.throw(_(msg))
+
     return target_work_hours
 
 
@@ -44,28 +50,31 @@ def view_actual_employee_log(aemployee, adate):
     # check empty or none
     if(weekly_day_hour is None):
         return
+    
+    hours_worked = 0.0
+    break_hours = 0.0
 
     # not pair of IN/OUT either missing
-    if len(weekly_day_hour)% 2 != 0: return
+    if len(weekly_day_hour)% 2 != 0:
+        hours_worked = -36.0
+        break_hours = -360.0
 
-    # seperate 'IN' from 'OUT'
-    # solo_list[start:stop:step]
-    clockin_list = [kin.time for x,kin in enumerate(weekly_day_hour) if x % 2 == 0]
-    clockout_list = [kout.time for x,kout in enumerate(weekly_day_hour) if x % 2 != 0]
+    if (len(weekly_day_hour) % 2 == 0):
+        # seperate 'IN' from 'OUT'
+        clockin_list = [kin.time for x,kin in enumerate(weekly_day_hour) if x % 2 == 0]
+        clockout_list = [kout.time for x,kout in enumerate(weekly_day_hour) if x % 2 != 0]
 
-    # get total worked hours
-    hours_worked = 0.0
-    for i in range(len(clockin_list)):
-        wh = time_diff_in_seconds(clockout_list[i],clockin_list[i])
-        hours_worked += float(str(wh))
-    
-    # get total break hours
-    break_hours = 0.0
-    for i in range(len(clockout_list)):
-        if ((i+1) < len(clockout_list)):
-            wh = time_diff_in_seconds(clockin_list[i+1],clockout_list[i])
-            break_hours += float(str(wh))
-    
+        # get total worked hours
+        for i in range(len(clockin_list)):
+            wh = time_diff_in_seconds(clockout_list[i],clockin_list[i])
+            hours_worked += float(str(wh))
+        
+        # get total break hours
+        for i in range(len(clockout_list)):
+            if ((i+1) < len(clockout_list)):
+                wh = time_diff_in_seconds(clockin_list[i+1],clockout_list[i])
+                break_hours += float(str(wh))
+        
     # create list
     new_workday = []
     new_workday.append({
@@ -73,15 +82,8 @@ def view_actual_employee_log(aemployee, adate):
         "ahour": hours_worked,
         "nbreak": 0,
         "bhour": break_hours,
-        "items":get_employee_checkin(aemployee,adate),
+        "items":weekly_day_hour, #get_employee_checkin(aemployee,adate),
     })
 
     return new_workday
 
-
-
-
-    
-
-
-    

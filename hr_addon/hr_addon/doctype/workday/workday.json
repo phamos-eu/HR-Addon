@@ -49,22 +49,28 @@
   {
    "fieldname": "target_hours",
    "fieldtype": "Float",
-   "label": "Target Hours"
+   "label": "Target Hours",
+   "read_only": 1
   },
   {
    "fieldname": "hours_worked",
    "fieldtype": "Data",
-   "label": "Hours worked"
+   "in_list_view": 1,
+   "label": "Hours worked",
+   "read_only": 1
   },
   {
    "fieldname": "number_of_breaks",
    "fieldtype": "Int",
-   "label": "Number of Breaks"
+   "label": "Number of Breaks",
+   "read_only": 1
   },
   {
    "fieldname": "break_hours",
    "fieldtype": "Data",
-   "label": "Break Hours"
+   "in_list_view": 1,
+   "label": "Break Hours",
+   "read_only": 1
   },
   {
    "fieldname": "employee_checkins",
@@ -96,7 +102,7 @@
   }
  ],
  "links": [],
- "modified": "2022-05-10 17:24:13.330193",
+ "modified": "2022-05-10 23:16:17.798681",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
