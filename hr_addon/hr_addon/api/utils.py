@@ -14,7 +14,7 @@ def get_employee_checkin(employee,atime):
     checkin_list = []
     checkin_list = frappe.db.sql(
         """
-        SELECT  name,log_type,time,skip_auto_attendance FROM `tabEmployee Checkin` 
+        SELECT  name,log_type,time,skip_auto_attendance,attendance FROM `tabEmployee Checkin` 
         WHERE employee='%s' AND DATE(time)= DATE('%s') ORDER BY time ASC
         """%(employee,atime), as_dict=1
     )
@@ -51,6 +51,9 @@ def view_actual_employee_log(aemployee, adate):
     if(weekly_day_hour is None):
         return
     
+    """ if(not len(weekly_day_hour)>0):
+        return """
+    
     hours_worked = 0.0
     break_hours = 0.0
 
@@ -77,10 +80,12 @@ def view_actual_employee_log(aemployee, adate):
         
     # create list
     new_workday = []
+    #print(f'\n\n\n\n inside valid : {weekly_day_hour[0]} \n\n\n\n')
     new_workday.append({
         "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
         "ahour": hours_worked,
         "nbreak": 0,
+        "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",
         "bhour": break_hours,
         "items":weekly_day_hour, #get_employee_checkin(aemployee,adate),
     })
