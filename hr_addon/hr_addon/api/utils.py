@@ -4,6 +4,7 @@ import frappe
 from frappe import _
 
 from frappe.utils.data import date_diff, time_diff_in_seconds
+from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, nowdate
 
 #@frappe.whitelist()
 def get_employee_checkin(employee,atime):
@@ -64,8 +65,8 @@ def view_actual_employee_log(aemployee, adate):
 
     if (len(weekly_day_hour) % 2 == 0):
         # seperate 'IN' from 'OUT'
-        clockin_list = [kin.time for x,kin in enumerate(weekly_day_hour) if x % 2 == 0]
-        clockout_list = [kout.time for x,kout in enumerate(weekly_day_hour) if x % 2 != 0]
+        clockin_list = [get_datetime(kin.time) for x,kin in enumerate(weekly_day_hour) if x % 2 == 0]
+        clockout_list = [get_datetime(kout.time) for x,kout in enumerate(weekly_day_hour) if x % 2 != 0]
 
         # get total worked hours
         for i in range(len(clockin_list)):
@@ -92,3 +93,97 @@ def view_actual_employee_log(aemployee, adate):
 
     return new_workday
 
+@frappe.whitelist()
+def get_actual_employee_log_bulk(aemployee, adate):
+    '''total actual log'''
+    
+    view_employee_attendance = get_employee_attendance(aemployee,adate)
+    weekly_day_hour = get_employee_checkin(aemployee,adate)
+
+    """ for i in range(len(view_employee_attendance)):
+        clockins_lt = []
+        clockins_lt = [klt for klt in weekly_day_hour if klt.attendance == view_employee_attendance[i].name]
+        view_employee_attendance[i].append({
+            "employee_checkins":clockins_lt
+        }) """
+    for vea in view_employee_attendance:
+        
+        clk_ls =[]
+        #clk_ls = [klt for klt in weekly_day_hour if klt.attendance == vea.name]
+        clk_ls = [klt for klt in weekly_day_hour if getdate(klt.time) == getdate(vea.attendance_date)]
+
+        if (not vea is None):
+            vea.employee_checkins=clk_ls
+
+    print(f'\n\n\n\n ivalid : {view_employee_attendance} \n\n\n\n')
+    print(f'\n\n\n\n zalid : {weekly_day_hour} \n\n\n\n')
+        
+    # check empty or none
+    if(view_employee_attendance is None):
+        return
+    
+    
+    hours_worked = 0.0
+    break_hours = 0.0
+
+    # not pair of IN/OUT either missing
+    if len(weekly_day_hour)% 2 != 0:
+        hours_worked = -36.0
+        break_hours = -360.0
+
+    if (len(weekly_day_hour) % 2 == 0):
+        # seperate 'IN' from 'OUT'
+        clockin_list = [get_datetime(kin.time) for x,kin in enumerate(weekly_day_hour) if x % 2 == 0]
+        clockout_list = [get_datetime(kout.time) for x,kout in enumerate(weekly_day_hour) if x % 2 != 0]
+
+        # get total worked hours
+        for i in range(len(clockin_list)):
+            wh = time_diff_in_seconds(clockout_list[i],clockin_list[i])
+            hours_worked += float(str(wh))
+        
+        # get total break hours
+        for i in range(len(clockout_list)):
+            if ((i+1) < len(clockout_list)):
+                wh = time_diff_in_seconds(clockin_list[i+1],clockout_list[i])
+                break_hours += float(str(wh))
+        
+    # create list
+    new_workday = []
+    #print(f'\n\n\n\n inside valid : {weekly_day_hour[0]} \n\n\n\n')
+    new_workday.append({
+        "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
+        "ahour": hours_worked,
+        "nbreak": 0,
+        "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",
+        "bhour": break_hours,
+        "items":weekly_day_hour, #get_employee_checkin(aemployee,adate),
+    })
+
+    return new_workday
+
+
+def get_employee_attendance(employee,atime):
+    ''' select DATE('date time');'''
+    employee = employee
+    atime = atime
+    
+    #checkin_list = []
+    attendance_list = frappe.db.sql(
+        """
+        SELECT  name,employee,status,attendance_date,shift FROM `tabAttendance` 
+        WHERE employee='%s' AND DATE(attendance_date)= DATE('%s') ORDER BY attendance_date ASC
+        """%(employee,atime), as_dict=1
+    )
+    #print(f'\n\n\n\n inside valid : {checkin_list} \n\n\n\n')
+    return attendance_list
+
+"""
+select name,employee,log_type,shift,time,attendance FROM `tabEmployee Checkin`;
+select name,employee,status,attendance_date,shift FROM `tabAttendance`;
+
+select employee,status,attendance_date,name,shift FROM `tabAttendance` a where a.employee='emp-00012' union select
+employee,log_type,time,attendance,shift from `tabEmployee Checkin` e  where e.employee='emp-00012';
+
+select employee,status,attendance_date,name,shift FROM `tabAttendance` a where a.employee in ('emp-00012','emp-00001'); select employee,log_type,time,attendance,shift from `tabEmployee Checkin` e  where e.employee in('emp-00012','emp-00001');
+
+"""

@@ -112,7 +112,7 @@ def get_unmarked_days(employee, month, exclude_holidays=0):
 		["employee","=",employee]
 	])
 
-	marked_days = [] #[get_datetime(rcord.log_date) for rcord in rcords]
+	marked_days = [get_datetime(rcord.log_date) for rcord in rcords]
 	if cint(exclude_holidays):
 		holiday_dates = get_holiday_dates_for_employee(employee, month_start, month_end)
 		holidays = [get_datetime(rcord) for rcord in holiday_dates]
