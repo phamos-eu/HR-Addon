@@ -1,13 +1,13 @@
 # Copyright (c) 2022, Jide Olayinka and contributors
 # For license information, please see license.txt
 
-from pydoc import doc
+#from pydoc import doc
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, nowdate
 
-from hr_addon.hr_addon.api.utils import view_actual_employee_log
+from hr_addon.hr_addon.api.utils import view_actual_employee_log,get_actual_employee_log_bulk
 from erpnext.hr.utils import get_holiday_dates_for_employee, validate_active_employee
 
 class Workday(Document):
@@ -29,7 +29,20 @@ def process_bulk_workday(data):
 	for date in data.unmarked_days:
 		single = []
 		single = view_actual_employee_log(data.employee, get_datetime(date))
+		#single = get_actual_employee_log_bulk(data.employee, get_datetime(date))
 		c_single = single[0]["items"]
+		
+		doc_dict = {
+			'doctype': 'Workday',
+			'employee': data.employee,
+			'log_date': get_datetime(date),
+			'company': company,
+			'attendance':single[0]["attendance"],
+			'target_hours':single[0]["thour"],
+			'hours_worked':"{:.2f}".format(single[0]["ahour"]/3600),
+			'break_hours': "{:.2f}".format(single[0]["bhour"]/3600),
+		}
+		workday = frappe.get_doc(doc_dict).insert()
 		
 		if((not single[0]["items"] is None) and (len(single[0]["items"]) > 0)):
 			""" e_checkins = {
@@ -39,17 +52,7 @@ def process_bulk_workday(data):
 			'skip_auto_attendance': c_single[0]["skip_auto_attendance"]
 			} """
 				
-			doc_dict = {
-			'doctype': 'Workday',
-			'employee': data.employee,
-			'log_date': get_datetime(date),
-			'company': company,
-			'attendance':single[0]["attendance"],
-			'target_hours':single[0]["thour"],
-			'hours_worked':"{:.2f}".format(single[0]["ahour"]/3600),
-			'break_hours': "{:.2f}".format(single[0]["bhour"]/3600),
-			}	
-			workday = frappe.get_doc(doc_dict).insert()
+			#print(f'\n Bug here len must be > 0 : {workday} \n')
 			
 			for i in range(len(c_single)):
 				row = workday.append("employee_checkins", {
@@ -58,12 +61,11 @@ def process_bulk_workday(data):
 					'log_time': c_single[i]["time"],
 					'skip_auto_attendance': c_single[i]["skip_auto_attendance"],
 					'parent':workday
-				})
+				})			
 			
+		workday.save()
 			
-			workday.save()
-			
-			#workday.submit() 
+		#workday.submit() 
 	
 
 def get_month_map():
@@ -84,9 +86,10 @@ def get_month_map():
 	
 @frappe.whitelist()
 def get_unmarked_days(employee, month, exclude_holidays=0):
+	'''get_umarked_days(employee,month,excludee_holidays=0, year)'''
 	import calendar
 	month_map = get_month_map()
-	today = get_datetime()
+	today = get_datetime() #get year from year
 	
 
 	joining_date, relieving_date = frappe.get_cached_value("Employee", employee, ["date_of_joining", "relieving_date"])
@@ -109,7 +112,7 @@ def get_unmarked_days(employee, month, exclude_holidays=0):
 		["employee","=",employee]
 	])
 
-	marked_days = [get_datetime(rcord.log_date) for rcord in rcords]
+	marked_days = [] #[get_datetime(rcord.log_date) for rcord in rcords]
 	if cint(exclude_holidays):
 		holiday_dates = get_holiday_dates_for_employee(employee, month_start, month_end)
 		holidays = [get_datetime(rcord) for rcord in holiday_dates]

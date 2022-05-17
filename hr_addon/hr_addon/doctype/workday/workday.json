@@ -49,8 +49,7 @@
   {
    "fieldname": "target_hours",
    "fieldtype": "Float",
-   "label": "Target Hours",
-   "read_only": 1
+   "label": "Target Hours"
   },
   {
    "fieldname": "hours_worked",
@@ -102,7 +101,7 @@
   }
  ],
  "links": [],
- "modified": "2022-05-10 23:16:17.798681",
+ "modified": "2022-05-15 16:13:51.503967",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
