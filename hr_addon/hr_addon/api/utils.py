@@ -84,7 +84,7 @@ def view_actual_employee_log(aemployee, adate):
         "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
         "ahour": hours_worked,
         "nbreak": 0,
-        "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",
+        "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",        
         "bhour": break_hours,
         "items":weekly_day_hour, #get_employee_checkin(aemployee,adate),
     })
