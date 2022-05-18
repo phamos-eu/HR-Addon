@@ -2,10 +2,13 @@
 # For license information, please see license.txt
 
 #from pydoc import doc
+from datetime import timedelta
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, nowdate
+from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, nowdate,add_days
+from frappe.utils.data import date_diff
+from datetime import date,datetime
 
 from hr_addon.hr_addon.api.utils import view_actual_employee_log,get_actual_employee_log_bulk
 from erpnext.hr.utils import get_holiday_dates_for_employee, validate_active_employee
@@ -111,8 +114,9 @@ def get_unmarked_days(employee, month, exclude_holidays=0):
 		["log_date","<=",month_end],
 		["employee","=",employee]
 	])
-
-	marked_days = [get_datetime(rcord.log_date) for rcord in rcords]
+	
+	#marked_days = [get_datetime(rcord.log_date) for rcord in rcords]
+	marked_days = [] 
 	if cint(exclude_holidays):
 		holiday_dates = get_holiday_dates_for_employee(employee, month_start, month_end)
 		holidays = [get_datetime(rcord) for rcord in holiday_dates]
@@ -121,6 +125,50 @@ def get_unmarked_days(employee, month, exclude_holidays=0):
 	unmarked_days = []
 
 	for date in dates_of_month:
+		date_time = get_datetime(date)
+		if today.day <= date_time.day and today.month <= date_time.month:
+			break
+		if date_time not in marked_days:
+			unmarked_days.append(date)
+	
+
+	return unmarked_days
+
+
+@frappe.whitelist()
+def get_unmarked_range(employee, from_day, to_day):
+	'''get_umarked_days(employee,month,excludee_holidays=0, year)'''
+	import calendar
+	month_map = get_month_map()
+	today = get_datetime() #get year from year
+	
+
+	joining_date, relieving_date = frappe.get_cached_value("Employee", employee, ["date_of_joining", "relieving_date"])
+	start_day = from_day
+	end_day = to_day #calendar.monthrange(today.year, month_map[month])[1] + 1	
+
+	delta = date_diff(end_day, start_day)	
+	days_of_list = ['{}'.format(add_days(start_day,i)) for i in range(delta + 1)]
+	month_start, month_end = days_of_list[0], days_of_list[-1]
+	print(f'\n\n\n\n datelid : {month_start} => {month_end} \n\n\n\n')
+
+	""" ["docstatus", "!=", 2]"""
+	""" rcords = frappe.get_list("Workday", fields=['log_date','employee'], filters=[
+		["log_date",">=",month_start],
+		["log_date","<=",month_end],
+		["employee","=",employee]
+	]) """
+	
+	#marked_days = [get_datetime(rcord.log_date) for rcord in rcords]
+	marked_days = [] 
+	""" if cint(exclude_holidays):
+		holiday_dates = get_holiday_dates_for_employee(employee, month_start, month_end)
+		holidays = [get_datetime(rcord) for rcord in holiday_dates]
+		marked_days.extend(holidays) """
+
+	unmarked_days = []
+
+	for date in days_of_list:
 		date_time = get_datetime(date)
 		if today.day <= date_time.day and today.month <= date_time.month:
 			break

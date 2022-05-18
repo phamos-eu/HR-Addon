@@ -19,7 +19,6 @@ def get_employee_checkin(employee,atime):
         WHERE employee='%s' AND DATE(time)= DATE('%s') ORDER BY time ASC
         """%(employee,atime), as_dict=1
     )
-    #print(f'\n\n\n\n inside valid : {checkin_list} \n\n\n\n')
     return checkin_list
 
 def get_employee_default_work_hour(employee,adate):
@@ -81,7 +80,6 @@ def view_actual_employee_log(aemployee, adate):
         
     # create list
     new_workday = []
-    #print(f'\n\n\n\n inside valid : {weekly_day_hour[0]} \n\n\n\n')
     new_workday.append({
         "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
         "ahour": hours_worked,
@@ -115,8 +113,8 @@ def get_actual_employee_log_bulk(aemployee, adate):
         if (not vea is None):
             vea.employee_checkins=clk_ls
 
-    print(f'\n\n\n\n ivalid : {view_employee_attendance} \n\n\n\n')
-    print(f'\n\n\n\n zalid : {weekly_day_hour} \n\n\n\n')
+    #print(f'\n\n\n\n ivalid : {view_employee_attendance} \n\n\n\n')
+    #print(f'\n\n\n\n zalid : {weekly_day_hour} \n\n\n\n')
         
     # check empty or none
     if(view_employee_attendance is None):
@@ -177,13 +175,3 @@ def get_employee_attendance(employee,atime):
     #print(f'\n\n\n\n inside valid : {checkin_list} \n\n\n\n')
     return attendance_list
 
-"""
-select name,employee,log_type,shift,time,attendance FROM `tabEmployee Checkin`;
-select name,employee,status,attendance_date,shift FROM `tabAttendance`;
-
-select employee,status,attendance_date,name,shift FROM `tabAttendance` a where a.employee='emp-00012' union select
-employee,log_type,time,attendance,shift from `tabEmployee Checkin` e  where e.employee='emp-00012';
-
-select employee,status,attendance_date,name,shift FROM `tabAttendance` a where a.employee in ('emp-00012','emp-00001'); select employee,log_type,time,attendance,shift from `tabEmployee Checkin` e  where e.employee in('emp-00012','emp-00001');
-
-"""

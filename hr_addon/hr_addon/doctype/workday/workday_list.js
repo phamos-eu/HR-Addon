@@ -30,25 +30,32 @@ frappe.listview_settings['Workday'] = {
 						dialog.set_df_property("unmarked_days", "hidden", 1);
 						//dialog.set_df_property("status", "hidden", 1);
 						dialog.set_df_property("exclude_holidays", "hidden", 1);
-						dialog.set_df_property("month", "value", '');
+						//dialog.set_df_property("month", "value", '');
+						dialog.set_df_property("date_from", "value", '');
+						dialog.set_df_property("date_to", "value", '');
 						dialog.set_df_property("unmarked_days", "options", []);
 						dialog.no_unmarked_days_left = false;
 					}
 				},
 				{
-					label: __("For Month"),
-					fieldtype: "Select",
-					fieldname: "month",
-					options: months,
+					fieldname: 'date_from',
+					label: __('Start Date'),
+					fieldtype: 'Date',
+					reqd: 1,
+				},
+				{
+					fieldname: 'date_to',
+					label: __('End Date'),
+					fieldtype: 'Date',
 					reqd: 1,
 					onchange: function() {
-						if (dialog.fields_dict.employee.value && dialog.fields_dict.month.value) {
+						if (dialog.fields_dict.employee.value && dialog.fields_dict.date_from.value) {
 							dialog.set_df_property("unmarked_days", "options", []);
 							dialog.no_unmarked_days_left = false;
-							me.get_multi_select_options(
+							me.get_day_range_options(
 								dialog.fields_dict.employee.value,
-								dialog.fields_dict.month.value,
-								dialog.fields_dict.exclude_holidays.get_value()
+								dialog.fields_dict.date_from.value,
+								dialog.fields_dict.date_to.value,
 							).then(options => {
 								if (options.length > 0) {
 									//dialog.set_df_property("unmarked_days", "hidden", 0);
@@ -60,23 +67,14 @@ frappe.listview_settings['Workday'] = {
 							});
 						}
 					}
-				},
-				/* {
-					label: __("Status"),
-					fieldtype: "Select",
-					fieldname: "status",
-					options: ["Present", "Absent", "Half Day", "Work From Home"],
-					hidden: 1,
-					reqd: 1,
-
-				}, */
+				},				
 				{
 					label: __("Toggle Days to process"),
 					fieldtype: "Check",
 					fieldname: "toggle_days",
 					hidden: 0,
 					onchange: function() {						
-						if (dialog.fields_dict.employee.value && dialog.fields_dict.month.value) {
+						if (dialog.fields_dict.employee.value && dialog.fields_dict.date_to.value) {
 							dialog.set_df_property("unmarked_days", "hidden", !dialog.fields_dict.toggle_days.get_value());
 							dialog.set_df_property("exclude_holidays", "hidden", !dialog.fields_dict.toggle_days.get_value());
 						}
@@ -122,7 +120,7 @@ frappe.listview_settings['Workday'] = {
 						frappe.msgprint(__("Workday for the month of {0} , has already been processed for the Employee {1}",
 							[dialog.fields_dict.month.value, dialog.fields_dict.employee.value]));
 					} else {
-						frappe.confirm(__('Process workday for {0} for the month of {1}?', [data.employee, data.month]), () => {
+						frappe.confirm(__('Process workday for {0} for the period of {1} to {2}?', [data.employee, data.date_from,data.date_to]), () => {
 							frappe.call({
 								method: "hr_addon.hr_addon.doctype.workday.workday.process_bulk_workday",
 								args: {
@@ -152,16 +150,15 @@ frappe.listview_settings['Workday'] = {
 		});
 		list_view.page.change_inner_button_type('Process Workdays',null, 'dark');
 	},
-
-	get_multi_select_options: function(employee, month, exclude_holidays) {
+	get_day_range_options: function(employee, from_day, to_day) {
 		return new Promise(resolve => {
 			frappe.call({				
-				method: 'hr_addon.hr_addon.doctype.workday.workday.get_unmarked_days',
+				method: 'hr_addon.hr_addon.doctype.workday.workday.get_unmarked_range',
 				async: false,
 				args: {
 					employee: employee,
-					month: month,
-					exclude_holidays: exclude_holidays
+					from_day: from_day,
+					to_day: to_day
 				}
 			}).then(r => {
 				var options = [];
@@ -177,5 +174,5 @@ frappe.listview_settings['Workday'] = {
 				resolve(options);
 			});
 		});
-	}
+	},
 };
