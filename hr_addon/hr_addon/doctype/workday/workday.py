@@ -15,15 +15,14 @@ from hr_addon.hr_addon.api.utils import view_actual_employee_log,get_actual_empl
 from erpnext.hr.utils import get_holiday_dates_for_employee, validate_active_employee
 
 class Workday(Document):
-	pass
-
-def autoname(self):
-	""""""
-	coy = frappe.db.sql("select abbr from tabCompany where name=%s", self.company)[0][0]
-	e_name = self.employee
-	name_key = coy+'WD'+'-.DD.-'+'-.####'
-	self.name = make_autoname(name_key)
-	self.title_hour= self.name
+	#pass
+	def autoname(self):
+		""""""
+		#coy = frappe.db.sql("select abbr from tabCompany where name=%s", self.company)[0][0]
+		e_name = self.employee
+		name_key = e_name+'-WD'+'-.MM.'+'-.DD.'+'-.####'
+		self.name = make_autoname(name_key)
+		self.title_hour= self.name
 #mark_bulk_attendance
 @frappe.whitelist()
 def process_bulk_workday(data):
