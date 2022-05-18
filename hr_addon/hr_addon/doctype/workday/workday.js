@@ -31,7 +31,10 @@ frappe.ui.form.on('Workday', {
 				frm.set_value("hours_worked",(alog[0].ahour/3600).toFixed(2));
 				frm.set_value("break_hours",(alog[0].bhour/3600).toFixed(2));
 				frm.set_value("target_hours",alog[0].thour);
-				$.each(alog[0].items,function(i,e){
+				let ec = alog[0].items
+				frm.set_value("first_checkin",ec[0].time);
+				frm.set_value("last_checkout",ec[ec.length-1].time);
+				$.each(ec,function(i,e){
 					let nw_checkins = frm.add_child("employee_checkins");
 					nw_checkins.employee_checkin = e.name;
 					nw_checkins.log_type = e.log_type;

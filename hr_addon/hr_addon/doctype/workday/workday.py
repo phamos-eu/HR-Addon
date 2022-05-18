@@ -59,8 +59,10 @@ def process_bulk_workday(data):
 			target_hours = 0
 		workday.target_hours = target_hours
 
+		# lenght of single must be greater than zero
 		if((not single[0]["items"] is None) and (len(single[0]["items"]) > 0)):
-			#print(f'\n Bug here len must be > 0 : {workday} \n')
+			workday.first_checkin = c_single[0].time
+			workday.last_checkout = c_single[-1].time
 			
 			for i in range(len(c_single)):
 				row = workday.append("employee_checkins", {

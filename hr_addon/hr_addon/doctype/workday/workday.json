@@ -16,9 +16,13 @@
   "section_break_9",
   "target_hours",
   "hours_worked",
-  "number_of_breaks",
   "column_break_5",
   "break_hours",
+  "number_of_breaks",
+  "section_break_14",
+  "first_checkin",
+  "last_checkout",
+  "column_break_17",
   "company"
  ],
  "fields": [
@@ -98,10 +102,28 @@
   {
    "fieldname": "section_break_9",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_14",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "first_checkin",
+   "fieldtype": "Data",
+   "label": "First Checkin"
+  },
+  {
+   "fieldname": "last_checkout",
+   "fieldtype": "Data",
+   "label": "Last Checkout"
+  },
+  {
+   "fieldname": "column_break_17",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2022-05-15 16:13:51.503967",
+ "modified": "2022-05-18 17:43:31.527478",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
