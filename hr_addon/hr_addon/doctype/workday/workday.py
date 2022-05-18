@@ -6,6 +6,7 @@ from datetime import timedelta
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, nowdate,add_days
 from frappe.utils.data import date_diff
 from datetime import date,datetime
@@ -16,6 +17,13 @@ from erpnext.hr.utils import get_holiday_dates_for_employee, validate_active_emp
 class Workday(Document):
 	pass
 
+def autoname(self):
+	""""""
+	coy = frappe.db.sql("select abbr from tabCompany where name=%s", self.company)[0][0]
+	e_name = self.employee
+	name_key = coy+'WD'+'-.DD.-'+'-.####'
+	self.name = make_autoname(name_key)
+	self.title_hour= self.name
 #mark_bulk_attendance
 @frappe.whitelist()
 def process_bulk_workday(data):
@@ -150,7 +158,6 @@ def get_unmarked_range(employee, from_day, to_day):
 	delta = date_diff(end_day, start_day)	
 	days_of_list = ['{}'.format(add_days(start_day,i)) for i in range(delta + 1)]
 	month_start, month_end = days_of_list[0], days_of_list[-1]
-	print(f'\n\n\n\n datelid : {month_start} => {month_end} \n\n\n\n')
 
 	""" ["docstatus", "!=", 2]"""
 	""" rcords = frappe.get_list("Workday", fields=['log_date','employee'], filters=[
@@ -161,11 +168,6 @@ def get_unmarked_range(employee, from_day, to_day):
 	
 	#marked_days = [get_datetime(rcord.log_date) for rcord in rcords]
 	marked_days = [] 
-	""" if cint(exclude_holidays):
-		holiday_dates = get_holiday_dates_for_employee(employee, month_start, month_end)
-		holidays = [get_datetime(rcord) for rcord in holiday_dates]
-		marked_days.extend(holidays) """
-
 	unmarked_days = []
 
 	for date in days_of_list:
