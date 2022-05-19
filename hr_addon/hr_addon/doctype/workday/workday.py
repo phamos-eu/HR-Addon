@@ -18,9 +18,10 @@ class Workday(Document):
 	#pass
 	def autoname(self):
 		""""""
-		#coy = frappe.db.sql("select abbr from tabCompany where name=%s", self.company)[0][0]
+		# WD-{employee}-{log_date}
 		e_name = self.employee
-		name_key = e_name+'-WD'+'-.MM.'+'-.DD.'+'-.####'
+		a_log_date = '{}'.format(getdate(self.log_date))
+		name_key = 'WD-'+e_name+'-'+a_log_date+'.##'
 		self.name = make_autoname(name_key)
 		self.title_hour= self.name
 #mark_bulk_attendance
