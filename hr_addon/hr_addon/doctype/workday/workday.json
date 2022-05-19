@@ -110,12 +110,14 @@
   {
    "fieldname": "first_checkin",
    "fieldtype": "Data",
-   "label": "First Checkin"
+   "label": "First Checkin",
+   "read_only": 1
   },
   {
    "fieldname": "last_checkout",
    "fieldtype": "Data",
-   "label": "Last Checkout"
+   "label": "Last Checkout",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_17",
@@ -123,7 +125,7 @@
   }
  ],
  "links": [],
- "modified": "2022-05-18 17:43:31.527478",
+ "modified": "2022-05-19 13:21:31.134869",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",

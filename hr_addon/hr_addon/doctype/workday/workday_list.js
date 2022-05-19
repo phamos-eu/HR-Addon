@@ -117,8 +117,8 @@ frappe.listview_settings['Workday'] = {
 				}],
 				primary_action(data) {
 					if (cur_dialog.no_unmarked_days_left) {
-						frappe.msgprint(__("Workday for the month of {0} , has already been processed for the Employee {1}",
-							[dialog.fields_dict.month.value, dialog.fields_dict.employee.value]));
+						frappe.msgprint(__("Workday for the period: {0} - {1} , has already been processed for the Employee {2}",
+							[dialog.fields_dict.date_to.value,dialog.fields_dict.date_from.value, dialog.fields_dict.employee.value]));
 					} else {
 						frappe.confirm(__('Process workday for {0} for the period of {1} to {2}?', [data.employee, data.date_from,data.date_to]), () => {
 							frappe.call({

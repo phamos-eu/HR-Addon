@@ -158,14 +158,13 @@ def get_unmarked_range(employee, from_day, to_day):
 	month_start, month_end = days_of_list[0], days_of_list[-1]
 
 	""" ["docstatus", "!=", 2]"""
-	""" rcords = frappe.get_list("Workday", fields=['log_date','employee'], filters=[
+	rcords = frappe.get_list("Workday", fields=['log_date','employee'], filters=[
 		["log_date",">=",month_start],
 		["log_date","<=",month_end],
 		["employee","=",employee]
-	]) """
+	])
 	
-	#marked_days = [get_datetime(rcord.log_date) for rcord in rcords]
-	marked_days = [] 
+	marked_days = [get_datetime(rcord.log_date) for rcord in rcords] #[]
 	unmarked_days = []
 
 	for date in days_of_list:
