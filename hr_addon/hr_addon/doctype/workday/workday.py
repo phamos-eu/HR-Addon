@@ -40,19 +40,18 @@ def process_bulk_workday(data):
 		single = []
 		single = view_actual_employee_log(data.employee, get_datetime(date))
 		#single = get_actual_employee_log_bulk(data.employee, get_datetime(date))
-		c_single = single[0]["items"]
-		target_hours = 0
+		c_single = single[0]["items"]		
 		doc_dict = {
 			'doctype': 'Workday',
 			'employee': data.employee,
 			'log_date': get_datetime(date),
 			'company': company,
 			'attendance':single[0]["attendance"],
-			'target_hours':single[0]["thour"],
 			'hours_worked':"{:.2f}".format(single[0]["ahour"]/3600),
 			'break_hours': "{:.2f}".format(single[0]["bhour"]/3600),
 		}
 		workday = frappe.get_doc(doc_dict).insert()
+		target_hours = single[0]["thour"]
 		if (workday.status == 'Half Day'):
 			target_hours = (single[0]["thour"])/2
 		if (workday.status == 'On Leave'):
