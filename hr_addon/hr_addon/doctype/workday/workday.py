@@ -15,15 +15,7 @@ from hr_addon.hr_addon.api.utils import view_actual_employee_log,get_actual_empl
 from erpnext.hr.utils import get_holiday_dates_for_employee, validate_active_employee
 
 class Workday(Document):
-	#pass
-	def autoname(self):
-		""""""
-		# WD-{employee}-{log_date}
-		e_name = self.employee
-		a_log_date = '{}'.format(getdate(self.log_date))
-		name_key = 'WD-'+e_name+'-'+a_log_date+'.##'
-		self.name = make_autoname(name_key)
-		self.title_hour= self.name
+	pass
 #mark_bulk_attendance
 @frappe.whitelist()
 def process_bulk_workday(data):
@@ -39,8 +31,8 @@ def process_bulk_workday(data):
 	
 	for date in data.unmarked_days:
 		single = []
-		single = view_actual_employee_log(data.employee, get_datetime(date))
-		#single = get_actual_employee_log_bulk(data.employee, get_datetime(date))
+		#single = view_actual_employee_log(data.employee, get_datetime(date))
+		single = get_actual_employee_log_bulk(data.employee, get_datetime(date))
 		c_single = single[0]["items"]		
 		doc_dict = {
 			'doctype': 'Workday',

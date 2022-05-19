@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:WD-{YYYY}-{#####}",
  "creation": "2022-05-06 15:25:52.037042",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -125,7 +126,7 @@
   }
  ],
  "links": [],
- "modified": "2022-05-19 13:21:31.134869",
+ "modified": "2022-05-19 18:54:54.155082",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",

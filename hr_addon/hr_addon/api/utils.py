@@ -36,7 +36,6 @@ def get_employee_default_work_hour(employee,adate):
     """%(employee,adate), as_dict=1
     )
     if (target_work_hours is None  or target_work_hours == []):
-        msg = f"<div>Warning, create target working hour for {employee} </div>"    
         msg = f'<div>Please create "Weekly Working Hours" for the selected Employee: {employee} first. </div>'    
         frappe.throw(_(msg))
 
@@ -96,15 +95,12 @@ def view_actual_employee_log(aemployee, adate):
 def get_actual_employee_log_bulk(aemployee, adate):
     '''total actual log'''
     
+    # create list
+    new_workday = []
+    
     view_employee_attendance = get_employee_attendance(aemployee,adate)
     weekly_day_hour = get_employee_checkin(aemployee,adate)
 
-    """ for i in range(len(view_employee_attendance)):
-        clockins_lt = []
-        clockins_lt = [klt for klt in weekly_day_hour if klt.attendance == view_employee_attendance[i].name]
-        view_employee_attendance[i].append({
-            "employee_checkins":clockins_lt
-        }) """
     for vea in view_employee_attendance:
         
         clk_ls =[]
@@ -114,49 +110,55 @@ def get_actual_employee_log_bulk(aemployee, adate):
         if (not vea is None):
             vea.employee_checkins=clk_ls
 
-    #print(f'\n\n\n\n ivalid : {view_employee_attendance} \n\n\n\n')
-    #print(f'\n\n\n\n zalid : {weekly_day_hour} \n\n\n\n')
         
     # check empty or none
-    if(view_employee_attendance is None):
-        return
-    
-    
-    hours_worked = 0.0
-    break_hours = 0.0
-
-    # not pair of IN/OUT either missing
-    if len(weekly_day_hour)% 2 != 0:
-        hours_worked = -36.0
-        break_hours = -360.0
-
-    if (len(weekly_day_hour) % 2 == 0):
-        # seperate 'IN' from 'OUT'
-        clockin_list = [get_datetime(kin.time) for x,kin in enumerate(weekly_day_hour) if x % 2 == 0]
-        clockout_list = [get_datetime(kout.time) for x,kout in enumerate(weekly_day_hour) if x % 2 != 0]
-
-        # get total worked hours
-        for i in range(len(clockin_list)):
-            wh = time_diff_in_seconds(clockout_list[i],clockin_list[i])
-            hours_worked += float(str(wh))
+    if((weekly_day_hour is None) or (weekly_day_hour == [])):
         
-        # get total break hours
-        for i in range(len(clockout_list)):
-            if ((i+1) < len(clockout_list)):
-                wh = time_diff_in_seconds(clockin_list[i+1],clockout_list[i])
-                break_hours += float(str(wh))
-        
-    # create list
-    new_workday = []
-    #print(f'\n\n\n\n inside valid : {weekly_day_hour[0]} \n\n\n\n')
-    new_workday.append({
-        "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
-        "ahour": hours_worked,
-        "nbreak": 0,
-        "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",
-        "bhour": break_hours,
-        "items":weekly_day_hour, #get_employee_checkin(aemployee,adate),
-    })
+        new_workday.append({
+            "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
+            "ahour": 0,
+            "nbreak": 0,
+            "attendance": view_employee_attendance[0].name if len(view_employee_attendance) > 0 else "",
+            "bhour": 0,
+            "items":[],
+        })
+
+    
+    if(not weekly_day_hour is None):
+        #
+        hours_worked = 0.0
+        break_hours = 0.0
+
+        # not pair of IN/OUT either missing
+        if len(weekly_day_hour)% 2 != 0:
+            hours_worked = -36.0
+            break_hours = -360.0
+
+        if (len(weekly_day_hour) % 2 == 0):
+            # seperate 'IN' from 'OUT'
+            clockin_list = [get_datetime(kin.time) for x,kin in enumerate(weekly_day_hour) if x % 2 == 0]
+            clockout_list = [get_datetime(kout.time) for x,kout in enumerate(weekly_day_hour) if x % 2 != 0]
+
+            # get total worked hours
+            for i in range(len(clockin_list)):
+                wh = time_diff_in_seconds(clockout_list[i],clockin_list[i])
+                hours_worked += float(str(wh))
+
+            # get total break hours
+            for i in range(len(clockout_list)):
+                if ((i+1) < len(clockout_list)):
+                    wh = time_diff_in_seconds(clockin_list[i+1],clockout_list[i])
+                    break_hours += float(str(wh))
+
+
+        new_workday.append({
+            "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
+            "ahour": hours_worked,
+            "nbreak": 0,
+            "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",
+            "bhour": break_hours,
+            "items":weekly_day_hour, 
+        })
 
     return new_workday
 
