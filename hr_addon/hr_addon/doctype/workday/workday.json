@@ -58,7 +58,7 @@
   },
   {
    "fieldname": "hours_worked",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Hours worked",
    "read_only": 1
@@ -66,12 +66,13 @@
   {
    "fieldname": "number_of_breaks",
    "fieldtype": "Int",
+   "hidden": 1,
    "label": "Number of Breaks",
    "read_only": 1
   },
   {
    "fieldname": "break_hours",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Break Hours",
    "read_only": 1
@@ -126,7 +127,7 @@
   }
  ],
  "links": [],
- "modified": "2022-05-19 18:54:54.155082",
+ "modified": "2022-05-20 13:50:22.016730",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",

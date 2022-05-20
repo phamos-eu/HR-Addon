@@ -15,7 +15,25 @@ frappe.ui.form.on('Workday', {
 				]
 			};
 		});
+		/* frm.set_query('Employee Checkins','employee_checkins', function(){
+			return{
+				'filters':[
+					['employee_checkins','employee_checkin','=',frm.doc.attendance]
+					
+				],
+			};
+		}); */
 	},
+	/* onload: function(frm){
+		frm.set_query('Employee Checkins','employee_checkins', function(){
+			return{
+				'filters':{
+					'employee_checkin':['=',frm.attendance]
+				}
+			};
+		});
+	}, */
+
 	attendance: function(frm){
 		//console.log(frm.doc);
 		let aemployee = frm.doc.employee;
