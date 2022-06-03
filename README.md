@@ -13,7 +13,7 @@ $ bench get-app HR-Addon https://github.com/phamos-eu/HR-Addon.git
 
 $ bench install-app HR-Addon If you are using a multi-tenant environment, use the following command
 
-$ bench --site site_name install-app HR-Addon
+$ bench --site site_name install-app hr_addon
 
 # Documentation
 The comprehensive documentation can be found at https://doku.phamos.eu/books/hr-addon
