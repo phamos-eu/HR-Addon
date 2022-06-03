@@ -40,8 +40,10 @@ def process_bulk_workday(data):
 			'log_date': get_datetime(date),
 			'company': company,
 			'attendance':single[0]["attendance"],
-			'hours_worked':"{:.2f}".format(single[0]["ahour"]/3600),
-			'break_hours': "{:.2f}".format(single[0]["bhour"]/3600),
+			'hours_worked':"{:.2f}".format(single[0]["ahour"]/(60*60)),
+			'break_hours': "{:.2f}".format(single[0]["bhour"]/(60*60)),
+			'total_work_seconds':single[0]["ahour"],
+			'total_break_seconds':single[0]["bhour"],
 		}
 		workday = frappe.get_doc(doc_dict).insert()
 		target_hours = single[0]["thour"]
@@ -50,6 +52,7 @@ def process_bulk_workday(data):
 		if (workday.status == 'On Leave'):
 			target_hours = 0
 		workday.target_hours = target_hours
+		workday.total_target_seconds = target_hours*(60*60)
 
 		# lenght of single must be greater than zero
 		if((not single[0]["items"] is None) and (len(single[0]["items"]) > 0)):

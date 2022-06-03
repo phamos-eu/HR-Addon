@@ -45,10 +45,12 @@ frappe.ui.form.on('Workday', {
 			}).done((r)=>{
 				frm.doc.employee_checkins = [];
 				let alog = r.message;
-				//console.log(alog);
-				frm.set_value("hours_worked",(alog[0].ahour/3600).toFixed(2));
-				frm.set_value("break_hours",(alog[0].bhour/3600).toFixed(2));
+				frm.set_value("hours_worked",(alog[0].ahour/(60*60)).toFixed(2));
+				frm.set_value("break_hours",(alog[0].bhour/(60*60)).toFixed(2));
+				frm.set_value("total_work_seconds",(alog[0].ahour).toFixed(2));
+				frm.set_value("total_break_seconds",(alog[0].bhour).toFixed(2));
 				frm.set_value("target_hours",alog[0].thour);
+				frm.set_value("total_target_seconds",(alog[0].thour*(60*60)));
 				let ec = alog[0].items
 				frm.set_value("first_checkin",ec[0].time);
 				frm.set_value("last_checkout",ec[ec.length-1].time);
