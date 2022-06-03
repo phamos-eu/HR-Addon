@@ -10,6 +10,7 @@ Your best to install HR Addon via the frappecloud.com marketplace (not yet publi
 From the frappe-bench folder, execute
 
 $ bench get-app HR-Addon https://github.com/phamos-eu/HR-Addon.git
+
 $ bench install-app HR-Addon If you are using a multi-tenant environment, use the following command
 
 $ bench --site site_name install-app HR-Addon
