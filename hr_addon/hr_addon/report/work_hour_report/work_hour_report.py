@@ -19,12 +19,11 @@ def execute(filters=None):
 	if filters.get("employee_id"):
 		empid = filters.get("employee_id")
 		condition_employee += f" AND employee = '{empid}'"
-	# {'fieldname':'name','label':'Workday','width':200,},
+	# #{'fieldname':'employee','label':'Employee','width':160},
 	# {'fieldname':'target_hours','label':'Target Hours','width':80},
 	columns = [		
-		{'fieldname':'log_date','label':'Date','width':110},
-		{'fieldname':'employee','label':'Employee','width':160},
-		{'fieldname':'attendance','label':'Attendance', "width": 160},
+		{'fieldname':'log_date','label':'Date','width':110},		
+		{'fieldname':'name','label':'Work Day',  "fieldtype": "Link", "options": "Workday", 'width':200,},		
 		{'fieldname':'status','label':'Status', "width": 80},
 		{'fieldname':'total_work_seconds','label':_('Work Hours'), "width": 110, },
 		{'fieldname':'total_break_seconds','label':_('Break Hours'), "width": 110, },
@@ -32,17 +31,20 @@ def execute(filters=None):
 		{'fieldname':'diff_log','label':'Diff','width':90},
 		{'fieldname':'first_in','label':'First Checkin','width':100},
 		{'fieldname':'last_out','label':'Last Checkout','width':100},
+		{'fieldname':'attendance','label':'Attendance','width': 160},
 		
 	]
 	work_data = frappe.db.sql(
 		"""		
-		SELECT name,log_date,employee,attendance,status,total_work_seconds,total_break_seconds,
+		SELECT name,log_date,employee,attendance ,status,total_work_seconds,total_break_seconds,
 		target_hours, total_target_seconds, (total_work_seconds - total_target_seconds) as diff_log,
 		TIME(first_checkin) as first_in,TIME(last_checkout) as last_out 
 		FROM `tabWorkday` 
-		WHERE docstatus < 2 %s %s
+		WHERE docstatus < 2 %s %s 
+		ORDER BY log_date ASC
 		"""%( condition_date, condition_employee),as_dict=1,
 	)
+	
 	data = work_data
 
 	return columns, data
