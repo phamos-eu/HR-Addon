@@ -4,7 +4,7 @@ Addon for Erpnext attendance and employee checkins
 
 # Installation
 ## Frappecloud
-Your best to install HR Addon via the frappecloud.com marketplace (not yet published)
+Your best to install HR Addon via the frappecloud.com marketplace
 
 ## Self hosted
 From the frappe-bench folder, execute
