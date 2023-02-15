@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Jide Olayinka and contributors
 # For license information, please see license.txt
 
-#from pydoc import doc
 from datetime import timedelta
 import frappe
 from frappe import _
@@ -12,7 +11,7 @@ from frappe.utils.data import date_diff
 from datetime import date,datetime
 
 from hr_addon.hr_addon.api.utils import view_actual_employee_log,get_actual_employee_log_bulk
-from erpnext.hr.utils import get_holiday_dates_for_employee, validate_active_employee
+from hrms.hr.utils import get_holiday_dates_for_employee, validate_active_employee
 
 class Workday(Document):
 	pass
