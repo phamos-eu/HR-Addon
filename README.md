@@ -1,6 +1,10 @@
 # HR Addon
 
-Addon for Erpnext attendance and employee checkins
+Addon for Erpnext attendance and employee checkins.
+
+HR Addon gives you a detailed report on employees working hours
+![image](https://user-images.githubusercontent.com/22279621/219353323-6888d305-1fc6-47ae-8977-98d5e97edf10.png)
+
 
 # Installation
 ## Frappecloud
