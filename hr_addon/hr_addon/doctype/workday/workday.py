@@ -11,7 +11,7 @@ from frappe.utils.data import date_diff
 from datetime import date,datetime
 
 from hr_addon.hr_addon.api.utils import view_actual_employee_log,get_actual_employee_log_bulk
-from hrms.hr.utils import get_holiday_dates_for_employee, validate_active_employee
+
 
 class Workday(Document):
 	pass
@@ -116,12 +116,16 @@ def get_unmarked_days(employee, month, exclude_holidays=0):
 		["employee","=",employee]
 	])
 	
-	#marked_days = [get_datetime(rcord.log_date) for rcord in rcords]
 	marked_days = [] 
 	if cint(exclude_holidays):
-		holiday_dates = get_holiday_dates_for_employee(employee, month_start, month_end)
-		holidays = [get_datetime(rcord) for rcord in holiday_dates]
-		marked_days.extend(holidays)
+		if get_version() == 14:
+			from hrms.hr.utils import get_holiday_dates_for_employee
+
+			holiday_dates = get_holiday_dates_for_employee(employee, month_start, month_end)
+			holidays = [get_datetime(rcord) for rcord in holiday_dates]
+			marked_days.extend(holidays)
+
+
 
 	unmarked_days = []
 
@@ -148,7 +152,6 @@ def get_unmarked_range(employee, from_day, to_day):
 	start_day = from_day
 	end_day = to_day #calendar.monthrange(today.year, month_map[month])[1] + 1	
 
-	#print(f'\n\n\n\n relieve date : {from_day} \n\n\n\n')
 	if joining_date and joining_date >= getdate(from_day):
 		start_day = joining_date
 	if relieving_date and relieving_date >= getdate(to_day):
@@ -176,3 +179,25 @@ def get_unmarked_range(employee, from_day, to_day):
 			unmarked_days.append(date)
 
 	return unmarked_days
+
+
+def get_version():
+	branch_name = get_app_branch("erpnext")
+	if "14" in branch_name:
+		return 14
+	else: 
+		return 13
+
+def get_app_branch(app):
+    """Returns branch of an app"""
+    import subprocess
+
+    try:
+        branch = subprocess.check_output(
+            "cd ../apps/{0} && git rev-parse --abbrev-ref HEAD".format(app), shell=True
+        )
+        branch = branch.decode("utf-8")
+        branch = branch.strip()
+        return branch
+    except Exception:
+        return ""
