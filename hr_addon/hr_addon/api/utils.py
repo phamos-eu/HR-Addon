@@ -30,7 +30,7 @@ def get_employee_default_work_hour(employee,adate):
     # AND YEAR(w.valid_from) = CAST(('2022-01-01') as INT) AND YEAR(w.valid_to) = CAST(('2022-12-30') as INT);
     target_work_hours= frappe.db.sql(
         """ 
-    SELECT w.name,w.employee,w.valid_from,w.valid_to,d.day,d.hours  FROM `tabWeekly Working Hours` w  
+    SELECT w.name,w.employee,w.valid_from,w.valid_to,d.day,d.hours,d.break_minutes  FROM `tabWeekly Working Hours` w  
     LEFT JOIN `tabDaily Hours Detail` d ON w.name = d.parent 
     WHERE w.employee='%s' AND d.day = DAYNAME('%s')
     """%(employee,adate), as_dict=1
@@ -79,13 +79,15 @@ def view_actual_employee_log(aemployee, adate):
                 break_hours += float(str(wh))
         
     # create list
+    employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)[0]
     new_workday = []
     new_workday.append({
-        "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
+        "thour": employee_default_work_hour.hours,
+        "break_minutes": employee_default_work_hour.break_minutes,
         "ahour": hours_worked,
         "nbreak": 0,
         "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",        
-        "bhour": break_hours,
+        "bhour": employee_default_work_hour.break_minutes,
         "items":weekly_day_hour, #get_employee_checkin(aemployee,adate),
     })
 

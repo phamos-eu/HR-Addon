@@ -8,7 +8,8 @@
  "field_order": [
   "day",
   "hours",
-  "hour_time"
+  "hour_time",
+  "break_minutes"
  ],
  "fields": [
   {
@@ -30,11 +31,17 @@
    "fieldname": "hour_time",
    "fieldtype": "Data",
    "label": "Hour Time"
+  },
+  {
+   "fieldname": "break_minutes",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Break Minutes"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2022-05-06 01:51:19.780122",
+ "modified": "2023-05-08 11:33:55.822930",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Daily Hours Detail",

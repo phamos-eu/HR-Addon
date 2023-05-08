@@ -20,6 +20,7 @@
   "column_break_5",
   "break_hours",
   "number_of_breaks",
+  "actual_working_hours",
   "section_break_14",
   "first_checkin",
   "last_checkout",
@@ -148,10 +149,16 @@
    "hidden": 1,
    "label": " Target In Seconds",
    "read_only": 1
+  },
+  {
+   "fieldname": "actual_working_hours",
+   "fieldtype": "Float",
+   "label": "Actual Working Hours",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2022-06-02 16:11:55.614340",
+ "modified": "2023-05-08 11:02:44.293182",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
