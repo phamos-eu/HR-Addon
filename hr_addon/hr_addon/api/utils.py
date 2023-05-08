@@ -87,7 +87,7 @@ def view_actual_employee_log(aemployee, adate):
         "ahour": hours_worked,
         "nbreak": 0,
         "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",        
-        "bhour": employee_default_work_hour.break_minutes,
+        "bhour": break_hours,
         "items":weekly_day_hour, #get_employee_checkin(aemployee,adate),
     })
 
@@ -115,9 +115,10 @@ def get_actual_employee_log_bulk(aemployee, adate):
         
     # check empty or none
     if((weekly_day_hour is None) or (weekly_day_hour == [])):
-        
+        employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)[0]
         new_workday.append({
-            "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
+            "thour": employee_default_work_hour.hours,
+            "break_minutes": employee_default_work_hour.break_minutes,
             "ahour": 0,
             "nbreak": 0,
             "attendance": view_employee_attendance[0].name if len(view_employee_attendance) > 0 else "",
@@ -152,9 +153,10 @@ def get_actual_employee_log_bulk(aemployee, adate):
                     wh = time_diff_in_seconds(clockin_list[i+1],clockout_list[i])
                     break_hours += float(str(wh))
 
-
+        employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)[0]
         new_workday.append({
-            "thour": get_employee_default_work_hour(aemployee,adate)[0].hours,
+            "thour": employee_default_work_hour.hours,
+            "break_minutes": employee_default_work_hour.break_minutes,
             "ahour": hours_worked,
             "nbreak": 0,
             "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",
