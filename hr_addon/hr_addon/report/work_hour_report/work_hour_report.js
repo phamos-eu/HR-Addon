@@ -87,9 +87,11 @@ frappe.query_reports["Work Hour Report"] = {
 
 		if (column.fieldname == "total_target_seconds" ) {
 			value = hitt(value);
-			
-			
 		}
+		if (column.fieldname == "expected_break_hours" ) {
+			value = hitt(value);	
+		}
+
 		if (column.fieldname == "diff_log" ) {
 			if(value < 0) {
 				value = "<span style='color:#FF8C00'>" + hitt(value,true) + "</span>";
