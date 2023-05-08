@@ -27,8 +27,10 @@ def execute(filters=None):
 		{'fieldname':'status','label':'Status', "width": 80},
 		{'fieldname':'total_work_seconds','label':_('Work Hours'), "width": 110, },
 		{'fieldname':'total_break_seconds','label':_('Break Hours'), "width": 110, },
+		{'fieldname':'actual_working_seconds','label':_('Actual Working Hours'), "width": 110, },
 		{'fieldname':'total_target_seconds','label':'Target Seconds','width':80},
 		{'fieldname':'diff_log','label':'Diff','width':90},
+		{'fieldname':'actual_diff_log','label':'Actual Diff','width':90},
 		{'fieldname':'first_in','label':'First Checkin','width':100},
 		{'fieldname':'last_out','label':'Last Checkout','width':100},
 		{'fieldname':'attendance','label':'Attendance','width': 160},
@@ -37,7 +39,9 @@ def execute(filters=None):
 	work_data = frappe.db.sql(
 		"""		
 		SELECT name,log_date,employee,attendance ,status,total_work_seconds,total_break_seconds,
+		actual_working_hours*60*60 actual_working_seconds,
 		target_hours, total_target_seconds, (total_work_seconds - total_target_seconds) as diff_log,
+		(total_work_seconds - actual_working_hours*60*60) as actual_diff_log,
 		TIME(first_checkin) as first_in,TIME(last_checkout) as last_out 
 		FROM `tabWorkday` 
 		WHERE docstatus < 2 %s %s 
