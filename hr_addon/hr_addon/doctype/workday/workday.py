@@ -44,7 +44,7 @@ def process_bulk_workday(data):
 			'expected_break_hours': "{:.2f}".format(single[0]["break_minutes"]/(60)),
 			'total_work_seconds':single[0]["ahour"],
 			'total_break_seconds':single[0]["bhour"],
-			'actual_working_hours': (single[0]["ahour"] - single[0]["bhour"])/(60*60)
+			'actual_working_hours': "{:.2f}".format(single[0]["ahour"]/(60*60) - single[0]["break_minutes"]/60)
 		}
 		workday = frappe.get_doc(doc_dict).insert()
 		target_hours = single[0]["thour"]
