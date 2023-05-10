@@ -26,9 +26,12 @@ def execute(filters=None):
 		{'fieldname':'name','label':'Work Day',  "fieldtype": "Link", "options": "Workday", 'width':200,},		
 		{'fieldname':'status','label':'Status', "width": 80},
 		{'fieldname':'total_work_seconds','label':_('Work Hours'), "width": 110, },
-		{'fieldname':'total_break_seconds','label':_('Break Hours'), "width": 110, },
+		# {'fieldname':'total_break_seconds','label':_('Break Hours'), "width": 110, },
+		{'fieldname':'expected_break_hours','label':'Expected Break Hours','width':80},
+		{'fieldname':'actual_working_seconds','label':_('Actual Working Hours'), "width": 110, },
 		{'fieldname':'total_target_seconds','label':'Target Seconds','width':80},
-		{'fieldname':'diff_log','label':'Diff','width':90},
+		# {'fieldname':'diff_log','label':'Diff (Work Hours - Target Seconds)','width':90},
+		{'fieldname':'actual_diff_log','label':'Diff (Actual Working Hours - Target Seconds)','width':90},
 		{'fieldname':'first_in','label':'First Checkin','width':100},
 		{'fieldname':'last_out','label':'Last Checkout','width':100},
 		{'fieldname':'attendance','label':'Attendance','width': 160},
@@ -37,7 +40,9 @@ def execute(filters=None):
 	work_data = frappe.db.sql(
 		"""		
 		SELECT name,log_date,employee,attendance ,status,total_work_seconds,total_break_seconds,
+		actual_working_hours*60*60 actual_working_seconds, expected_break_hours*60*60 expected_break_hours,
 		target_hours, total_target_seconds, (total_work_seconds - total_target_seconds) as diff_log,
+		(actual_working_hours*60*60 - total_target_seconds) as actual_diff_log,
 		TIME(first_checkin) as first_in,TIME(last_checkout) as last_out 
 		FROM `tabWorkday` 
 		WHERE docstatus < 2 %s %s 

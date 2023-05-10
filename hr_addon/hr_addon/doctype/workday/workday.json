@@ -17,7 +17,9 @@
   "section_break_9",
   "target_hours",
   "hours_worked",
+  "actual_working_hours",
   "column_break_5",
+  "expected_break_hours",
   "break_hours",
   "number_of_breaks",
   "section_break_14",
@@ -76,7 +78,7 @@
   {
    "fieldname": "break_hours",
    "fieldtype": "Float",
-   "in_list_view": 1,
+   "hidden": 1,
    "label": "Break Hours",
    "read_only": 1
   },
@@ -148,10 +150,22 @@
    "hidden": 1,
    "label": " Target In Seconds",
    "read_only": 1
+  },
+  {
+   "fieldname": "actual_working_hours",
+   "fieldtype": "Float",
+   "label": "Actual Working Hours",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_break_hours",
+   "fieldtype": "Float",
+   "label": "Expected Break Hours",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2022-06-02 16:11:55.614340",
+ "modified": "2023-05-09 08:59:25.570460",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
