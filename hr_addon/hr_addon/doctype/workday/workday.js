@@ -46,7 +46,6 @@ frappe.ui.form.on('Workday', {
 				date: frm.doc.log_date
 			},
 			callback: function(r){
-				console.log("log_date", r);
 				if (r.message == true){
 					frm.set_value("hours_worked", 0)
 					frm.set_value("break_hours", 0)
@@ -56,6 +55,9 @@ frappe.ui.form.on('Workday', {
 					frm.set_value("total_target_seconds", 0)
 					frm.set_value("expected_break_hours", 0)
 					frm.set_value("actual_working_hours", 0)
+					frm.set_value("employee_checkins", [])
+					frm.set_value("first_checkin", "")
+					frm.set_value("last_checkout", "")
 				} else {
 					get_hours(frm)
 				}
