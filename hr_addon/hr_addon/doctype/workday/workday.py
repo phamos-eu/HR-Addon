@@ -74,6 +74,16 @@ def process_bulk_workday(data):
 		#workday.submit() 
 	
 
+@frappe.whitelist()
+def date_is_in_holiday_list(employee, date):
+	holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
+	hl_doc = frappe.get_doc("Holiday List", holiday_list)
+	for holiday in hl_doc.holidays:
+		if holiday.holiday_date == frappe.utils.get_datetime(date).date():
+			return True
+	
+	return False
+
 def get_month_map():
 	return frappe._dict({
 		"January": 1,
