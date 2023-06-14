@@ -10,3 +10,4 @@ def get_data():
 			"label": _("HR Addon")
 		}
 	]
+asdf
