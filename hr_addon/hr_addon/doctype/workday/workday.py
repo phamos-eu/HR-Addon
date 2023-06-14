@@ -29,78 +29,50 @@ def process_bulk_workday(data):
 		return
 	
 	for date in data.unmarked_days:
-		if not date_is_in_holiday_list(data.employee, get_datetime(date)):
-			single = []
-			#single = view_actual_employee_log(data.employee, get_datetime(date))
-			single = get_actual_employee_log_bulk(data.employee, get_datetime(date))
-			c_single = single[0]["items"]		
-			doc_dict = {
-				'doctype': 'Workday',
-				'employee': data.employee,
-				'log_date': get_datetime(date),
-				'company': company,
-				'attendance':single[0]["attendance"],
-				'hours_worked':"{:.2f}".format(single[0]["ahour"]/(60*60)),
-				'break_hours': "{:.2f}".format(single[0]["bhour"]/(60*60)),
-				'expected_break_hours': "{:.2f}".format(single[0]["break_minutes"]/(60)),
-				'total_work_seconds':single[0]["ahour"],
-				'total_break_seconds':single[0]["bhour"],
-				'actual_working_hours': "{:.2f}".format(single[0]["ahour"]/(60*60) - single[0]["break_minutes"]/60)
-			}
-			workday = frappe.get_doc(doc_dict).insert()
-			target_hours = single[0]["thour"]
-			if (workday.status == 'Half Day'):
-				target_hours = (single[0]["thour"])/2
-			if (workday.status == 'On Leave'):
-				target_hours = 0
-			workday.target_hours = target_hours
-			workday.total_target_seconds = target_hours*(60*60)
+		single = []
+		#single = view_actual_employee_log(data.employee, get_datetime(date))
+		single = get_actual_employee_log_bulk(data.employee, get_datetime(date))
+		c_single = single[0]["items"]		
+		doc_dict = {
+			'doctype': 'Workday',
+			'employee': data.employee,
+			'log_date': get_datetime(date),
+			'company': company,
+			'attendance':single[0]["attendance"],
+			'hours_worked':"{:.2f}".format(single[0]["ahour"]/(60*60)),
+			'break_hours': "{:.2f}".format(single[0]["bhour"]/(60*60)),
+			'expected_break_hours': "{:.2f}".format(single[0]["break_minutes"]/(60)),
+			'total_work_seconds':single[0]["ahour"],
+			'total_break_seconds':single[0]["bhour"],
+			'actual_working_hours': "{:.2f}".format(single[0]["ahour"]/(60*60) - single[0]["break_minutes"]/60)
+		}
+		workday = frappe.get_doc(doc_dict).insert()
+		target_hours = single[0]["thour"]
+		if (workday.status == 'Half Day'):
+			target_hours = (single[0]["thour"])/2
+		if (workday.status == 'On Leave'):
+			target_hours = 0
+		workday.target_hours = target_hours
+		workday.total_target_seconds = target_hours*(60*60)
 
-			# lenght of single must be greater than zero
-			if((not single[0]["items"] is None) and (len(single[0]["items"]) > 0)):
-				workday.first_checkin = c_single[0].time
-				workday.last_checkout = c_single[-1].time
-				
-				for i in range(len(c_single)):
-					row = workday.append("employee_checkins", {
-						'employee_checkin': c_single[i]["name"],
-						'log_type': c_single[i]["log_type"],
-						'log_time': c_single[i]["time"],
-						'skip_auto_attendance': c_single[i]["skip_auto_attendance"],
-						'parent':workday
-					})			
-			workday.save()
-		else:
-			doc_dict = {
-				'doctype': 'Workday',
-				'employee': data.employee,
-				'log_date': get_datetime(date),
-				'company': company,
-				'attendance':"",
-				'hours_worked':0,
-				'break_hours':0,
-				'expected_break_hours':0,
-				'total_work_seconds':0,
-				'total_break_seconds':0,
-				'actual_working_hours':0,
-				'target_hours': 0,
-				'total_target_seconds': 0,
-				'employee_checkins': []
-			}
-			workday = frappe.get_doc(doc_dict).insert()
+		# lenght of single must be greater than zero
+		if((not single[0]["items"] is None) and (len(single[0]["items"]) > 0)):
+			workday.first_checkin = c_single[0].time
+			workday.last_checkout = c_single[-1].time
+			
+			for i in range(len(c_single)):
+				row = workday.append("employee_checkins", {
+					'employee_checkin': c_single[i]["name"],
+					'log_type': c_single[i]["log_type"],
+					'log_time': c_single[i]["time"],
+					'skip_auto_attendance': c_single[i]["skip_auto_attendance"],
+					'parent':workday
+				})			
+			
+		workday.save()
 			
 		#workday.submit() 
 	
-
-@frappe.whitelist()
-def date_is_in_holiday_list(employee, date):
-	holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
-	hl_doc = frappe.get_doc("Holiday List", holiday_list)
-	for holiday in hl_doc.holidays:
-		if holiday.holiday_date == frappe.utils.get_datetime(date).date():
-			return True
-	
-	return False
 
 def get_month_map():
 	return frappe._dict({
