@@ -56,6 +56,9 @@ def process_bulk_workday(data):
 			workday.target_hours = target_hours
 			workday.total_target_seconds = target_hours*(60*60)
 
+			if workday.target_hours == 0:
+				workday.expected_break_hours = 0
+
 			# lenght of single must be greater than zero
 			if((not single[0]["items"] is None) and (len(single[0]["items"]) > 0)):
 				workday.first_checkin = c_single[0].time

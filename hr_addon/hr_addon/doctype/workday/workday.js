@@ -82,7 +82,11 @@ var get_hours = function(frm){
 			frm.set_value("total_break_seconds",(alog[0].bhour).toFixed(2));
 			frm.set_value("target_hours",alog[0].thour);
 			frm.set_value("total_target_seconds",(alog[0].thour*(60*60)));
-			frm.set_value("expected_break_hours",(alog[0].break_minutes/60));
+			if (frm.doc.target_hours == 0){
+				frm.set_value("expected_break_hours", 0);
+			} else {
+				frm.set_value("expected_break_hours",(alog[0].break_minutes/60));
+			}
 			frm.set_value("actual_working_hours",frm.doc.hours_worked - frm.doc.expected_break_hours);
 			let ec = alog[0].items
 			frm.set_value("first_checkin",ec[0].time);
