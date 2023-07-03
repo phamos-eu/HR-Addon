@@ -63,7 +63,20 @@ frappe.ui.form.on('Workday', {
 				}
 			}
 		})
-	}
+	},
+
+	status(frm){
+		if (frm.doc.status === "On Leave"){
+			setTimeout(() => {
+				frm.set_value("target_hours", 0)
+				frm.set_value("expected_break_hours", 0)
+				frm.set_value("actual_working_hours", 0)
+				frm.set_value("total_target_seconds", 0)
+				frm.set_value("total_break_seconds", 0)
+				frm.set_value("total_work_seconds", 0)
+			}, 1000);
+		} // TODO: consider case of frm.doc.status === "Half Day"
+	},
 });
 
 var get_hours = function(frm){
