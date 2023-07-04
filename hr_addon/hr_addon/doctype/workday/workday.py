@@ -58,6 +58,8 @@ def process_bulk_workday(data):
 
 			if workday.target_hours == 0:
 				workday.expected_break_hours = 0
+				workday.total_break_seconds = 0
+				workday.actual_working_hours = 0
 
 			# lenght of single must be greater than zero
 			if((not single[0]["items"] is None) and (len(single[0]["items"]) > 0)):
