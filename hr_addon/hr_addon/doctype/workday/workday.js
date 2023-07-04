@@ -110,10 +110,9 @@ var get_hours = function(frm){
 				nw_checkins.log_type = e.log_type;
 				nw_checkins.log_time = e.time;
 				nw_checkins.skip_auto_attendance= e.skip_auto_attendance;
-
+				});
+				refresh_field("employee_checkins");
 			});
-			refresh_field("employee_checkins");
-		});
-		
+		}
 	}
-}
+});
