@@ -20,6 +20,7 @@
   "hours",
   "section_break_11",
   "total_work_hours",
+  "no_break_hours",
   "column_break_14",
   "total_hours_time",
   "amended_from",
@@ -131,11 +132,17 @@
    "fieldtype": "Link",
    "label": "Company",
    "options": "Company"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_break_hours",
+   "fieldtype": "Check",
+   "label": "No break hours if target hours is less than 6 hours"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2022-05-09 17:28:24.192027",
+ "modified": "2023-07-04 11:38:50.406939",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Weekly Working Hours",
