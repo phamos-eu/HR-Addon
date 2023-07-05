@@ -60,6 +60,12 @@ def process_bulk_workday(data):
 				workday.expected_break_hours = 0
 				workday.total_break_seconds = 0
 				workday.actual_working_hours = 0
+			elif workday.target_hours < 6:
+				wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": workday.employee}, fields=["name", "no_break_hours"])
+				no_break_hours = True if len(wwh) > 0 and wwh[0]["no_break_hours"] == 1 else False
+				if no_break_hours:
+					workday.expected_break_hours = 0
+					workday.total_break_seconds = 0
 
 			# lenght of single must be greater than zero
 			if((not single[0]["items"] is None) and (len(single[0]["items"]) > 0)):
@@ -74,7 +80,6 @@ def process_bulk_workday(data):
 						'skip_auto_attendance': c_single[i]["skip_auto_attendance"],
 						'parent':workday
 					})			
-			workday.save()
 		else:
 			doc_dict = {
 				'doctype': 'Workday',
@@ -95,7 +100,19 @@ def process_bulk_workday(data):
 			workday = frappe.get_doc(doc_dict).insert()
 			
 		#workday.submit() 
+		workday.save()
 	
+
+@frappe.whitelist()
+def date_is_in_holiday_list(employee, date):
+	holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
+	hl_doc = frappe.get_doc("Holiday List", holiday_list)
+	for holiday in hl_doc.holidays:
+		if holiday.holiday_date == frappe.utils.get_datetime(date).date():
+			return True
+
+	return False
+
 
 def get_month_map():
 	return frappe._dict({
