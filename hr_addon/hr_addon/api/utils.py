@@ -80,10 +80,16 @@ def view_actual_employee_log(aemployee, adate):
         
     # create list
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)[0]
+    break_minutes = employee_default_work_hour.break_minutes
+    wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=["name", "no_break_hours"])
+    no_break_hours = True if len(wwh) > 0 and wwh[0]["no_break_hours"] == 1 else False
+    if no_break_hours:
+        if employee_default_work_hour.hours < 6:
+            break_minutes = 0
     new_workday = []
     new_workday.append({
         "thour": employee_default_work_hour.hours,
-        "break_minutes": employee_default_work_hour.break_minutes,
+        "break_minutes": break_minutes,
         "ahour": hours_worked,
         "nbreak": 0,
         "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",        
