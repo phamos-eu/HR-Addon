@@ -10,7 +10,7 @@ from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, nowdate,
 from frappe.utils.data import date_diff
 from datetime import date,datetime
 
-from hr_addon.hr_addon.api.utils import view_actual_employee_log,get_actual_employee_log_bulk
+from hr_addon.hr_addon.api.utils import view_actual_employee_log, get_actual_employee_log_bulk, date_is_in_holiday_list
 
 
 class Workday(Document):
@@ -103,16 +103,6 @@ def process_bulk_workday(data):
 		#workday.submit() 
 		workday.save()
 	
-
-@frappe.whitelist()
-def date_is_in_holiday_list(employee, date):
-	holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
-	hl_doc = frappe.get_doc("Holiday List", holiday_list)
-	for holiday in hl_doc.holidays:
-		if holiday.holiday_date == frappe.utils.get_datetime(date).date():
-			return True
-
-	return False
 
 
 def get_month_map():
