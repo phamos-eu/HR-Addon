@@ -40,7 +40,7 @@ frappe.ui.form.on('Workday', {
 
 	log_date: function(frm){
 		frappe.call({
-			method: "hr_addon.hr_addon.doctype.workday.workday.date_is_in_holiday_list",
+			method: "hr_addon.hr_addon.api.utils.date_is_in_holiday_list",
 			args: {
 				employee: frm.doc.employee,
 				date: frm.doc.log_date
