@@ -81,14 +81,19 @@ def view_actual_employee_log(aemployee, adate):
     # create list
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)[0]
     break_minutes = employee_default_work_hour.break_minutes
-    wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=["name", "no_break_hours"])
+    wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"])
     no_break_hours = True if len(wwh) > 0 and wwh[0]["no_break_hours"] == 1 else False
     if no_break_hours:
         if hours_worked/60/60 < 6:
             break_minutes = 0
+
+    target_hours = employee_default_work_hour.hours
+    if len(wwh) > 0 and wwh[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1:
+        if date_is_in_holiday_list(aemployee,adate):
+            target_hours = 0
     new_workday = []
     new_workday.append({
-        "thour": employee_default_work_hour.hours,
+        "thour": target_hours,
         "break_minutes": break_minutes,
         "ahour": hours_worked,
         "nbreak": 0,
@@ -188,3 +193,13 @@ def get_employee_attendance(employee,atime):
     #print(f'\n\n\n\n inside valid : {checkin_list} \n\n\n\n')
     return attendance_list
 
+
+@frappe.whitelist()
+def date_is_in_holiday_list(employee, date):
+	holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
+	hl_doc = frappe.get_doc("Holiday List", holiday_list)
+	for holiday in hl_doc.holidays:
+		if holiday.holiday_date == frappe.utils.get_datetime(date).date():
+			return True
+
+	return False

@@ -21,6 +21,7 @@
   "section_break_11",
   "total_work_hours",
   "no_break_hours",
+  "set_target_hours_to_zero_when_date_is_holiday",
   "column_break_14",
   "total_hours_time",
   "amended_from",
@@ -138,11 +139,17 @@
    "fieldname": "no_break_hours",
    "fieldtype": "Check",
    "label": "No break hours if target hours is less than 6 hours"
+  },
+  {
+   "default": "0",
+   "fieldname": "set_target_hours_to_zero_when_date_is_holiday",
+   "fieldtype": "Check",
+   "label": "Set Target Hours to Zero when date is holiday"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2023-07-04 11:38:50.406939",
+ "modified": "2023-07-27 09:16:56.101160",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Weekly Working Hours",
