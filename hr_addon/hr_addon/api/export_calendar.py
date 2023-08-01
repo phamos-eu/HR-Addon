@@ -13,7 +13,7 @@ def generate_leave_ical_file(leave_applications):
         # Extract data from the Leave Application document
         start_date = leave_application.get('from_date')
         end_date = leave_application.get('to_date')
-        employee_name = leave_application.get('employee')
+        employee_name = leave_application.get('employee_name')
         leave_type = leave_application.get('leave_type')
         description = leave_application.get('description')
 
@@ -33,9 +33,9 @@ def export_calendar(doc, method=None):
     if doc.status == "Approved":
         leave_applications = frappe.db.get_list("Leave Application", 
                         filters={"status": "Approved"},
-                        fields=["from_date", "to_date", "employee", "leave_type", "description"])
+                        fields=["from_date", "to_date", "employee_name", "leave_type", "description"])
         ical_data = generate_leave_ical_file(leave_applications)
 
         # Save the iCalendar data as a File document
         file_name = "Urlaubskalender.ics"  # Set the desired filename here
-        save_file(file_name, ical_data, dt="Leave Application", dn=doc.name, is_private=1)
+        save_file(file_name, ical_data, dt="Leave Application", dn=doc.name, is_private=0)
