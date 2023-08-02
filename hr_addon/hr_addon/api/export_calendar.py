@@ -13,7 +13,7 @@ def generate_leave_ical_file(leave_applications):
         # Extract data from the Leave Application document
         start_date = leave_application.get('from_date')
         end_date = leave_application.get('to_date')
-        employee_name = leave_application.get('employee')
+        employee_name = leave_application.get('employee_name')
         leave_type = leave_application.get('leave_type')
         description = leave_application.get('description')
 
@@ -30,12 +30,36 @@ def generate_leave_ical_file(leave_applications):
     return ical_data
 
 def export_calendar(doc, method=None):
+    """
+    This function is triggered when a Leave Application is created/changed/updated.
+    """
     if doc.status == "Approved":
         leave_applications = frappe.db.get_list("Leave Application", 
                         filters={"status": "Approved"},
-                        fields=["from_date", "to_date", "employee", "leave_type", "description"])
+                        fields=["from_date", "to_date", "employee_name", "leave_type", "description"])
         ical_data = generate_leave_ical_file(leave_applications)
 
         # Save the iCalendar data as a File document
         file_name = "Urlaubskalender.ics"  # Set the desired filename here
-        save_file(file_name, ical_data, dt="Leave Application", dn=doc.name, is_private=1)
+        create_file(file_name, ical_data, doc.name)
+
+
+def create_file(file_name, file_content, doc_name):
+    """
+    Creates a file in public folder and also a Frappe's File document and attatch it to the Leave Application.
+    """
+    
+    file_path = "{}/public/files/{}".format(frappe.utils.get_site_path(), file_name)
+    with open(file_path, 'wb') as ical_file:
+        ical_file.write(file_content)
+
+    # Save the file in the Frappe File document
+    file_doc = frappe.get_doc({
+        "doctype": "File",
+        "file_name": file_name,
+        "file_url": "/files/{}".format(file_name),
+        "is_private": 0,
+        "attached_to_doctype": "Leave Application",
+        "attached_to_name": doc_name
+    })
+    file_doc.save()
