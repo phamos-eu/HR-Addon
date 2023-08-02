@@ -46,20 +46,9 @@ def export_calendar(doc, method=None):
 
 def create_file(file_name, file_content, doc_name):
     """
-    Creates a file in public folder and also a Frappe's File document and attatch it to the Leave Application.
+    Creates a file in public folder.
     """
-    
+
     file_path = "{}/public/files/{}".format(frappe.utils.get_site_path(), file_name)
     with open(file_path, 'wb') as ical_file:
         ical_file.write(file_content)
-
-    # Save the file in the Frappe File document
-    file_doc = frappe.get_doc({
-        "doctype": "File",
-        "file_name": file_name,
-        "file_url": "/files/{}".format(file_name),
-        "is_private": 0,
-        "attached_to_doctype": "Leave Application",
-        "attached_to_name": doc_name
-    })
-    file_doc.save()
