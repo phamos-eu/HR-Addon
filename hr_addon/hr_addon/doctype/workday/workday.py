@@ -58,7 +58,7 @@ def process_bulk_workday(data):
 		if workday.target_hours == 0:
 			workday.expected_break_hours = 0
 			workday.total_break_seconds = 0
-			workday.actual_working_hours = 0
+			# workday.actual_working_hours = 0
 		if float(workday.hours_worked) < 6:
 			wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": workday.employee}, fields=["name", "no_break_hours"])
 			no_break_hours = True if len(wwh) > 0 and wwh[0]["no_break_hours"] == 1 else False
