@@ -13,9 +13,13 @@ def generate_leave_ical_file(leave_applications):
         # Extract data from the Leave Application document
         start_date = leave_application.get('from_date')
         end_date = leave_application.get('to_date')
+        if start_date != end_date:
+            end_date += frappe.utils.datetime.timedelta(days=1)
         employee_name = leave_application.get('employee_name')
         leave_type = leave_application.get('leave_type')
         description = leave_application.get('description')
+        if not description:
+            description = ""
 
         event.add('dtstart', start_date)
         event.add('dtend', end_date)
