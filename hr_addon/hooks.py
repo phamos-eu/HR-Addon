@@ -188,3 +188,9 @@ user_data_fields = [
 # translated_search_doctypes = []
 
 required_apps = ["hrms"]
+
+doc_events = {
+    "Leave Application": {
+        "on_change": "hr_addon.hr_addon.api.export_calendar.export_calendar",
+    }
+}
