@@ -8,7 +8,8 @@
  "field_order": [
   "general_section",
   "runapp",
-  "allow_bulk_processing"
+  "allow_bulk_processing",
+  "name_of_calendar_export_ics_file"
  ],
  "fields": [
   {
@@ -27,12 +28,18 @@
    "fieldname": "allow_bulk_processing",
    "fieldtype": "Check",
    "label": "Allow Bulk Processing"
+  },
+  {
+   "description": "Just the filename without the extension .ics",
+   "fieldname": "name_of_calendar_export_ics_file",
+   "fieldtype": "Data",
+   "label": "Name of calendar export ICS file"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-05-13 22:53:32.840880",
+ "modified": "2023-08-23 09:01:11.883966",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
