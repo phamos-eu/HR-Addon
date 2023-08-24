@@ -44,7 +44,8 @@ def export_calendar(doc, method=None):
         ical_data = generate_leave_ical_file(leave_applications)
 
         # Save the iCalendar data as a File document
-        file_name = "Urlaubskalender.ics"  # Set the desired filename here
+        file_name = frappe.db.get_single_value("HR Addon Settings", "name_of_calendar_export_ics_file")
+        file_name = "{}.ics".format(file_name)  # Set the desired filename here
         create_file(file_name, ical_data, doc.name)
 
 
