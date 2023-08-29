@@ -30,7 +30,7 @@
    "label": "Allow Bulk Processing"
   },
   {
-   "description": "Just the filename without the extension .ics",
+   "description": "Just the filename without the extension .ics. <br>\nNormally the public file Urlaubskalender.ics is created in the following location: Your domain/files/Urlaubskalender.ics\nIf you adjust the name and path in this field, the old file will be deleted the next time the calendar file is overwritten.\nThe file will be regenerated every time an approved \"Leave Application\" is saved.",
    "fieldname": "name_of_calendar_export_ics_file",
    "fieldtype": "Data",
    "label": "Name of calendar export ICS file"
@@ -39,7 +39,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-08-23 09:01:11.883966",
+ "modified": "2023-08-28 11:33:27.539168",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
