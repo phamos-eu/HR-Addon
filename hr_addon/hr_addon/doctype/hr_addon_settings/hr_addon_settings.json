@@ -9,7 +9,8 @@
   "general_section",
   "runapp",
   "allow_bulk_processing",
-  "name_of_calendar_export_ics_file"
+  "name_of_calendar_export_ics_file",
+  "ics_folder_path"
  ],
  "fields": [
   {
@@ -34,12 +35,18 @@
    "fieldname": "name_of_calendar_export_ics_file",
    "fieldtype": "Data",
    "label": "Name of calendar export ICS file"
+  },
+  {
+   "description": "Absolute Path of the folder in which the ICS file will be saved, for example: /home/xxxxxxxxxx/owncloud/calendar/. Make sure this folder is writable by frappe user. Leave this field empty if you want to make the file public.",
+   "fieldname": "ics_folder_path",
+   "fieldtype": "Data",
+   "label": "ICS folder path"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-08-28 11:33:27.539168",
+ "modified": "2023-10-05 14:23:55.630571",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
