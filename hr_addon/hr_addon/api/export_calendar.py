@@ -20,10 +20,15 @@ def generate_leave_ical_file(leave_applications):
         if not description:
             description = ""
 
+        uid = leave_application.name
+        if uid.count("-") == 4:
+            uid = uid[:-2]
+
         event.add('dtstart', start_date)
         event.add('dtend', end_date)
         event.add('summary', f'{employee_name} - {leave_type}')
         event.add('description', description)
+        event.add("uid", uid)
 
         cal.add_component(event)
 
@@ -39,7 +44,7 @@ def export_calendar(doc, method=None):
     if doc.status == "Approved":
         leave_applications = frappe.db.get_list("Leave Application", 
                         filters={"status": "Approved"},
-                        fields=["from_date", "to_date", "employee_name", "leave_type", "description"])
+                        fields=["name", "from_date", "to_date", "employee_name", "leave_type", "description"])
         ical_data = generate_leave_ical_file(leave_applications)
 
         # Save the iCalendar data as a File document
