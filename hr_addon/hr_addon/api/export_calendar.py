@@ -1,4 +1,4 @@
-import io
+import io, os
 import frappe
 from icalendar import Event, Calendar
 from datetime import datetime
@@ -55,9 +55,11 @@ def export_calendar(doc, method=None):
 
 def create_file(file_name, file_content, doc_name):
     """
-    Creates a file in public folder.
+    Creates a file in user defined folder
     """
-
-    file_path = "{}/public/files/{}".format(frappe.utils.get_site_path(), file_name)
+    folder_path = frappe.db.get_single_value("HR Addon Settings", "ics_folder_path")
+    if not folder_path:
+        folder_path = "{}/public/files/".format(frappe.utils.get_site_path())
+    file_path = os.path.join(folder_path, file_name)
     with open(file_path, 'wb') as ical_file:
         ical_file.write(file_content)
