@@ -1,4 +1,4 @@
-import io
+import io, os
 import frappe
 from icalendar import Event, Calendar
 from datetime import datetime
@@ -20,10 +20,15 @@ def generate_leave_ical_file(leave_applications):
         if not description:
             description = ""
 
+        uid = leave_application.name
+        if uid.count("-") == 4:
+            uid = uid[:-2]
+
         event.add('dtstart', start_date)
         event.add('dtend', end_date)
         event.add('summary', f'{employee_name} - {leave_type}')
         event.add('description', description)
+        event.add("uid", uid)
 
         cal.add_component(event)
 
@@ -39,7 +44,7 @@ def export_calendar(doc, method=None):
     if doc.status == "Approved":
         leave_applications = frappe.db.get_list("Leave Application", 
                         filters={"status": "Approved"},
-                        fields=["from_date", "to_date", "employee_name", "leave_type", "description"])
+                        fields=["name", "from_date", "to_date", "employee_name", "leave_type", "description"])
         ical_data = generate_leave_ical_file(leave_applications)
 
         # Save the iCalendar data as a File document
@@ -50,9 +55,11 @@ def export_calendar(doc, method=None):
 
 def create_file(file_name, file_content, doc_name):
     """
-    Creates a file in public folder.
+    Creates a file in user defined folder
     """
-
-    file_path = "{}/public/files/{}".format(frappe.utils.get_site_path(), file_name)
+    folder_path = frappe.db.get_single_value("HR Addon Settings", "ics_folder_path")
+    if not folder_path:
+        folder_path = "{}/public/files/".format(frappe.utils.get_site_path())
+    file_path = os.path.join(folder_path, file_name)
     with open(file_path, 'wb') as ical_file:
         ical_file.write(file_content)
