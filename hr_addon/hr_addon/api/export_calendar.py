@@ -21,7 +21,7 @@ def generate_leave_ical_file(leave_applications):
             description = ""
 
         uid = leave_application.name
-        if uid.count("-") == 4:
+        if uid.count("-") == 4 and uid.find("CANCELLED") < 0:
             uid = uid[:-2]
 
         event.add('dtstart', start_date)
@@ -41,10 +41,20 @@ def export_calendar(doc, method=None):
     """
     This function is triggered when a Leave Application is created/changed/updated.
     """
-    if doc.status == "Approved":
+    if doc.status == "Approved" or doc.status == "Cancelled":
         leave_applications = frappe.db.get_list("Leave Application", 
-                        filters={"status": "Approved"},
-                        fields=["name", "from_date", "to_date", "employee_name", "leave_type", "description"])
+                        filters=[["status", "in", ["Approved", "Cancelled"]]],
+                        fields=["name", "status", "from_date", "to_date", "employee_name", "leave_type", "description", "amended_from"])
+
+        index = 0
+        for la in leave_applications:
+            if la["status"] == "Cancelled":
+                if la["name"] in [app["amended_from"] for app in leave_applications]:
+                    del leave_applications[index]
+                else:
+                    la["name"] = "CANCELLED-{}".format(la["name"])
+            index = index + 1
+
         ical_data = generate_leave_ical_file(leave_applications)
 
         # Save the iCalendar data as a File document

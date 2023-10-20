@@ -192,5 +192,6 @@ required_apps = ["hrms"]
 doc_events = {
     "Leave Application": {
         "on_change": "hr_addon.hr_addon.api.export_calendar.export_calendar",
+		"on_cancel": "hr_addon.hr_addon.api.export_calendar.export_calendar"
     }
 }
