@@ -15,3 +15,16 @@ class HRAddonSettings(Document):
 		# remove also the Urlaubskalender.ics, if exist
 		if os.path.exists("{}/public/files/Urlaubskalender.ics".format(frappe.utils.get_site_path())):
 			os.remove("{}/public/files/Urlaubskalender.ics".format(frappe.utils.get_site_path()))
+
+
+@frappe.whitelist()
+def download_ics_file():
+	settings = frappe.get_doc("HR Addon Settings")
+	if settings.ics_folder_path:
+		file_name = os.path.join(settings.ics_folder_path, settings.name_of_calendar_export_ics_file + ".ics")
+		if os.path.exists(file_name):
+			with open(file_name, 'rb') as file:
+				file_content = file.read()
+			return file_content
+		else:
+			frappe.throw(f"File '{file_name}' not found.")
