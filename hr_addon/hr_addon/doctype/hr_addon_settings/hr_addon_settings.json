@@ -10,7 +10,8 @@
   "runapp",
   "allow_bulk_processing",
   "name_of_calendar_export_ics_file",
-  "ics_folder_path"
+  "ics_folder_path",
+  "download_ics_file"
  ],
  "fields": [
   {
@@ -41,12 +42,17 @@
    "fieldname": "ics_folder_path",
    "fieldtype": "Data",
    "label": "ICS folder path"
+  },
+  {
+   "fieldname": "download_ics_file",
+   "fieldtype": "Button",
+   "label": "Download ICS File"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-10-05 14:23:55.630571",
+ "modified": "2023-10-23 11:13:01.642208",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
