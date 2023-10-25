@@ -26,7 +26,10 @@ def generate_leave_ical_file(leave_applications):
 
         event.add('dtstart', start_date)
         event.add('dtend', end_date)
-        event.add('summary', f'{employee_name} - {leave_type}')
+        summary = ""
+        if leave_application.get("cancelled"):
+            summary = "CANCELLED - "
+        event.add('summary', f'{summary}{employee_name} - {leave_type}')
         event.add('description', description)
         event.add("uid", uid)
 
@@ -49,10 +52,11 @@ def export_calendar(doc, method=None):
         index = 0
         for la in leave_applications:
             if la["status"] == "Cancelled":
+                la["cancelled"] = False
                 if la["name"] in [app["amended_from"] for app in leave_applications]:
                     del leave_applications[index]
                 else:
-                    la["name"] = "CANCELLED-{}".format(la["name"])
+                    la["cancelled"] = True
             index = index + 1
 
         ical_data = generate_leave_ical_file(leave_applications)
