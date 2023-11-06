@@ -4,6 +4,8 @@
 import frappe, os
 from frappe.model.document import Document
 
+from hr_addon.hr_addon.doctype.workday.workday import get_unmarked_range, process_bulk_workday
+
 class HRAddonSettings(Document):
 	def before_save(self):
 		# remove the old ics file
@@ -33,3 +35,38 @@ def download_ics_file():
 		return file_content
 	else:
 		frappe.throw(f"File '{file_name}' not found.")
+
+def generate_workdays_scheduled_job():
+	hr_addon_settings = frappe.get_doc("HR Addon Settings")
+	day = hr_addon_settings.day
+	time = hr_addon_settings.time
+	number2name_dict= {
+		0:"Monday",
+		1:"Tuesday",
+		2:"Wednesday",
+		3:"Thursday",
+		4:"Friday",
+		5:"Saturday",
+		6:"Sunday"
+	}
+	now = frappe.utils.datetime.datetime.now()
+	today_weekday_number = now.weekday()
+	weekday_name = number2name_dict[today_weekday_number]
+	if weekday_name == day:
+		if now.hour == int(time):
+			generate_workdays_for_past_7_days_now()
+
+
+@frappe.whitelist()
+def generate_workdays_for_past_7_days_now():
+	today = frappe.utils.datetime.datetime.now()
+	a_week_ago = today - frappe.utils.datetime.timedelta(days=7)
+	employees = frappe.db.get_list("Employee")
+	for employee in employees:
+		employee_name = employee["name"]
+		unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
+		data = {
+			"employee": employee_name,
+			"unmarked_days": unmarked_days
+		}
+		process_bulk_workday(data)
