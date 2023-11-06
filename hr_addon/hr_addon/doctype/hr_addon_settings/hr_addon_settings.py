@@ -38,6 +38,8 @@ def download_ics_file():
 
 def generate_workdays_scheduled_job():
 	hr_addon_settings = frappe.get_doc("HR Addon Settings")
+	if hr_addon_settings.enabled == 0:
+		return
 	day = hr_addon_settings.day
 	time = hr_addon_settings.time
 	number2name_dict= {
