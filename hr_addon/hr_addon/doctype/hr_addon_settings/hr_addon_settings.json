@@ -54,9 +54,10 @@
    "label": "Download ICS File"
   },
   {
+   "description": "To avoid having to generate a workday for each employee individually, you can use this function to generate the workdays for the last 7 days for all employees at the same time. These are the basis for the Work Hour Report.\nTo do this, you should ensure that a Holiday List is linked in all employees and that a Weekly Working Hour has been created for each employee. \nAlso, be sure that all Employee Checkins are entered correctly before generating.",
    "fieldname": "scheduled_job_section",
    "fieldtype": "Section Break",
-   "label": "Scheduled Job"
+   "label": "Generate Workdays automatically"
   },
   {
    "description": "It will be generated for every Employee",
@@ -88,7 +89,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-11-06 14:54:14.228938",
+ "modified": "2023-11-10 13:50:23.399969",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
