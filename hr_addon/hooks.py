@@ -195,3 +195,9 @@ doc_events = {
 		"on_cancel": "hr_addon.hr_addon.api.export_calendar.export_calendar"
     }
 }
+
+scheduler_events = {
+	"hourly": [
+		"hr_addon.hr_addon.doctype.hr_addon_settings.hr_addon_settings.generate_workdays_scheduled_job"
+	],
+}

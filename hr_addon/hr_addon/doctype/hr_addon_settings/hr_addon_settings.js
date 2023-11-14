@@ -30,6 +30,14 @@ frappe.ui.form.on('HR Addon Settings', {
 				link.click();
 			}
 		});
+	},
+
+	generate_workdays_for_past_7_days_now: function(frm){
+		frappe.call({
+			method: "hr_addon.hr_addon.doctype.hr_addon_settings.hr_addon_settings.generate_workdays_for_past_7_days_now",
+		}).then(r => {
+			frappe.msgprint("The workdays have been generated.")
+		})
 	}
 });
 
