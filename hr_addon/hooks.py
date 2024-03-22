@@ -187,4 +187,4 @@ user_data_fields = [
 # For example: Role, Gender, etc.
 # translated_search_doctypes = []
 
-required_apps = ["hrms"]
+# required_apps = ["hrms"]
