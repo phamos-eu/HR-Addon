@@ -4,7 +4,7 @@ import frappe
 from frappe import _
 
 from frappe.utils.data import date_diff, time_diff_in_seconds
-from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, nowdate
+from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, nowdate, comma_sep, getdate, today
 
 #@frappe.whitelist()
 def get_employee_checkin(employee,atime):
@@ -181,4 +181,144 @@ def get_employee_attendance(employee,atime):
     )
     #print(f'\n\n\n\n inside valid : {checkin_list} \n\n\n\n')
     return attendance_list
+
+
+# ----------------------------------------------------------------------
+# WORK ANNIVERSARY REMINDERS SEND TO EMPLOYEES LIST IN HR-ADDON-SETTINGS
+# ----------------------------------------------------------------------
+@frappe.whitelist()
+def send_work_anniversary_notification():
+    # Employee Item
+    emp_email_list = frappe.db.get_all("Employee Item", {"parent": "HR Addon Settings", "parentfield": "anniversary_notification_email_list"}, "employee")
+    recipients = []
+    for employee in emp_email_list:
+        employee_doc = frappe.get_doc("Employee", employee)
+        employee_email = employee_doc.get("user_id") or employee_doc.get("personal_email") or employee_doc.get("company_email")
+        if employee_email:
+            recipients.append({"employee_email": employee_email, "company": employee_doc.company})
+            # recipients.append(employee_email)
+        else:
+            frappe.throw(_("Email not set for {0}".format(employee)))
+
+    """Send Employee Work Anniversary Reminders if 'Send Work Anniversary Reminders' is checked"""
+    to_send = int(frappe.db.get_single_value("HR Addon Settings", "send_work_anniversary_notifications"))
+    if not to_send:
+        return
+    
+    if not recipients:
+        frappe.throw(_("Recipient Employees not set in field 'Anniversary Notification Email List'"))
+
+    employees_joined_today = get_employees_having_an_event_today("work_anniversary")
+
+    for company, anniversary_persons in employees_joined_today.items():
+        reminder_text, message = get_work_anniversary_reminder_text_and_message(anniversary_persons)
+        recipients_by_company = [d.get('employee_email') for d in recipients if d.get('company') == company ]
+        if recipients_by_company:
+            send_work_anniversary_reminder(recipients_by_company, reminder_text, anniversary_persons, message)
+
+
+#### replicated to avoid import from erpnext.hr.doctype.employee.employee_reminders erpnext version-13
+def get_employees_having_an_event_today(event_type):
+    """Get all employee who have `event_type` today
+    & group them based on their company. `event_type`
+    can be `birthday` or `work_anniversary`"""
+
+    from collections import defaultdict
+
+    # Set column based on event type
+    if event_type == "birthday":
+        condition_column = "date_of_birth"
+    elif event_type == "work_anniversary":
+        condition_column = "date_of_joining"
+    else:
+        return
+
+    employees_born_today = frappe.db.multisql(
+        {
+            "mariadb": f"""
+            SELECT `personal_email`, `company`, `company_email`, `user_id`, `employee_name` AS 'name', `image`, `date_of_joining`
+            FROM `tabEmployee`
+            WHERE
+                DAY({condition_column}) = DAY(%(today)s)
+            AND
+                MONTH({condition_column}) = MONTH(%(today)s)
+            AND
+                YEAR({condition_column}) < YEAR(%(today)s)
+            AND
+                `status` = 'Active'
+        """,
+            "postgres": f"""
+            SELECT "personal_email", "company", "company_email", "user_id", "employee_name" AS 'name', "image"
+            FROM "tabEmployee"
+            WHERE
+                DATE_PART('day', {condition_column}) = date_part('day', %(today)s)
+            AND
+                DATE_PART('month', {condition_column}) = date_part('month', %(today)s)
+            AND
+                DATE_PART('year', {condition_column}) < date_part('year', %(today)s)
+            AND
+                "status" = 'Active'
+        """,
+        },
+        dict(today=today(), condition_column=condition_column),
+        as_dict=1
+    )
+
+    grouped_employees = defaultdict(lambda: [])
+
+    for employee_doc in employees_born_today:
+        grouped_employees[employee_doc.get("company")].append(employee_doc)
+
+    return grouped_employees
+
+
+#### replicated to avoid import from erpnext.hr.doctype.employee.employee_reminders erpnext version-13
+def get_work_anniversary_reminder_text_and_message(anniversary_persons):
+    if len(anniversary_persons) == 1:
+        anniversary_person = anniversary_persons[0]["name"]
+        persons_name = anniversary_person
+        # Number of years completed at the company
+        completed_years = getdate().year - anniversary_persons[0]["date_of_joining"].year
+        anniversary_person += f" completed {get_pluralized_years(completed_years)}"
+    else:
+        person_names_with_years = []
+        names = []
+        for person in anniversary_persons:
+            person_text = person["name"]
+            names.append(person_text)
+            # Number of years completed at the company
+            completed_years = getdate().year - person["date_of_joining"].year
+            person_text += f" completed {get_pluralized_years(completed_years)}"
+            person_names_with_years.append(person_text)
+
+        # converts ["Jim", "Rim", "Dim"] to Jim, Rim & Dim
+        anniversary_person = comma_sep(person_names_with_years, frappe._("{0} & {1}"), False)
+        persons_name = comma_sep(names, frappe._("{0} & {1}"), False)
+
+    reminder_text = _("Today {0} at our Company! 🎉").format(anniversary_person)
+    message = _("A friendly reminder of an important date for our team.")
+    message += "<br>"
+    message += _("Everyone, let’s congratulate {0} on their work anniversary!").format(persons_name)
+
+    return reminder_text, message
+
+
+def send_work_anniversary_reminder(recipients, reminder_text, anniversary_persons, message):
+    frappe.sendmail(
+        recipients=recipients,
+        subject=_("Work Anniversary Reminder"),
+        template="anniversary_reminder",
+        args=dict(
+            reminder_text=reminder_text,
+            anniversary_persons=anniversary_persons,
+            message=message,
+        ),
+        header=_("Work Anniversary Reminder"),
+    )
+
+
+def get_pluralized_years(years):
+    if years == 1:
+        return "1 year"
+    return f"{years} years"
 
