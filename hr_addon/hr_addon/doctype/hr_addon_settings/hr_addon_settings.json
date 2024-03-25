@@ -8,7 +8,9 @@
  "field_order": [
   "general_section",
   "runapp",
-  "allow_bulk_processing"
+  "allow_bulk_processing",
+  "send_work_anniversary_notifications",
+  "anniversary_notification_email_list"
  ],
  "fields": [
   {
@@ -27,12 +29,26 @@
    "fieldname": "allow_bulk_processing",
    "fieldtype": "Check",
    "label": "Allow Bulk Processing"
+  },
+  {
+   "depends_on": "eval: doc.send_work_anniversary_notifications",
+   "fieldname": "anniversary_notification_email_list",
+   "fieldtype": "Table MultiSelect",
+   "label": "Anniversary Notification Email List",
+   "mandatory_depends_on": "eval: doc.send_work_anniversary_notifications",
+   "options": "Employee Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_work_anniversary_notifications",
+   "fieldtype": "Check",
+   "label": "Work Anniversaries "
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-05-13 22:53:32.840880",
+ "modified": "2024-03-25 10:28:56.947190",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",

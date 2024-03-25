@@ -31,6 +31,9 @@ app_license = "MIT"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
+doctype_js = {
+    "HR Settings" : "public/js/hr_settings.js"
+}
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -106,24 +109,11 @@ app_license = "MIT"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"hr_addon.tasks.all"
-# 	],
-# 	"daily": [
-# 		"hr_addon.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"hr_addon.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"hr_addon.tasks.weekly"
-# 	]
-# 	"monthly": [
-# 		"hr_addon.tasks.monthly"
-# 	]
-# }
-
+scheduler_events = {
+	"daily": [
+		"hr_addon.hr_addon.api.utils.send_work_anniversary_notification"
+	]
+}
 # Testing
 # -------
 
@@ -186,5 +176,3 @@ user_data_fields = [
 # Recommended only for DocTypes which have limited documents with untranslated names
 # For example: Role, Gender, etc.
 # translated_search_doctypes = []
-
-required_apps = ["hrms"]
