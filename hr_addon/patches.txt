@@ -1,1 +1,2 @@
 hr_addon.patches.v15_0.add_custom_field_for_employee
+hr_addon.patches.v15_0.add_custom_field_for_hr_settings #12
