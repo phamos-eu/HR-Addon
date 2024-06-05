@@ -2,22 +2,36 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('HR Addon Settings', {
-	// refresh: function(frm) {
-
-	// }
-
-	validate: function(frm){
-		if (frm.doc.name_of_calendar_export_ics_file.length == 0){
-			const randomString = generateRandomString(24);
-			frm.set_value("name_of_calendar_export_ics_file", randomString)
-		}
+	refresh: function(frm) {
+        frm.add_custom_button(
+            __("Test"),
+            function () {
+                frappe.call({
+                    method: "hr_addon.hr_addon.api.utils.send_work_anniversary_notification",
+                    args: {
+                        doc: frm.doc,
+                    },
+                    freeze: true,
+                    callback: function (r) {
+                        
+                    },
+                });
+            },
+        );
 	},
 
-	after_save: function(frm){
-		if (frm.doc.name_of_calendar_export_ics_file.length < 24){
-			frappe.msgprint("The filename is less than 24 characters. Please, consider to have a longer filename or leave it empty to get a random filename.")
-		}
-	},
+	// validate: function(frm){
+	// 	if (frm.doc.name_of_calendar_export_ics_file.length == 0){
+	// 		const randomString = generateRandomString(24);
+	// 		frm.set_value("name_of_calendar_export_ics_file", randomString)
+	// 	}
+	// },
+
+	// after_save: function(frm){
+	// 	if (frm.doc.name_of_calendar_export_ics_file.length < 24){
+	// 		frappe.msgprint("The filename is less than 24 characters. Please, consider to have a longer filename or leave it empty to get a random filename.")
+	// 	}
+	// },
 
 	download_ics_file: function(frm){
 		frappe.call({
