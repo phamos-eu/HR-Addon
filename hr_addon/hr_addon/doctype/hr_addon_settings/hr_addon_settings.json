@@ -1,4 +1,5 @@
 {
+ "_comments": "[{\"comment\": \"<div class=\\\"ql-editor read-mode\\\"><p>Enable Work Anniversaries notification for Leave Approver</p>...\", \"by\": \"Administrator\", \"name\": \"64bk4h7mnd\"}, {\"comment\": \"<div class=\\\"ql-editor read-mode\\\"><p>Enable Work Anniversaries notification</p></div>\", \"by\": \"Administrator\", \"name\": \"64t9m5fb37\"}]",
  "actions": [],
  "allow_rename": 1,
  "creation": "2022-05-13 22:53:32.840880",
@@ -19,8 +20,8 @@
   "enabled",
   "notification_section",
   "anniversary_notification_email_list",
-  "enable_work_anniversary_notifications",
-  "enable_work_anniversaries_for_leave_approver",
+  "enable_work_anniversaries_notification",
+  "enable_work_anniversaries_notification_for_leave_approvers",
   "column_break_dvlg",
   "anniversary_notification_email_recipient_role"
  ],
@@ -105,20 +106,6 @@
    "options": "Employee Item"
   },
   {
-   "default": "0",
-   "fieldname": "enable_work_anniversary_notifications",
-   "fieldtype": "Check",
-   "label": "Enable Work Anniversaries"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval: doc.enable_work_anniversary_notifications",
-   "fieldname": "enable_work_anniversaries_for_leave_approver",
-   "fieldtype": "Check",
-   "label": "Enable Work Anniversaries for Leave Approver",
-   "mandatory_depends_on": "eval: doc.enable_work_anniversary_notifications"
-  },
-  {
    "fieldname": "column_break_dvlg",
    "fieldtype": "Column Break"
   },
@@ -127,14 +114,27 @@
    "fieldname": "anniversary_notification_email_recipient_role",
    "fieldtype": "Link",
    "label": "Anniversary Notification Email Recipient Role",
-   "mandatory_depends_on": "eval: doc.enable_work_anniversary_notifications",
    "options": "Role"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "fieldname": "enable_work_anniversaries_notification_for_leave_approvers",
+   "fieldtype": "Check",
+   "label": "Enable Work Anniversaries notification for Leave Approvers",
+   "mandatory_depends_on": "eval: doc.enable_work_anniversary_notifications"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_work_anniversaries_notification",
+   "fieldtype": "Check",
+   "label": "Enable Work Anniversaries notification"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-05-31 15:12:23.095650",
+ "modified": "2024-06-05 13:44:06.876268",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",

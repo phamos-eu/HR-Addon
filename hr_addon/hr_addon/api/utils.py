@@ -211,7 +211,7 @@ def date_is_in_holiday_list(employee, date):
 # ----------------------------------------------------------------------
 def send_work_anniversary_notification():
     """Send Employee Work Anniversary Reminders if 'Send Work Anniversary Reminders' is checked"""
-    if not int(frappe.db.get_single_value("HR Addon Settings", "enable_work_anniversary_notifications")):
+    if not int(frappe.db.get_single_value("HR Addon Settings", "enable_work_anniversaries_notification")):
         return
     
     ############## Sending email to specified employees in HR Addon Settings field anniversary_notification_email_list
@@ -251,8 +251,8 @@ def send_work_anniversary_notification():
         if role_email_recipients:
             send_emails(employees_joined_seven_days_later, role_email_recipients, joining_date)
 
-    ############## Sending email to specified employee leave approvers if HR Addon Settings field enable_work_anniversaries_for_leave_approver is checked
-    if int(frappe.db.get_single_value("HR Addon Settings", "enable_work_anniversaries_for_leave_approver")):
+    ############## Sending email to specified employee leave approvers if HR Addon Settings field enable_work_anniversaries_notification_for_leave_approvers is checked
+    if int(frappe.db.get_single_value("HR Addon Settings", "enable_work_anniversaries_notification_for_leave_approvers")):
         for company, anniversary_persons in employees_joined_seven_days_later.items():
             for anniversary_person in anniversary_persons:
                 if anniversary_person.get("leave_approver"):
