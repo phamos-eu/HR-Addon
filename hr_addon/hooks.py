@@ -108,7 +108,11 @@ doctype_js = {
 
 # Scheduled Tasks
 # ---------------
-
+scheduler_events = {
+	"daily": [
+		"hr_addon.hr_addon.api.utils.send_work_anniversary_notification"
+	]
+}
 # scheduler_events = {
 # 	"all": [
 # 		"hr_addon.tasks.all"
