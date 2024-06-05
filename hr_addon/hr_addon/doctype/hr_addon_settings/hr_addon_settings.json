@@ -16,7 +16,13 @@
   "day",
   "time",
   "generate_workdays_for_past_7_days_now",
-  "enabled"
+  "enabled",
+  "notification_section",
+  "anniversary_notification_email_list",
+  "enable_work_anniversary_notifications",
+  "enable_work_anniversaries_for_leave_approver",
+  "column_break_dvlg",
+  "anniversary_notification_email_recipient_role"
  ],
  "fields": [
   {
@@ -84,12 +90,51 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "notification_section",
+   "fieldtype": "Section Break",
+   "label": "Anniversary Notification"
+  },
+  {
+   "depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "fieldname": "anniversary_notification_email_list",
+   "fieldtype": "Table MultiSelect",
+   "label": "Anniversary Notification Email List",
+   "mandatory_depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "options": "Employee Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_work_anniversary_notifications",
+   "fieldtype": "Check",
+   "label": "Enable Work Anniversaries"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "fieldname": "enable_work_anniversaries_for_leave_approver",
+   "fieldtype": "Check",
+   "label": "Enable Work Anniversaries for Leave Approver",
+   "mandatory_depends_on": "eval: doc.enable_work_anniversary_notifications"
+  },
+  {
+   "fieldname": "column_break_dvlg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "fieldname": "anniversary_notification_email_recipient_role",
+   "fieldtype": "Link",
+   "label": "Anniversary Notification Email Recipient Role",
+   "mandatory_depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "options": "Role"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-11-10 13:50:23.399969",
+ "modified": "2024-05-31 15:12:23.095650",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
@@ -118,5 +163,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
