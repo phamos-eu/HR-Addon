@@ -98,11 +98,11 @@
    "label": "Anniversary Notification"
   },
   {
-   "depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "depends_on": "eval: doc.enable_work_anniversaries_notification",
    "fieldname": "anniversary_notification_email_list",
    "fieldtype": "Table MultiSelect",
    "label": "Anniversary Notification Email List",
-   "mandatory_depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "mandatory_depends_on": "eval: doc.enable_work_anniversaries_notification",
    "options": "Employee Item"
   },
   {
@@ -110,7 +110,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "depends_on": "eval: doc.enable_work_anniversaries_notification",
    "fieldname": "anniversary_notification_email_recipient_role",
    "fieldtype": "Link",
    "label": "Anniversary Notification Email Recipient Role",
@@ -134,7 +134,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-06-05 13:44:06.876268",
+ "modified": "2024-06-05 13:48:08.302927",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
