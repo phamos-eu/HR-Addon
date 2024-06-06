@@ -1,5 +1,4 @@
 {
- "_comments": "[{\"comment\": \"<div class=\\\"ql-editor read-mode\\\"><p>Enable Work Anniversaries notification for Leave Approver</p>...\", \"by\": \"Administrator\", \"name\": \"64bk4h7mnd\"}, {\"comment\": \"<div class=\\\"ql-editor read-mode\\\"><p>Enable Work Anniversaries notification</p></div>\", \"by\": \"Administrator\", \"name\": \"64t9m5fb37\"}]",
  "actions": [],
  "allow_rename": 1,
  "creation": "2022-05-13 22:53:32.840880",
@@ -21,9 +20,10 @@
   "notification_section",
   "anniversary_notification_email_list",
   "enable_work_anniversaries_notification",
-  "enable_work_anniversaries_notification_for_leave_approvers",
   "column_break_dvlg",
-  "anniversary_notification_email_recipient_role"
+  "anniversary_notification_email_recipient_role",
+  "notification_x_days_before",
+  "enable_work_anniversaries_notification_for_leave_approvers"
  ],
  "fields": [
   {
@@ -99,6 +99,7 @@
   },
   {
    "depends_on": "eval: doc.enable_work_anniversaries_notification",
+   "description": "Employees selected in this fields will receive all anniversary notification for employees in same company",
    "fieldname": "anniversary_notification_email_list",
    "fieldtype": "Table MultiSelect",
    "label": "Anniversary Notification Email List",
@@ -111,6 +112,7 @@
   },
   {
    "depends_on": "eval: doc.enable_work_anniversaries_notification",
+   "description": "Employees who has Role selected in this fields will receive all anniversary notification of employees in same company",
    "fieldname": "anniversary_notification_email_recipient_role",
    "fieldtype": "Link",
    "label": "Anniversary Notification Email Recipient Role",
@@ -118,7 +120,8 @@
   },
   {
    "default": "0",
-   "depends_on": "eval: doc.enable_work_anniversary_notifications",
+   "depends_on": "eval: doc.enable_work_anniversaries_notification",
+   "description": "Employees who are leaver approver for other other employees will receive anniversary notification of their leave approvee",
    "fieldname": "enable_work_anniversaries_notification_for_leave_approvers",
    "fieldtype": "Check",
    "label": "Enable Work Anniversaries notification for Leave Approvers",
@@ -129,12 +132,20 @@
    "fieldname": "enable_work_anniversaries_notification",
    "fieldtype": "Check",
    "label": "Enable Work Anniversaries notification"
+  },
+  {
+   "depends_on": "eval: doc.enable_work_anniversaries_notification",
+   "description": "Email Recipient Role and Leavers Approvers will receive advance notification (no. of  days selected in this field) ",
+   "fieldname": "notification_x_days_before",
+   "fieldtype": "Int",
+   "label": "Notification (x days) before",
+   "mandatory_depends_on": "eval: doc.enable_work_anniversaries_notification && (doc.anniversary_notification_email_recipient_role || doc.enable_work_anniversaries_notification_for_leave_approvers)"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-06-05 13:57:48.550208",
+ "modified": "2024-06-06 10:08:48.960520",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",

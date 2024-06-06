@@ -234,7 +234,8 @@ def send_work_anniversary_notification():
 
     ############## Sending email to specified employees with Role in HR Addon Settings field anniversary_notification_email_recipient_role
     email_recipient_role = frappe.db.get_single_value("HR Addon Settings", "anniversary_notification_email_recipient_role")
-    joining_date = frappe.utils.add_days(today(), 7)
+    notification_x_days_before = int(frappe.db.get_single_value("HR Addon Settings", "notification_x_days_before"))
+    joining_date = frappe.utils.add_days(today(), notification_x_days_before)
     employees_joined_seven_days_later = get_employees_having_an_event_on_given_date("work_anniversary", joining_date)
     if email_recipient_role:
         role_email_recipients = []
