@@ -2,9 +2,8 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('HR Addon Settings', {
-	// refresh: function(frm) {
-
-	// }
+	refresh: function(frm) {
+	},
 
 	validate: function(frm){
 		if (frm.doc.name_of_calendar_export_ics_file.length == 0){
