@@ -262,6 +262,7 @@ def create_workday_from_stundennachweis_monteur(stundennachweis_monteur):
 	workday.total_work_seconds = workday.hours_worked * 60 * 60
 	workday.total_break_seconds = workday.break_hours * 60 * 60
 	workday.insert()
+	return workday.name
 
 def create_employee_checkin(employee, worked_hours, break_hours):
 	now = frappe.utils.datetime.datetime.now()
