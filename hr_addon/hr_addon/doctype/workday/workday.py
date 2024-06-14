@@ -11,7 +11,7 @@ from frappe.utils.data import date_diff
 from datetime import date,datetime
 
 from hr_addon.hr_addon.api.utils import view_actual_employee_log, get_actual_employee_log_bulk, date_is_in_holiday_list
-
+import json
 
 class Workday(Document):
 	pass
@@ -222,3 +222,95 @@ def get_app_branch(app):
         return branch
     except Exception:
         return ""
+
+
+@frappe.whitelist()
+def create_workday_from_stundennachweis_monteur(stundennachweis_monteur):
+	stundennachweis_monteur = json.loads(stundennachweis_monteur or {})
+	workday = frappe.new_doc("Workday")
+	workday.employee = stundennachweis_monteur["mitarbeiter"]
+	workday.log_date = stundennachweis_monteur["datum"]
+
+	employee_checkins = create_employee_checkin(stundennachweis_monteur["mitarbeiter"], 
+						stundennachweis_monteur["arbeitszeit_gesamt"], 
+						stundennachweis_monteur["pausenzeit"])
+	for employee_checkin in employee_checkins:
+		row = frappe.get_doc({
+			"doctype": "Employee Checkins",
+			"employee_checkin": employee_checkin.name,
+			"log_type": employee_checkin.log_type,
+			"log_time": employee_checkin.time,
+			"skip_auto_attendance": 0,
+			"parent": workday.name,
+			"parentfield": "employee_checkins",
+			"parenttype": "Workday"
+		})
+		workday.append("employee_checkins", row)
+
+	if len(employee_checkins) > 0:
+		workday.first_checkin = employee_checkins[0].time
+		workday.last_checkout = employee_checkins[-1].time
+
+	workday.target_hours = int(stundennachweis_monteur["arbeitszeit_gesamt"])
+	workday.hours_worked = int(stundennachweis_monteur["arbeitszeit_gesamt"]) + stundennachweis_monteur["pausenzeit"]
+	workday.actual_working_hours = int(stundennachweis_monteur["arbeitszeit_gesamt"])
+	workday.expected_break_hours = stundennachweis_monteur["pausenzeit"]
+	workday.break_hours = stundennachweis_monteur["pausenzeit"]
+	workday.number_of_breaks = 1 if stundennachweis_monteur["pausenzeit"] > 0 else 0
+
+	workday.total_target_seconds = workday.target_hours * 60 * 60
+	workday.total_work_seconds = workday.hours_worked * 60 * 60
+	workday.total_break_seconds = workday.break_hours * 60 * 60
+	workday.insert()
+
+def create_employee_checkin(employee, worked_hours, break_hours):
+	now = frappe.utils.datetime.datetime.now()
+	now = now.replace(hour=8, minute=0, second=0, microsecond=0)
+	employee_checkins = []
+	if break_hours == 0:
+		# create IN checkin
+		employee_checkin = frappe.new_doc("Employee Checkin")
+		employee_checkin.employee = employee
+		employee_checkin.log_type = "IN"
+		employee_checkin.time = now
+		employee_checkin.insert()
+		employee_checkins.append(employee_checkin)
+		# create OUT checkin
+		employee_checkin = frappe.new_doc("Employee Checkin")
+		employee_checkin.employee = employee
+		employee_checkin.log_type = "OUT"
+		employee_checkin.time = now + frappe.utils.relativedelta(hours=int(worked_hours))
+		employee_checkin.insert()
+		employee_checkins.append(employee_checkin)
+	elif break_hours > 0:
+		# create IN checkin, part 1
+		employee_checkin = frappe.new_doc("Employee Checkin")
+		employee_checkin.employee = employee
+		employee_checkin.log_type = "IN"
+		employee_checkin.time = now
+		employee_checkin.insert()
+		employee_checkins.append(employee_checkin)
+		# create OUT checkin, part 1
+		employee_checkin = frappe.new_doc("Employee Checkin")
+		employee_checkin.employee = employee
+		employee_checkin.log_type = "OUT"
+		employee_checkin.time = now + frappe.utils.relativedelta(hours=float(worked_hours)/2)
+		employee_checkin.insert()
+		employee_checkins.append(employee_checkin)
+
+		# create IN checkin, part 2
+		employee_checkin = frappe.new_doc("Employee Checkin")
+		employee_checkin.employee = employee
+		employee_checkin.log_type = "IN"
+		employee_checkin.time = now + frappe.utils.relativedelta(hours=float(worked_hours)/2 + break_hours)
+		employee_checkin.insert()
+		employee_checkins.append(employee_checkin)
+		# create OUT checkin, part 2
+		employee_checkin = frappe.new_doc("Employee Checkin")
+		employee_checkin.employee = employee
+		employee_checkin.log_type = "OUT"
+		employee_checkin.time = now + frappe.utils.relativedelta(hours=float(worked_hours) + break_hours)
+		employee_checkin.insert()
+		employee_checkins.append(employee_checkin)
+	
+	return employee_checkins
