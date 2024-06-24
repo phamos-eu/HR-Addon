@@ -193,7 +193,7 @@ def get_employee_attendance(employee,atime):
     attendance_list = frappe.db.sql(
         """
         SELECT  name,employee,status,attendance_date,shift FROM `tabAttendance` 
-        WHERE employee='%s' AND DATE(attendance_date)= DATE('%s') ORDER BY attendance_date ASC
+        WHERE employee='%s' AND DATE(attendance_date)= DATE('%s') AND docstatus = 1 ORDER BY attendance_date ASC
         """%(employee,atime), as_dict=1
     )
     #print(f'\n\n\n\n inside valid : {checkin_list} \n\n\n\n')
