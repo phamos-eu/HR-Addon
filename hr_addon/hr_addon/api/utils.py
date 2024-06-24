@@ -37,11 +37,15 @@ def get_employee_default_work_hour(employee,adate):
     WHERE w.employee='%s' AND d.day = DAYNAME('%s')
     """%(employee,adate), as_dict=1
     )
-    if (target_work_hours is None  or target_work_hours == []):
-        msg = f'<div>Please create "Weekly Working Hours" for the selected Employee: {employee} first. </div>'    
-        frappe.throw(_(msg))
 
-    return target_work_hours
+    if not target_work_hours:
+        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{employee} first.'))
+
+    if len(target_work_hours) > 1:
+        target_work_hours= "<br> ".join([frappe.get_desk_link("Weekly Working Hours", w.name) for w in target_work_hours])
+        frappe.throw(_('There exist multiple Weekly Working Hours exist for the Date <b>{0}</b>: <br>{1} <br>').format(adate, target_work_hours))
+
+    return target_work_hours[0]
 
 
 @frappe.whitelist()
@@ -81,7 +85,7 @@ def view_actual_employee_log(aemployee, adate):
                 break_hours += float(str(wh))
         
     # create list
-    employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)[0]
+    employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
     break_minutes = employee_default_work_hour.break_minutes
     wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"])
     no_break_hours = True if len(wwh) > 0 and wwh[0]["no_break_hours"] == 1 else False
@@ -128,7 +132,7 @@ def get_actual_employee_log_bulk(aemployee, adate):
         
     # check empty or none
     if((weekly_day_hour is None) or (weekly_day_hour == [])):
-        employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)[0]
+        employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
         new_workday.append({
             "thour": employee_default_work_hour.hours,
             "break_minutes": employee_default_work_hour.break_minutes,
@@ -166,7 +170,7 @@ def get_actual_employee_log_bulk(aemployee, adate):
                     wh = time_diff_in_seconds(clockin_list[i+1],clockout_list[i])
                     break_hours += float(str(wh))
 
-        employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)[0]
+        employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
         new_workday.append({
             "thour": employee_default_work_hour.hours,
             "break_minutes": employee_default_work_hour.break_minutes,
