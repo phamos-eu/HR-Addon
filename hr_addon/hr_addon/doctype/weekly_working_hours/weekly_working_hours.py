@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import getdate
 from frappe.model.naming import make_autoname
 
 class WeeklyWorkingHours(Document):
@@ -16,3 +17,38 @@ class WeeklyWorkingHours(Document):
 		self.name = make_autoname(name_key)
 		self.title_hour= self.name
 
+	def validate(self):
+		self.validate_overlapping_records_in_specific_interval()
+
+	def validate_overlapping_records_in_specific_interval(self):
+
+		if not self.valid_from or not self.valid_to:
+			frappe.throw("From Date and To Date are required.")
+
+		if not self.employee:
+			frappe.throw("Employee required.")
+
+		valid_from = getdate(self.valid_from)
+		valid_to = getdate(self.valid_to)
+
+		filters = {"valid_from": valid_from, "valid_to": valid_to, "employee": self.employee}
+
+		condition = ""
+		if not self.is_new():
+			condition += "AND name != %(name)s "
+			filters["name"] = self.name
+
+		overlapping_records = frappe.db.sql("""
+			SELECT name 
+			FROM `tabWeekly Working Hours`
+			WHERE 
+				(
+					(valid_from <= %(valid_from)s AND valid_to >= %(valid_to)s) OR
+					(valid_from <= %(valid_from)s AND valid_to >= %(valid_to)s) OR
+					(valid_from >= %(valid_from)s AND valid_to <= %(valid_to)s)
+				) AND employee = %(employee)s AND docstatus = 1 {condition}
+			""".format(condition=condition), filters, as_dict=True)
+
+		if overlapping_records:
+			overlapping_records = "<br> ".join([frappe.get_desk_link("Weekly Working Hours", d.name) for d in overlapping_records])
+			frappe.throw("Following Weekly Working Hours record already exists for {0} for the specified date range:<br> {1}".format(frappe.get_desk_link("Employee", self.employee), overlapping_records))
