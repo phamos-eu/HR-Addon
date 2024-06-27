@@ -59,7 +59,7 @@ frappe.ui.form.on('Workday', {
 					frm.set_value("first_checkin", "")
 					frm.set_value("last_checkout", "")
 				} else {
-					get_hours_1(frm)
+					get_hours(frm)
 				}
 			}
 		})
