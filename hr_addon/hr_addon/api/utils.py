@@ -86,6 +86,9 @@ def get_actual_employee_log(aemployee, adate):
     # create list
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
 
+    if break_hours < 0.5:
+        break_hours = flt(employee_default_work_hour.break_minutes/60) if employee_default_work_hour.break_minutes else break_hours
+
     break_minutes = employee_default_work_hour.break_minutes
     wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"])
     no_break_hours = True if len(wwh) > 0 and wwh[0]["no_break_hours"] == 1 else False
