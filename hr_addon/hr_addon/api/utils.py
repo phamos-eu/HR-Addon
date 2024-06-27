@@ -3,8 +3,8 @@ from time import time
 import frappe
 from frappe import _
 
-from frappe.utils.data import date_diff, time_diff_in_seconds
-from frappe.utils import get_datetime, getdate, today, comma_sep
+from frappe.utils.data import date_diff, time_diff_in_seconds, time_diff_in_hours
+from frappe.utils import get_datetime, getdate, today, comma_sep, cstr, flt
 from frappe.core.doctype.role.role import get_info_based_on_role
 
 
@@ -45,6 +45,74 @@ def get_employee_default_work_hour(employee,adate):
 
     return target_work_hours[0]
 
+
+@frappe.whitelist()
+def get_actual_employee_log(aemployee, adate):
+    '''total actual log'''
+    weekly_day_hour = get_employee_checkin(aemployee,adate)
+    new_workday = {}
+    # check empty or none
+    if not weekly_day_hour:
+        return
+    
+    """ if(not len(weekly_day_hour)>0):
+        return """
+    
+    hours_worked = 0.0
+    break_hours = 0.0
+
+    # not pair of IN/OUT either missing
+    if len(weekly_day_hour)% 2 != 0:
+        hours_worked = -36.0
+        break_hours = -360.0
+
+    if (len(weekly_day_hour) % 2 == 0):
+        # seperate 'IN' from 'OUT'
+        clockin_list = [get_datetime(kin.time) for x,kin in enumerate(weekly_day_hour) if x % 2 == 0]
+        clockout_list = [get_datetime(kout.time) for x,kout in enumerate(weekly_day_hour) if x % 2 != 0]
+
+        # get total worked hours
+        for i in range(len(clockin_list)):
+            wh = time_diff_in_hours(clockout_list[i],clockin_list[i])
+            hours_worked += float(str(wh))
+        
+        # get total break hours
+        for i in range(len(clockout_list)):
+            if ((i+1) < len(clockout_list)):
+                frappe.msgprint(cstr("{}:{}").format(clockin_list[i+1],clockout_list[i]))
+                wh = time_diff_in_hours(clockin_list[i+1],clockout_list[i])
+                break_hours += float(str(wh))
+        
+    # create list
+    employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
+
+    break_minutes = employee_default_work_hour.break_minutes
+    wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"])
+    no_break_hours = True if len(wwh) > 0 and wwh[0]["no_break_hours"] == 1 else False
+    if no_break_hours:
+        if hours_worked < 6:
+            break_minutes = 0
+
+    target_hours = employee_default_work_hour.hours
+    if len(wwh) > 0 and wwh[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1:
+        if date_is_in_holiday_list(aemployee,adate):
+            target_hours = 0
+
+    new_workday.update({
+        "thour": target_hours,
+        "total_target_seconds": target_hours*60*60,
+        "break_minutes": break_minutes,
+        "ahour": flt(hours_worked, 2),
+        "expected_break_hours": flt(break_minutes/60, 2),
+        "total_work_seconds": flt(hours_worked * 60 * 60, 2),
+        "nbreak": 0,
+        "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",        
+        "bhour": flt(break_hours, 3),
+        "total_break_seconds": flt(break_hours * 60 * 60, 2),
+        "items":weekly_day_hour,
+    })
+
+    return new_workday
 
 @frappe.whitelist()
 def view_actual_employee_log(aemployee, adate):
