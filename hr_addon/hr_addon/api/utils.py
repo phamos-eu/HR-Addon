@@ -13,15 +13,13 @@ def get_employee_checkin(employee,atime):
     ''' select DATE('date time');'''
     employee = employee
     atime = atime
-    
-    checkin_list = []
     checkin_list = frappe.db.sql(
         """
         SELECT  name,log_type,time,skip_auto_attendance,attendance FROM `tabEmployee Checkin` 
         WHERE employee='%s' AND DATE(time)= DATE('%s') ORDER BY time ASC
         """%(employee,atime), as_dict=1
     )
-    return checkin_list
+    return checkin_list or []
 
 def get_employee_default_work_hour(employee,adate):
     ''' weekly working hour'''
