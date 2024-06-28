@@ -272,12 +272,18 @@ def get_employee_attendance(employee,atime):
 @frappe.whitelist()
 def date_is_in_holiday_list(employee, date):
 	holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
-	hl_doc = frappe.get_doc("Holiday List", holiday_list)
-	for holiday in hl_doc.holidays:
-		if holiday.holiday_date == frappe.utils.get_datetime(date).date():
-			return True
+	if not holiday_list:
+		frappe.msgprint(_("Holiday list not set in {0}").format(employee))
+		return False
 
-	return False
+	holidays = frappe.db.sql(
+        """
+            SELECT holiday_date FROM `tabHoliday`
+            WHERE parent=%s AND holiday_date=%s
+        """,(holiday_list, getdate(date))
+    )
+
+	return len(holidays) > 0
 
 # ----------------------------------------------------------------------
 # WORK ANNIVERSARY REMINDERS SEND TO EMPLOYEES LIST IN HR-ADDON-SETTINGS
