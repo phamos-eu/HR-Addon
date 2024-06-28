@@ -31,6 +31,7 @@ app_license = "MIT"
 # page_js = {"page" : "public/js/file.js"}
 doctype_js = {
 	"HR Settings": "public/js/hr_settings.js",
+    "Employee Checkin": "public/js/employee_checkin.js",
 	
 }
 # include js in doctype views
@@ -197,6 +198,9 @@ doc_events = {
     "Leave Application": {
         "on_change": "hr_addon.hr_addon.api.export_calendar.export_calendar",
 		"on_cancel": "hr_addon.hr_addon.api.export_calendar.export_calendar"
+    },
+    "Location": {
+        "after_insert": "hr_addon.custom_scripts.custom_python.location.generate_qr_code_for_location",
     }
 }
 
