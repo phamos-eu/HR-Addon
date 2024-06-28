@@ -94,18 +94,9 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
                 wh = time_diff_in_hours(clockin_list[i+1],clockout_list[i])
                 break_hours += float(str(wh))
 
-    # # need to conigure this in suncyle app
-    # default_break_hours = flt(employee_default_work_hour.break_minutes/60)
-    # if break_hours <= default_break_hours:
-    #     break_hours = flt(default_break_hours)
-    # # need to conigure this in suncyle app
-
     break_minutes = employee_default_work_hour.break_minutes
-
     target_hours = employee_default_work_hour.hours
 
-    # TODO: fix timesheet records
-    # make precision configurable
     total_target_seconds = target_hours * 60 * 60
     total_work_seconds = flt(hours_worked * 60 * 60)
     expected_break_hours = flt(break_minutes / 60)
