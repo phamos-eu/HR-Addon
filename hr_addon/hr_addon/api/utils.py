@@ -49,27 +49,39 @@ def get_employee_default_work_hour(employee,adate):
 @frappe.whitelist()
 def get_actual_employee_log(aemployee, adate):
     '''total actual log'''
-    weekly_day_hour = get_employee_checkin(aemployee,adate)
-    new_workday = {}
+    employee_checkins = get_employee_checkin(aemployee,adate)
+
     # check empty or none
-    if not weekly_day_hour:
+    if not employee_checkins:
         return
+
+    employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
+    is_date_in_holiday_list = date_is_in_holiday_list(aemployee,adate)
+    fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"]
+    weekly_working_hours = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=fields)
+    no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
+    is_target_hours_zero_on_holiday = len(weekly_working_hours) > 0 and weekly_working_hours[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1
     
-    """ if(not len(weekly_day_hour)>0):
-        return """
-    
+    new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
+
+    return new_workday
+
+
+def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list=False):
+    new_workday = {}
+
     hours_worked = 0.0
     break_hours = 0.0
 
     # not pair of IN/OUT either missing
-    if len(weekly_day_hour)% 2 != 0:
+    if len(employee_checkins)% 2 != 0:
         hours_worked = -36.0
         break_hours = -360.0
 
-    if (len(weekly_day_hour) % 2 == 0):
+    if (len(employee_checkins) % 2 == 0):
         # seperate 'IN' from 'OUT'
-        clockin_list = [get_datetime(kin.time) for x,kin in enumerate(weekly_day_hour) if x % 2 == 0]
-        clockout_list = [get_datetime(kout.time) for x,kout in enumerate(weekly_day_hour) if x % 2 != 0]
+        clockin_list = [get_datetime(kin.time) for x,kin in enumerate(employee_checkins) if x % 2 == 0]
+        clockout_list = [get_datetime(kout.time) for x,kout in enumerate(employee_checkins) if x % 2 != 0]
 
         # get total worked hours
         for i in range(len(clockin_list)):
@@ -79,40 +91,58 @@ def get_actual_employee_log(aemployee, adate):
         # get total break hours
         for i in range(len(clockout_list)):
             if ((i+1) < len(clockout_list)):
-                frappe.msgprint(cstr("{}:{}").format(clockin_list[i+1],clockout_list[i]))
                 wh = time_diff_in_hours(clockin_list[i+1],clockout_list[i])
                 break_hours += float(str(wh))
-        
-    # create list
-    employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
 
-    if break_hours < 0.5:
-        break_hours = flt(employee_default_work_hour.break_minutes/60) if employee_default_work_hour.break_minutes else break_hours
+    # # need to conigure this in suncyle app
+    # default_break_hours = flt(employee_default_work_hour.break_minutes/60)
+    # if break_hours <= default_break_hours:
+    #     break_hours = flt(default_break_hours)
+    # # need to conigure this in suncyle app
 
     break_minutes = employee_default_work_hour.break_minutes
-    wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"])
-    no_break_hours = True if len(wwh) > 0 and wwh[0]["no_break_hours"] == 1 else False
-    if no_break_hours:
-        if hours_worked < 6:
-            break_minutes = 0
 
     target_hours = employee_default_work_hour.hours
-    if len(wwh) > 0 and wwh[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1:
-        if date_is_in_holiday_list(aemployee,adate):
-            target_hours = 0
+
+    # TODO: fix timesheet records
+    # make precision configurable
+    total_target_seconds = target_hours * 60 * 60
+    total_work_seconds = flt(hours_worked * 60 * 60)
+    expected_break_hours = flt(break_minutes / 60)
+    total_break_seconds = flt(break_hours * 60 * 60)
+    break_hours = flt(break_hours)
+    hours_worked = flt(hours_worked)
+    actual_working_hours = hours_worked - expected_break_hours
+    attendance = employee_checkins[0].attendance if len(employee_checkins) > 0 else ""
+
+    if no_break_hours and hours_worked < 6: # 6 as constant
+        break_minutes = 0
+        total_break_seconds = 0
+        expected_break_hours = 0
+        actual_working_hours = hours_worked
+
+    if is_target_hours_zero_on_holiday and is_date_in_holiday_list:
+        target_hours = 0
+        expected_break_hours = 0
+        total_target_seconds = 0
+
+    # if target_hours == 0:
+    #     expected_break_hours = 0
+    #     total_break_seconds = 0
 
     new_workday.update({
-        "thour": target_hours,
-        "total_target_seconds": target_hours*60*60,
+        "target_hours": target_hours,
+        "total_target_seconds": total_target_seconds,
         "break_minutes": break_minutes,
-        "ahour": flt(hours_worked, 2),
-        "expected_break_hours": flt(break_minutes/60, 2),
-        "total_work_seconds": flt(hours_worked * 60 * 60, 2),
+        "hours_worked": hours_worked,
+        "expected_break_hours": expected_break_hours,
+        "actual_working_hours": actual_working_hours,
+        "total_work_seconds": total_work_seconds,
         "nbreak": 0,
-        "attendance": weekly_day_hour[0].attendance if len(weekly_day_hour) > 0 else "",        
-        "bhour": flt(break_hours, 3),
-        "total_break_seconds": flt(break_hours * 60 * 60, 2),
-        "items":weekly_day_hour,
+        "attendance": attendance,        
+        "break_hours": break_hours,
+        "total_break_seconds": total_break_seconds,
+        "employee_checkins":employee_checkins,
     })
 
     return new_workday
@@ -178,6 +208,36 @@ def view_actual_employee_log(aemployee, adate):
     })
 
     return new_workday
+
+
+@frappe.whitelist()
+def get_actual_employee_log_for_bulk_process(aemployee, adate):
+
+    employee_checkins = get_employee_checkin(aemployee, adate)
+    employee_default_work_hour = get_employee_default_work_hour(aemployee, adate)
+
+    if employee_checkins:
+        is_date_in_holiday_list = date_is_in_holiday_list(aemployee, adate)
+        fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"]
+        weekly_working_hours = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=fields)
+        no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
+        is_target_hours_zero_on_holiday = len(weekly_working_hours) > 0 and weekly_working_hours[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1
+        new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
+    else:
+        view_employee_attendance = get_employee_attendance(aemployee, adate)
+
+        new_workday = {
+            "target_hours": employee_default_work_hour.hours,
+            "break_minutes": employee_default_work_hour.break_minutes,
+            "hours_worked": 0,
+            "nbreak": 0,
+            "attendance": view_employee_attendance[0].name if len(view_employee_attendance) > 0 else "",
+            "break_hours": 0,
+            "employee_checkins":[],
+        }
+
+    return new_workday
+
 
 @frappe.whitelist()
 def get_actual_employee_log_bulk(aemployee, adate):
