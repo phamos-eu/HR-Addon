@@ -37,7 +37,7 @@ def get_employee_default_work_hour(employee,adate):
     )
 
     if not target_work_hours:
-        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{employee} first.'))
+        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{0} first.').format(employee))
 
     if len(target_work_hours) > 1:
         target_work_hours= "<br> ".join([frappe.get_desk_link("Weekly Working Hours", w.name) for w in target_work_hours])
@@ -53,6 +53,7 @@ def get_actual_employee_log(aemployee, adate):
 
     # check empty or none
     if not employee_checkins:
+        frappe.msgprint("No Checkin found for {0} on date {1}".format(frappe.get_desk_link("Employee", aemployee) ,adate))
         return
 
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
@@ -114,8 +115,13 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
 
     if is_target_hours_zero_on_holiday and is_date_in_holiday_list:
         target_hours = 0
-        expected_break_hours = 0
         total_target_seconds = 0
+
+    hr_addon_settings = frappe.get_doc("HR Addon Settings")
+    if hr_addon_settings.enable_default_break_hour_for_shorter_breaks:
+        default_break_hours = flt(employee_default_work_hour.break_minutes/60)
+        if break_hours <= default_break_hours:
+            break_hours = flt(default_break_hours)
 
     # if target_hours == 0:
     #     expected_break_hours = 0
