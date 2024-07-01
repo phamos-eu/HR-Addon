@@ -201,7 +201,10 @@ doc_events = {
     },
     "Location": {
         "after_insert": "hr_addon.custom_scripts.custom_python.location.generate_qr_code_for_location",
-    }
+    },
+    "Employee Checkin": {
+        "validate": "hr_addon.custom_scripts.custom_python.employee_checkin.validate_duplicate_log",
+    },
 }
 
 scheduler_events = {
