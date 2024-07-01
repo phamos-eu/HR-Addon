@@ -117,6 +117,12 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
         expected_break_hours = 0
         total_target_seconds = 0
 
+    hr_addon_settings = frappe.get_doc("HR Addon Settings")
+    if hr_addon_settings.enable_default_break_hour_for_shorter_breaks:
+        default_break_hours = flt(employee_default_work_hour.break_minutes/60)
+        if break_hours <= default_break_hours:
+            break_hours = flt(default_break_hours)
+
     # if target_hours == 0:
     #     expected_break_hours = 0
     #     total_break_seconds = 0

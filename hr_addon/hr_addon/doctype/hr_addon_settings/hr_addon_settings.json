@@ -17,6 +17,8 @@
   "time",
   "generate_workdays_for_past_7_days_now",
   "enabled",
+  "column_break_jozi",
+  "enable_default_break_hour_for_shorter_breaks",
   "notification_section",
   "anniversary_notification_email_list",
   "enable_work_anniversaries_notification",
@@ -140,12 +142,23 @@
    "fieldtype": "Int",
    "label": "Notification (x days) before",
    "mandatory_depends_on": "eval: doc.enable_work_anniversaries_notification && (doc.anniversary_notification_email_recipient_role || doc.enable_work_anniversaries_notification_for_leave_approvers)"
+  },
+  {
+   "fieldname": "column_break_jozi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "While Generating Workdays, if user took shorter breaks than default break defined in 'Weekly Working Hours'. Then use default break time in calculation",
+   "fieldname": "enable_default_break_hour_for_shorter_breaks",
+   "fieldtype": "Check",
+   "label": "Enable default break hour for shorter breaks"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-06-06 10:08:48.960520",
+ "modified": "2024-07-01 16:50:41.571435",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
