@@ -114,7 +114,6 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
 
     if is_target_hours_zero_on_holiday and is_date_in_holiday_list:
         target_hours = 0
-        expected_break_hours = 0
         total_target_seconds = 0
 
     hr_addon_settings = frappe.get_doc("HR Addon Settings")
