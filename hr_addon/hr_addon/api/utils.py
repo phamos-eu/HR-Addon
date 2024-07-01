@@ -53,6 +53,7 @@ def get_actual_employee_log(aemployee, adate):
 
     # check empty or none
     if not employee_checkins:
+        frappe.msgprint("No Checkin found for {0} on date {1}".format(frappe.get_desk_link("Employee", aemployee) ,adate))
         return
 
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
