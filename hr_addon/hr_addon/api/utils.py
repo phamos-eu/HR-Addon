@@ -37,7 +37,7 @@ def get_employee_default_work_hour(employee,adate):
     )
 
     if not target_work_hours:
-        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{employee} first.'))
+        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{0} first.').format(employee))
 
     if len(target_work_hours) > 1:
         target_work_hours= "<br> ".join([frappe.get_desk_link("Weekly Working Hours", w.name) for w in target_work_hours])
