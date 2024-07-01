@@ -17,5 +17,10 @@ def execute():
             fieldtype="Button", insert_after="danger_zone_section",description="Clicking this button will retrieve the current fiscal year and update the 'From' and 'To' year fields for Weekly Working Hours records created this year."
         )
     )
+    create_custom_field("HR Settings",
+        dict(fieldname="end_danger_zone_section", label="",
+            fieldtype="Section Break", insert_after="update_year"
+        )
+    )
 
      
