@@ -7,6 +7,10 @@ frappe.ui.form.on('Employee Checkin', {
                 }
             });
         }
+
+        const hasHRRole = frappe.user.has_role("HR User") || frappe.user.has_role("HR Manager");
+        if (!hasHRRole) {
+            frm.set_df_property('device_id', 'hidden', 1);
+        }
     }
- });
- 
+});

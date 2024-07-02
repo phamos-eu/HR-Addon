@@ -14,6 +14,4 @@ def execute():
 		)
 	)
 	
-    make_property_setter("Employee Checkin", "device_id", "depends_on",
-			'eval:frappe.user.has_role("HR User") || frappe.user.has_role("HR Manager")',
-			"Data")
+    make_property_setter("Employee Checkin", "device_id", "depends_on",'',"Data")
