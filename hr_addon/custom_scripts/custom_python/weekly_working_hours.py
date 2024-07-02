@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import getdate
+from frappe.utils import today
 from frappe.model.document import Document
 
 @frappe.whitelist()
@@ -17,6 +17,9 @@ def set_from_to_dates():
     year_start_date = fiscal_year[0].year_start_date
     year_end_date = fiscal_year[0].year_end_date
 
+    # Get today's date
+    current_date = today()
+
     # Update the valid_from and valid_to fields
     frappe.db.sql("""
         UPDATE
@@ -33,11 +36,11 @@ def set_from_to_dates():
                 WHERE
                     permanent = 1
             )
+            AND creation BETWEEN %(year_start_date)s AND %(year_end_date)s
     """, {
         "year_start_date": year_start_date,
-        "year_end_date": year_end_date
+        "year_end_date": year_end_date,
+        "current_date": current_date
     })
     
     frappe.db.commit()
-
-

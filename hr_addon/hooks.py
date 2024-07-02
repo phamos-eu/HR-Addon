@@ -30,7 +30,9 @@ app_license = "MIT"
 # include js in page
 # page_js = {"page" : "public/js/file.js"}
 doctype_js = {
-   
+	"HR Settings": "public/js/hr_settings.js",
+    "Employee Checkin": "public/js/employee_checkin.js",
+	
 }
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
@@ -196,16 +198,14 @@ doc_events = {
     "Leave Application": {
         "on_change": "hr_addon.hr_addon.api.export_calendar.export_calendar",
 		"on_cancel": "hr_addon.hr_addon.api.export_calendar.export_calendar"
-    }
+    },
+    "Location": {
+        "after_insert": "hr_addon.custom_scripts.custom_python.location.generate_qr_code_for_location",
+    },
 }
-
-doctype_list_js = {"Weekly Working Hours" : "public/js/list_view.js"}
 
 scheduler_events = {
 	"hourly": [
 		"hr_addon.hr_addon.doctype.hr_addon_settings.hr_addon_settings.generate_workdays_scheduled_job"
 	],
-    "yearly": [
-        "hr_addon.custom_scripts.custom_python.weekly_working_hours.set_from_to_dates",
-	]
 }
