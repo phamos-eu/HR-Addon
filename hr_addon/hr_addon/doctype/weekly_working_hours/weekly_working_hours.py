@@ -25,28 +25,29 @@ class WeeklyWorkingHours(Document):
 	# and ensures no overlapping days within the same date range for a specific employee.
 	def validate_record(self):
 		# Check for overlapping date ranges
-		existing_record = frappe.db.sql("""
+		existing_records = frappe.db.sql("""
         SELECT wwh.name
         FROM `tabWeekly Working Hours` wwh
         WHERE
             wwh.employee = %s AND
             wwh.docstatus = 1 AND
             wwh.name != %s AND (
-                (wwh.valid_from <= %s AND wwh.valid_to >= %s) OR
-                (wwh.valid_from <= %s AND wwh.valid_to >= %s)
+                (wwh.valid_from <= %s AND wwh.valid_to >= %s) 
             )
-    """, (self.employee, self.name, self.valid_from, self.valid_to, self.valid_from, self.valid_to))
+    """, (self.employee, self.name, self.valid_from, self.valid_to))
+		print(existing_records)
 		# Check for overlapping days
-		if existing_record:
+		for existing_record in existing_records:
+			print(existing_record[0])
 			for day in self.hours:
 				existing_record_days = frappe.db.sql("""
                 SELECT dhd.day
                 FROM `tabDaily Hours Detail` dhd
                 WHERE dhd.parent = %s AND dhd.day = %s
-            """, (existing_record[0][0], day.get('day')))
+            """, (existing_record[0], day.get('day')))
 				if existing_record_days:
 					frappe.throw(
-                    _("Weekly Working Hours already exist for this Employee {0} with overlapping dates and days. </br> Existing Weekly Working Hours : {1}.").format(self.employee,existing_record[0][0])
+                    _("Weekly Working Hours already exist for this Employee {0} with overlapping dates and days. </br> Existing Weekly Working Hours : {1}.").format(self.employee,existing_record[0])
                 )
                 
        
