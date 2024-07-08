@@ -39,30 +39,32 @@ frappe.ui.form.on('Workday', {
 	},
 
 	log_date: function(frm){
-		frappe.call({
-			method: "hr_addon.hr_addon.api.utils.date_is_in_holiday_list",
-			args: {
-				employee: frm.doc.employee,
-				date: frm.doc.log_date
-			},
-			callback: function(r){
-				if (r.message == true){
-					frm.set_value("hours_worked", 0)
-					frm.set_value("break_hours", 0)
-					frm.set_value("total_work_seconds", 0)
-					frm.set_value("total_break_seconds", 0)
-					frm.set_value("target_hours", 0)
-					frm.set_value("total_target_seconds", 0)
-					frm.set_value("expected_break_hours", 0)
-					frm.set_value("actual_working_hours", 0)
-					frm.set_value("employee_checkins", [])
-					frm.set_value("first_checkin", "")
-					frm.set_value("last_checkout", "")
-				} else {
-					get_hours(frm)
+		if (frm.doc.employee && frm.doc.log_date) {
+			frappe.call({
+				method: "hr_addon.hr_addon.api.utils.date_is_in_holiday_list",
+				args: {
+					employee: frm.doc.employee,
+					date: frm.doc.log_date
+				},
+				callback: function(r){
+					if (r.message == true){
+						frm.set_value("hours_worked", 0)
+						frm.set_value("break_hours", 0)
+						frm.set_value("total_work_seconds", 0)
+						frm.set_value("total_break_seconds", 0)
+						frm.set_value("target_hours", 0)
+						frm.set_value("total_target_seconds", 0)
+						frm.set_value("expected_break_hours", 0)
+						frm.set_value("actual_working_hours", 0)
+						frm.set_value("employee_checkins", [])
+						frm.set_value("first_checkin", "")
+						frm.set_value("last_checkout", "")
+					} else {
+						get_hours(frm)
+					}
 				}
-			}
-		})
+			})
+		}
 	},
 
 	status(frm){
@@ -82,7 +84,7 @@ frappe.ui.form.on('Workday', {
 var get_hours = function(frm){
 	let aemployee = frm.doc.employee;
 	let adate = frm.doc.log_date;
-	if(aemployee){
+	if(aemployee && adate){
 		frappe.call({
 			method:'hr_addon.hr_addon.api.utils.get_actual_employee_log',
 			args:{aemployee:aemployee,adate:adate}
