@@ -89,34 +89,53 @@ var get_hours = function(frm){
 			method:'hr_addon.hr_addon.api.utils.get_actual_employee_log',
 			args:{aemployee:aemployee,adate:adate}
 		}).done((r)=>{
-			frm.doc.employee_checkins = [];
-			let alog = r.message;
-			frm.set_value("hours_worked",alog.hours_worked);
-			frm.set_value("break_hours",alog.break_hours);
-			frm.set_value("total_work_seconds",alog.total_work_seconds);
-			frm.set_value("total_break_seconds",alog.total_break_seconds);
-			frm.set_value("target_hours",alog.target_hours);
-			frm.set_value("expected_break_hours",(alog.expected_break_hours));
-			frm.set_value("total_target_seconds",alog.total_target_seconds);
-
-			frm.set_value("actual_working_hours", alog.actual_working_hours);
-			let employee_checkins = alog.employee_checkins;
-			if (employee_checkins) {
-				frm.set_value("first_checkin",employee_checkins[0].time);
-				frm.set_value("last_checkout",employee_checkins[employee_checkins.length-1].time);
-				$.each(employee_checkins ,function(i,e){
-					let nw_checkins = frm.add_child("employee_checkins");
-					nw_checkins.employee_checkin = e.name;
-					nw_checkins.log_type = e.log_type;
-					nw_checkins.log_time = e.time;
-					nw_checkins.skip_auto_attendance= e.skip_auto_attendance;
-					refresh_field("employee_checkins");
-				});
+			if (r.message && Object.keys(r.message).length > 0) {
+				frm.doc.employee_checkins = [];
+				let alog = r.message;
+				frm.set_value("hours_worked",alog.hours_worked);
+				frm.set_value("break_hours",alog.break_hours);
+				frm.set_value("total_work_seconds",alog.total_work_seconds);
+				frm.set_value("total_break_seconds",alog.total_break_seconds);
+				frm.set_value("target_hours",alog.target_hours);
+				frm.set_value("expected_break_hours",(alog.expected_break_hours));
+				frm.set_value("total_target_seconds",alog.total_target_seconds);
+	
+				frm.set_value("actual_working_hours", alog.actual_working_hours);
+				let employee_checkins = alog.employee_checkins;
+				if (employee_checkins) {
+					frm.set_value("first_checkin",employee_checkins[0].time);
+					frm.set_value("last_checkout",employee_checkins[employee_checkins.length-1].time);
+					$.each(employee_checkins ,function(i,e){
+						let nw_checkins = frm.add_child("employee_checkins");
+						nw_checkins.employee_checkin = e.name;
+						nw_checkins.log_type = e.log_type;
+						nw_checkins.log_time = e.time;
+						nw_checkins.skip_auto_attendance= e.skip_auto_attendance;
+						refresh_field("employee_checkins");
+					});
+				}
+			} else {
+				unset_fields(frm)
 			}
+
 		})
 	}
 }
 
+var unset_fields = function(frm) {
+	frm.set_value("hours_worked", 0);
+	frm.set_value("break_hours", 0);
+	frm.set_value("total_work_seconds", 0);
+	frm.set_value("total_break_seconds", 0);
+	frm.set_value("target_hours", 0);
+	frm.set_value("total_target_seconds", 0);
+	frm.set_value("expected_break_hours", 0);
+	frm.set_value("actual_working_hours", 0);
+	frm.set_value("employee_checkins", []);
+	frm.set_value("first_checkin", "");
+	frm.set_value("last_checkout", "");
+	frm.refresh_fields();
+}
 
 // var get_hours = function(frm){
 // 	let aemployee = frm.doc.employee;
