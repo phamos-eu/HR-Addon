@@ -48,19 +48,10 @@ frappe.ui.form.on('Workday', {
 				},
 				callback: function(r){
 					if (r.message == true){
-						frm.set_value("hours_worked", 0)
-						frm.set_value("break_hours", 0)
-						frm.set_value("total_work_seconds", 0)
-						frm.set_value("total_break_seconds", 0)
-						frm.set_value("target_hours", 0)
-						frm.set_value("total_target_seconds", 0)
-						frm.set_value("expected_break_hours", 0)
-						frm.set_value("actual_working_hours", 0)
-						frm.set_value("employee_checkins", [])
-						frm.set_value("first_checkin", "")
-						frm.set_value("last_checkout", "")
+						frappe.msgprint("Given Date is Holiday")
+						unset_fields(frm);
 					} else {
-						get_hours(frm)
+						get_hours(frm);
 					}
 				}
 			})
@@ -115,7 +106,7 @@ var get_hours = function(frm){
 					});
 				}
 			} else {
-				unset_fields(frm)
+				unset_fields(frm);
 			}
 
 		})
