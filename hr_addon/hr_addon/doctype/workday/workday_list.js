@@ -122,7 +122,7 @@ frappe.listview_settings['Workday'] = {
 					} else {
 						frappe.confirm(__('Process workday for {0} for the period of {1} to {2}?', [data.employee, data.date_from,data.date_to]), () => {
 							frappe.call({
-								method: "hr_addon.hr_addon.doctype.workday.workday.process_bulk_workday",
+								method: "hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays",
 								args: {
 									data: data
 								},
