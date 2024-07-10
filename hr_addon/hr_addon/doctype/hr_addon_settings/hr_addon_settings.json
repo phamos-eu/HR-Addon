@@ -16,7 +16,16 @@
   "day",
   "time",
   "generate_workdays_for_past_7_days_now",
-  "enabled"
+  "enabled",
+  "column_break_jozi",
+  "enable_default_break_hour_for_shorter_breaks",
+  "notification_section",
+  "anniversary_notification_email_list",
+  "enable_work_anniversaries_notification",
+  "column_break_dvlg",
+  "anniversary_notification_email_recipient_role",
+  "notification_x_days_before",
+  "enable_work_anniversaries_notification_for_leave_approvers"
  ],
  "fields": [
   {
@@ -84,12 +93,72 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "notification_section",
+   "fieldtype": "Section Break",
+   "label": "Anniversary Notification"
+  },
+  {
+   "depends_on": "eval: doc.enable_work_anniversaries_notification",
+   "description": "Employees selected in this fields will receive all anniversary notification for employees in same company",
+   "fieldname": "anniversary_notification_email_list",
+   "fieldtype": "Table MultiSelect",
+   "label": "Anniversary Notification Email List",
+   "mandatory_depends_on": "eval: doc.enable_work_anniversaries_notification",
+   "options": "Employee Item"
+  },
+  {
+   "fieldname": "column_break_dvlg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.enable_work_anniversaries_notification",
+   "description": "Employees who has Role selected in this fields will receive all anniversary notification of employees in same company",
+   "fieldname": "anniversary_notification_email_recipient_role",
+   "fieldtype": "Link",
+   "label": "Anniversary Notification Email Recipient Role",
+   "options": "Role"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.enable_work_anniversaries_notification",
+   "description": "Employees who are leaver approver for other other employees will receive anniversary notification of their leave approvee",
+   "fieldname": "enable_work_anniversaries_notification_for_leave_approvers",
+   "fieldtype": "Check",
+   "label": "Enable Work Anniversaries notification for Leave Approvers",
+   "mandatory_depends_on": "eval: doc.enable_work_anniversaries_notification"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_work_anniversaries_notification",
+   "fieldtype": "Check",
+   "label": "Enable Work Anniversaries notification"
+  },
+  {
+   "depends_on": "eval: doc.enable_work_anniversaries_notification",
+   "description": "Email Recipient Role and Leavers Approvers will receive advance notification (no. of  days selected in this field) ",
+   "fieldname": "notification_x_days_before",
+   "fieldtype": "Int",
+   "label": "Notification (x days) before",
+   "mandatory_depends_on": "eval: doc.enable_work_anniversaries_notification && (doc.anniversary_notification_email_recipient_role || doc.enable_work_anniversaries_notification_for_leave_approvers)"
+  },
+  {
+   "fieldname": "column_break_jozi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "While Generating Workdays, if user took shorter breaks than default break defined in 'Weekly Working Hours'. Then use default break time in calculation",
+   "fieldname": "enable_default_break_hour_for_shorter_breaks",
+   "fieldtype": "Check",
+   "label": "Enable default break hour for shorter breaks"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-11-10 13:50:23.399969",
+ "modified": "2024-07-01 16:50:41.571435",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
@@ -118,5 +187,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

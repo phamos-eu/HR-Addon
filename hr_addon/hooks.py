@@ -29,6 +29,9 @@ app_license = "MIT"
 
 # include js in page
 # page_js = {"page" : "public/js/file.js"}
+doctype_js = {
+    "HR Settings" : "public/js/hr_settings.js"
+}
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
@@ -105,7 +108,6 @@ app_license = "MIT"
 
 # Scheduled Tasks
 # ---------------
-
 # scheduler_events = {
 # 	"all": [
 # 		"hr_addon.tasks.all"
@@ -123,6 +125,7 @@ app_license = "MIT"
 # 		"hr_addon.tasks.monthly"
 # 	]
 # }
+
 
 # Testing
 # -------
@@ -196,8 +199,16 @@ doc_events = {
     }
 }
 
+doctype_list_js = {"Weekly Working Hours" : "public/js/list_view.js"}
+
 scheduler_events = {
 	"hourly": [
 		"hr_addon.hr_addon.doctype.hr_addon_settings.hr_addon_settings.generate_workdays_scheduled_job"
 	],
+    "yearly": [
+        "hr_addon.custom_scripts.custom_python.weekly_working_hours.set_from_to_dates",
+	],
+	"daily": [
+		"hr_addon.hr_addon.api.utils.send_work_anniversary_notification"
+	]
 }

@@ -4,15 +4,16 @@
 import frappe, os
 from frappe.model.document import Document
 
-from hr_addon.hr_addon.doctype.workday.workday import get_unmarked_range, process_bulk_workday
+from hr_addon.hr_addon.doctype.workday.workday import get_unmarked_range, bulk_process_workdays
 
 class HRAddonSettings(Document):
 	def before_save(self):
 		# remove the old ics file
 		old_doc = self.get_doc_before_save()
-		old_file_name = old_doc.name_of_calendar_export_ics_file
-		if old_file_name != self.name_of_calendar_export_ics_file:
-			os.remove("{}/public/files/{}.ics".format(frappe.utils.get_site_path(), old_file_name))
+		if old_doc:
+			old_file_name = old_doc.name_of_calendar_export_ics_file
+			if old_file_name != self.name_of_calendar_export_ics_file:
+				os.remove("{}/public/files/{}.ics".format(frappe.utils.get_site_path(), old_file_name))
 
 		# remove also the Urlaubskalender.ics, if exist
 		if os.path.exists("{}/public/files/Urlaubskalender.ics".format(frappe.utils.get_site_path())):
@@ -71,4 +72,4 @@ def generate_workdays_for_past_7_days_now():
 			"employee": employee_name,
 			"unmarked_days": unmarked_days
 		}
-		process_bulk_workday(data)
+		bulk_process_workdays(data)
