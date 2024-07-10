@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate
 from frappe.model.naming import make_autoname
+from frappe import _, bold
 
 class WeeklyWorkingHours(Document):
 	#pass

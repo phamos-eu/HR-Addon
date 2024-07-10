@@ -32,8 +32,8 @@ def get_employee_default_work_hour(employee,adate):
         """ 
     SELECT w.name,w.employee,w.valid_from,w.valid_to,d.day,d.hours,d.break_minutes  FROM `tabWeekly Working Hours` w  
     LEFT JOIN `tabDaily Hours Detail` d ON w.name = d.parent 
-    WHERE w.employee='%s' AND d.day = DAYNAME('%s') AND w.docstatus = 1
-    """%(employee,adate), as_dict=1
+    WHERE w.employee='%s' AND d.day = DAYNAME('%s') and w.valid_from <= '%s' and w.valid_to >= '%s' and w.docstatus = 1
+    """%(employee,adate,adate,adate), as_dict=1
     )
 
     if not target_work_hours:
