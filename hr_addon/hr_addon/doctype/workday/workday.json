@@ -71,14 +71,12 @@
   {
    "fieldname": "number_of_breaks",
    "fieldtype": "Int",
-   "hidden": 1,
    "label": "Number of Breaks",
    "read_only": 1
   },
   {
    "fieldname": "break_hours",
    "fieldtype": "Float",
-   "hidden": 1,
    "label": "Break Hours",
    "read_only": 1
   },
@@ -165,10 +163,11 @@
   }
  ],
  "links": [],
- "modified": "2023-05-09 08:59:25.570460",
+ "modified": "2024-07-23 15:57:51.556634",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -197,5 +196,6 @@
   }
  ],
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }
