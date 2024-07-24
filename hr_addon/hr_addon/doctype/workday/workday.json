@@ -71,14 +71,14 @@
   {
    "fieldname": "number_of_breaks",
    "fieldtype": "Int",
-   "hidden": 1,
+   "hidden": 0,
    "label": "Number of Breaks",
    "read_only": 1
   },
   {
    "fieldname": "break_hours",
    "fieldtype": "Float",
-   "hidden": 1,
+   "hidden": 0,
    "label": "Break Hours",
    "read_only": 1
   },
