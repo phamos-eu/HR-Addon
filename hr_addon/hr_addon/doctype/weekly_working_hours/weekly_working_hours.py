@@ -19,7 +19,12 @@ class WeeklyWorkingHours(Document):
 		self.title_hour= self.name
 
 	def validate(self):
+		self.validate_if_employee_is_active()
 		self.validate_overlapping_records_in_specific_interval()
+
+	def validate_if_employee_is_active(self):
+		if self.employee and frappe.get_value('Employee', self.employee, 'status') != "Active":
+			frappe.throw(_("{0} is not active").format(frappe.get_desk_link('Employee', self.employee)))
 
 	def validate_overlapping_records_in_specific_interval(self):
 
