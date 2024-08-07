@@ -5,15 +5,12 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate
 from frappe.model.naming import make_autoname
-from frappe import _, bold
+from frappe import _
 
 class WeeklyWorkingHours(Document):
-	#pass
 	def autoname(self):
-		""""""
 		coy = frappe.db.sql("select abbr from tabCompany where name=%s", self.company)[0][0]
 		e_name = self.employee
-		#name_key = coy+'-.YYYY.-'+e_name
 		name_key = coy+'-.YYYY.-'+e_name+'-.####'
 		self.name = make_autoname(name_key)
 		self.title_hour= self.name
