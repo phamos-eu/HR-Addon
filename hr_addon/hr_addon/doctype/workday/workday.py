@@ -32,7 +32,7 @@ def bulk_process_workdays(data):
 	data = frappe._dict(data)
 
 	if data.employee and frappe.get_value('Employee', data.employee, 'status') != "Active":
-		frappe.throw(_("Employee is not active"))
+		frappe.throw(_("{0} is not active").format(frappe.get_desk_link('Employee', data.employee)))
 
 	company = frappe.get_value('Employee', data.employee, 'company')
 	if not data.unmarked_days:
