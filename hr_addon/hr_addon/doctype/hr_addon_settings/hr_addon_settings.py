@@ -64,7 +64,7 @@ def generate_workdays_scheduled_job():
 def generate_workdays_for_past_7_days_now():
 	today = frappe.utils.datetime.datetime.now()
 	a_week_ago = today - frappe.utils.datetime.timedelta(days=7)
-	employees = frappe.db.get_list("Employee")
+	employees = frappe.db.get_list("Employee", filters={"status": "Active"})
 	for employee in employees:
 		employee_name = employee["name"]
 		unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
