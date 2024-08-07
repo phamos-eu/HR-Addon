@@ -4,7 +4,7 @@
 import frappe, os
 from frappe.model.document import Document
 
-from hr_addon.hr_addon.doctype.workday.workday import get_unmarked_range, bulk_process_workdays
+from hr_addon.hr_addon.doctype.workday.workday import get_unmarked_range, bulk_process_workdays_background
 
 class HRAddonSettings(Document):
 	def before_save(self):
@@ -72,4 +72,4 @@ def generate_workdays_for_past_7_days_now():
 			"employee": employee_name,
 			"unmarked_days": unmarked_days
 		}
-		bulk_process_workdays(data)
+		bulk_process_workdays_background(data)

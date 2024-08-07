@@ -97,19 +97,18 @@ def process_bulk_workday(data):
 		workday.save()
 	
 
-
-@frappe.whitelist()
-def bulk_process_workdays(data):
+def bulk_process_workdays_background(data):
 	'''bulk workday processing'''
 	frappe.msgprint(_("Bulk operation is enqueued in background."), alert=True)
 	frappe.enqueue(
-		'hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays_background',
+		'hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays',
 		queue='long',
 		data=data
 	)
 
 
-def bulk_process_workdays_background(data):
+@frappe.whitelist()
+def bulk_process_workdays(data):
 	import json
 	if isinstance(data, str):
 		data = json.loads(data)
