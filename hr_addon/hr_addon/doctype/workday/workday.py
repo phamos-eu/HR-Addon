@@ -166,9 +166,9 @@ def bulk_process_workdays_background(data):
 			workday = workday.insert()
 
 		except Exception:
-			message = _("Something went wrong in Workday Creation:".format(traceback.format_exc()))
+			message = _("Something went wrong in Workday Creation: {0}".format(traceback.format_exc()))
 			frappe.msgprint(message)
-			frappe.log_error("process_bulk_workday() error: {0}", message)
+			frappe.log_error("bulk_process_workdays() error", message)
 
 
 def get_month_map():
