@@ -114,6 +114,10 @@ def bulk_process_workdays_background(data):
 	if isinstance(data, str):
 		data = json.loads(data)
 	data = frappe._dict(data)
+
+	if data.employee and frappe.get_value('Employee', data.employee, 'status') != "Active":
+		frappe.throw(_("Employee is not active"))
+
 	company = frappe.get_value('Employee', data.employee, 'company')
 	if not data.unmarked_days:
 		frappe.throw(_("Please select a date"))
