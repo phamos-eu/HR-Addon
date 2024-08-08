@@ -1,119 +1,39 @@
 # Copyright (c) 2022, Jide Olayinka and contributors
 # For license information, please see license.txt
 
-from datetime import timedelta
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.model.naming import make_autoname
-from frappe.utils import cint, cstr, formatdate, get_datetime, getdate, nowdate,add_days
+from frappe.utils import cint, get_datetime, getdate ,add_days
 from frappe.utils.data import date_diff
-from datetime import date,datetime
 import traceback
+from hr_addon.hr_addon.api.utils import get_actual_employee_log_for_bulk_process
 
-from hr_addon.hr_addon.api.utils import (
-	view_actual_employee_log,
-	get_actual_employee_log_bulk, 
-	get_actual_employee_log_for_bulk_process,
-	date_is_in_holiday_list
-)
 
 class Workday(Document):
 	pass
-#mark_bulk_attendance
-@frappe.whitelist()
-def process_bulk_workday(data):
-	'''bulk workday processing'''
-	import json
-	if isinstance(data, str):
-		data = json.loads(data)
-	data = frappe._dict(data)
-	company = frappe.get_value('Employee', data.employee, 'company')
-	if not data.unmarked_days:
-		frappe.throw(_("Please select a date"))
-		return
-	
-	for date in data.unmarked_days:
-		single = []
-		#single = view_actual_employee_log(data.employee, get_datetime(date))
-		single = get_actual_employee_log_bulk(data.employee, get_datetime(date))
-		c_single = single[0]["items"]		
-		doc_dict = {
-			'doctype': 'Workday',
-			'employee': data.employee,
-			'log_date': get_datetime(date),
-			'company': company,
-			'attendance':single[0]["attendance"],
-			'hours_worked':"{:.2f}".format(single[0]["ahour"]/(60*60)),
-			'break_hours': "{:.2f}".format(single[0]["bhour"]/(60*60)),
-			'expected_break_hours': "{:.2f}".format(single[0]["break_minutes"]/(60)),
-			'total_work_seconds':single[0]["ahour"],
-			'total_break_seconds':single[0]["bhour"],
-			'actual_working_hours': "{:.2f}".format(single[0]["ahour"]/(60*60) - single[0]["break_minutes"]/60)
-		}
-		workday = frappe.get_doc(doc_dict).insert()
-		target_hours = single[0]["thour"]
-		if (workday.status == 'Half Day'):
-			target_hours = (single[0]["thour"])/2
-		if (workday.status == 'On Leave'):
-			target_hours = 0
-		workday.target_hours = target_hours
-		workday.total_target_seconds = target_hours*(60*60)
-
-		if workday.target_hours == 0:
-			workday.expected_break_hours = 0
-			workday.total_break_seconds = 0
-			# workday.actual_working_hours = 0
-		if float(workday.hours_worked) < 6:
-			wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": workday.employee}, fields=["name", "no_break_hours"])
-			no_break_hours = True if len(wwh) > 0 and wwh[0]["no_break_hours"] == 1 else False
-			if no_break_hours:
-				workday.expected_break_hours = 0
-				workday.total_break_seconds = 0
-				workday.actual_working_hours = workday.hours_worked
-
-		# lenght of single must be greater than zero
-		if((not single[0]["items"] is None) and (len(single[0]["items"]) > 0)):
-			workday.first_checkin = c_single[0].time
-			workday.last_checkout = c_single[-1].time
-			
-			for i in range(len(c_single)):
-				row = workday.append("employee_checkins", {
-					'employee_checkin': c_single[i]["name"],
-					'log_type': c_single[i]["log_type"],
-					'log_time': c_single[i]["time"],
-					'skip_auto_attendance': c_single[i]["skip_auto_attendance"],
-					'parent':workday
-				})
-		if date_is_in_holiday_list(data.employee, get_datetime(date)):
-			wwh = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": data.employee}, fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"])
-			if len(wwh) > 0 and wwh[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1:
-				workday.actual_working_hours = float(workday.actual_working_hours) + float(workday.expected_break_hours)
-				workday.expected_break_hours = 0
-				workday.target_hours = 0
-				workday.total_target_seconds = 0
-			
-		#workday.submit() 
-		workday.save()
 	
 
-
-@frappe.whitelist()
-def bulk_process_workdays(data):
+def bulk_process_workdays_background(data):
 	'''bulk workday processing'''
 	frappe.msgprint(_("Bulk operation is enqueued in background."), alert=True)
 	frappe.enqueue(
-		'hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays_background',
+		'hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays',
 		queue='long',
 		data=data
 	)
 
 
-def bulk_process_workdays_background(data):
+@frappe.whitelist()
+def bulk_process_workdays(data):
 	import json
 	if isinstance(data, str):
 		data = json.loads(data)
 	data = frappe._dict(data)
+
+	if data.employee and frappe.get_value('Employee', data.employee, 'status') != "Active":
+		frappe.throw(_("{0} is not active").format(frappe.get_desk_link('Employee', data.employee)))
+
 	company = frappe.get_value('Employee', data.employee, 'company')
 	if not data.unmarked_days:
 		frappe.throw(_("Please select a date"))
@@ -162,9 +82,9 @@ def bulk_process_workdays_background(data):
 			workday = workday.insert()
 
 		except Exception:
-			message = _("Something went wrong in Workday Creation:".format(traceback.format_exc()))
+			message = _("Something went wrong in Workday Creation: {0}".format(traceback.format_exc()))
 			frappe.msgprint(message)
-			frappe.log_error("process_bulk_workday() error: {0}", message)
+			frappe.log_error("bulk_process_workdays() error", message)
 
 
 def get_month_map():
