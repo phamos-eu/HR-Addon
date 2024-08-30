@@ -73,12 +73,13 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
 
     # not pair of IN/OUT either missing
     if len(employee_checkins)% 2 != 0:
+        hours_worked = -36.0
+        break_hours = -360.0
         employee_checkin_message = ""
         for d in employee_checkins:
             employee_checkin_message += "<li>CheckIn Type:{0} for {1}</li>".format(d.log_type, frappe.get_desk_link("Employee Checkin", d.name))
 
         frappe.msgprint("CheckIns must be in pair for the given date:<ul>{}</ul>".format(employee_checkin_message))
-        return new_workday
 
     if (len(employee_checkins) % 2 == 0):
         # seperate 'IN' from 'OUT'
