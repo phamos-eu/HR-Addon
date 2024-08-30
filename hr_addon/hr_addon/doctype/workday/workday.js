@@ -3,18 +3,7 @@
 
 frappe.ui.form.on("Workday", {
   refresh: function (frm) {
-    if (frm.doc.break_hours == -360 && frm.doc.hours_worked == -36) {
-      $(".control-input-wrapper > .control-value.like-disabled-input").css(
-        "color",
-        "red"
-      );
-    } else {
-      // Reset the color to default (or any other color) when the condition is not met
-      $(".control-input-wrapper > .control-value.like-disabled-input").css(
-        "color",
-        ""
-      );
-    }
+    set_color_red(frm);
   },
   setup: function (frm) {
     frm.set_query("attendance", function () {
@@ -119,6 +108,7 @@ var get_hours = function (frm) {
               nw_checkins.log_time = e.time;
               nw_checkins.skip_auto_attendance = e.skip_auto_attendance;
               refresh_field("employee_checkins");
+              set_color_red(frm);
             });
           }
         } else {
@@ -141,4 +131,19 @@ var unset_fields = function (frm) {
   frm.set_value("first_checkin", "");
   frm.set_value("last_checkout", "");
   frm.refresh_fields();
+};
+
+var set_color_red = function (frm) {
+  if (frm.doc.break_hours == -360 && frm.doc.hours_worked == -36) {
+    $(".control-input-wrapper > .control-value.like-disabled-input").css(
+      "color",
+      "red"
+    );
+  } else {
+    // Reset the color to default (or any other color) when the condition is not met
+    $(".control-input-wrapper > .control-value.like-disabled-input").css(
+      "color",
+      ""
+    );
+  }
 };
