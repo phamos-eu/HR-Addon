@@ -55,23 +55,23 @@ def get_actual_employee_log(aemployee, adate):
 
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
     is_date_in_holiday_list = date_is_in_holiday_list(aemployee,adate)
-    is_date_in_comp_off = date_is_in_comp_off(aemployee,adate)
+    comp_off_doc = date_is_in_comp_off(aemployee,adate)
     fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"]
     weekly_working_hours = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=fields)
     no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
     is_target_hours_zero_on_holiday = len(weekly_working_hours) > 0 and weekly_working_hours[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1
     
-    new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list,is_date_in_comp_off)
+    new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours,comp_off_doc, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
 
     return new_workday
 
 
-def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list=False,is_date_in_comp_off=False):
+def get_workday(employee_checkins, employee_default_work_hour, no_break_hours,comp_off_doc, is_target_hours_zero_on_holiday, is_date_in_holiday_list=False):
     new_workday = {}
 
     hours_worked = 0.0
     break_hours = 0.0
-
+   
     # not pair of IN/OUT either missing
     if len(employee_checkins)% 2 != 0:
         hours_worked = -36.0
@@ -120,9 +120,12 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
         target_hours = 0
         total_target_seconds = 0
 
-    if is_date_in_comp_off:
+    if comp_off_doc:
         hours_worked = 0
-        actual_working_hours = 0    
+        actual_working_hours = 0  
+        #frappe.msgprint(frappe.get_desk_link("Leave Application", comp_off_doc) )
+        frappe.msgprint("The selected employee has a Leave Application with the leave type: 'Freizeitausgleich (Nicht buchen!)' on the given date. {0} : ".format(frappe.get_desk_link("Leave Application", comp_off_doc)))
+
 
     hr_addon_settings = frappe.get_doc("HR Addon Settings")
     if hr_addon_settings.enable_default_break_hour_for_shorter_breaks:
