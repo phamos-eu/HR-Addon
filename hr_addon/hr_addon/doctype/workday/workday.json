@@ -59,7 +59,8 @@
   {
    "fieldname": "target_hours",
    "fieldtype": "Float",
-   "label": "Target Hours"
+   "label": "Target Hours",
+   "read_only": 1
   },
   {
    "fieldname": "hours_worked",
@@ -71,14 +72,12 @@
   {
    "fieldname": "number_of_breaks",
    "fieldtype": "Int",
-   "hidden": 0,
    "label": "Number of Breaks",
    "read_only": 1
   },
   {
    "fieldname": "break_hours",
    "fieldtype": "Float",
-   "hidden": 0,
    "label": "Break Hours",
    "read_only": 1
   },
@@ -166,10 +165,11 @@
   }
  ],
  "links": [],
- "modified": "2024-07-24 16:45:02.502629",
+ "modified": "2024-09-01 13:44:04.729173",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -198,5 +198,6 @@
   }
  ],
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }
