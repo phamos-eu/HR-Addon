@@ -34,7 +34,7 @@ def get_employee_default_work_hour(employee,adate):
     )
 
     if not target_work_hours:
-        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{0} first.').format(employee))
+        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{0} first for date : {1}.').format(employee,adate))
 
     if len(target_work_hours) > 1:
         target_work_hours= "<br> ".join([frappe.get_desk_link("Weekly Working Hours", w.name) for w in target_work_hours])
@@ -216,18 +216,19 @@ def date_is_in_holiday_list(employee, date):
 
 @frappe.whitelist()
 def date_is_in_comp_off(employee, date):
-    comp_off_leave_application = frappe.db.sql("""
-        SELECT name 
-        FROM `tabLeave Application` 
-        WHERE employee = %s 
-        AND %s BETWEEN from_date AND to_date 
-        AND leave_type = %s
-    """, (employee, date, 'Freizeitausgleich (Nicht buchen!)'))
+    comp_off_leave_application = frappe.db.get_value(
+        "Leave Application",
+        {
+            "employee": employee,
+            "from_date": ("<=", date),
+            "to_date": (">=", date),
+            "leave_type": "Freizeitausgleich (Nicht buchen!)"
+        },
+        "name"
+    )
 
-    if comp_off_leave_application:
-        return comp_off_leave_application[0][0]
-    else:
-        return None
+    return comp_off_leave_application
+
 
 
 # ----------------------------------------------------------------------
