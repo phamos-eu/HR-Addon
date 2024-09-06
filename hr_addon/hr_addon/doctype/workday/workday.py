@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, get_datetime, getdate ,add_days
+from frappe.utils import cint, get_datetime, getdate ,add_days,formatdate
 from frappe.utils.data import date_diff
 import traceback
 from hr_addon.hr_addon.api.utils import get_actual_employee_log_for_bulk_process,date_is_in_comp_off
@@ -24,8 +24,12 @@ def bulk_process_workdays_background(data):
     )
 
 
+import frappe
+from frappe.utils import getdate, get_datetime
+import traceback
+
 @frappe.whitelist()
-def bulk_process_workdays(data):
+def bulk_process_workdays(data,flag):
     import json
     if isinstance(data, str):
         data = json.loads(data)
@@ -39,51 +43,61 @@ def bulk_process_workdays(data):
         frappe.throw(_("Please select a date"))
         return
 
+    missing_dates = []
+    
     for date in data.unmarked_days:
         try:
             single = get_actual_employee_log_for_bulk_process(data.employee, get_datetime(date))
             comp_off_doc = date_is_in_comp_off(data.employee, get_datetime(date))
+            
+            # Check if the workday already exists
+            existing_workday = frappe.get_value('Workday', {
+                'employee': data.employee,
+                'log_date': get_datetime(date)
+            })
+            
+            if existing_workday:
+                continue  # Skip creating if it already exists
+
             if comp_off_doc:
                 doc_dict = {
-                "doctype": 'Workday',
-                "employee": data.employee,
-                "log_date": get_datetime(date),
-                "company": company,
-                "attendance":single.get("attendance"),
-                "hours_worked": 0,
-                "break_hours": 0,
-                "target_hours": single.get("target_hours"),
-                "total_work_seconds": 0,
-                "expected_break_hours": single.get("expected_break_hours"),
-                "total_break_seconds": single.get("total_break_seconds"),
-                "total_target_seconds": single.get("total_target_seconds"),
-                "actual_working_hours": 0
+                    "doctype": 'Workday',
+                    "employee": data.employee,
+                    "log_date": get_datetime(date),
+                    "company": company,
+                    "attendance": single.get("attendance"),
+                    "hours_worked": 0,
+                    "break_hours": 0,
+                    "target_hours": single.get("target_hours"),
+                    "total_work_seconds": 0,
+                    "expected_break_hours": single.get("expected_break_hours"),
+                    "total_break_seconds": single.get("total_break_seconds"),
+                    "total_target_seconds": single.get("total_target_seconds"),
+                    "actual_working_hours": 0
                 }
             else:
                 doc_dict = {
-                "doctype": 'Workday',
-                "employee": data.employee,
-                "log_date": get_datetime(date),
-                "company": company,
-                "attendance":single.get("attendance"),
-                "hours_worked": single.get("hours_worked"),
-                "break_hours": single.get("break_hours"),
-                "target_hours": single.get("target_hours"),
-                "total_work_seconds": single.get("total_work_seconds"),
-                "expected_break_hours": single.get("expected_break_hours"),
-                "total_break_seconds": single.get("total_break_seconds"),
-                "total_target_seconds": single.get("total_target_seconds"),
-                "actual_working_hours": single.get("actual_working_hours")
+                    "doctype": 'Workday',
+                    "employee": data.employee,
+                    "log_date": get_datetime(date),
+                    "company": company,
+                    "attendance": single.get("attendance"),
+                    "hours_worked": single.get("hours_worked"),
+                    "break_hours": single.get("break_hours"),
+                    "target_hours": single.get("target_hours"),
+                    "total_work_seconds": single.get("total_work_seconds"),
+                    "expected_break_hours": single.get("expected_break_hours"),
+                    "total_break_seconds": single.get("total_break_seconds"),
+                    "total_target_seconds": single.get("total_target_seconds"),
+                    "actual_working_hours": single.get("actual_working_hours")
                 }
-                
+
             workday = frappe.get_doc(doc_dict)
 
-            # set status in 
             if (workday.status == 'Half Day'):
-                workday.target_hours = (workday.target_hours)/2
+                workday.target_hours = workday.target_hours / 2
             elif (workday.status == 'On Leave'):
                 workday.target_hours = 0
-            # set status before 
 
             employee_checkins = single.get("employee_checkins")
             if employee_checkins:
@@ -97,19 +111,28 @@ def bulk_process_workdays(data):
                         "log_time": employee_checkin.get("time"),   
                         "skip_auto_attendance": employee_checkin.get("skip_auto_attendance"),   
                     })
-            # Validate before inserting
+            
             if len(employee_checkins) % 2 != 0:
                 formatted_date = frappe.utils.formatdate(workday.log_date)
-                frappe.throw(
-            "CheckIns must be in pairs for the given date: " + formatted_date
-            )
-            workday = workday.insert()
+                frappe.throw("CheckIns must be in pairs for the given date: " + formatted_date)
+            if flag == "Create workday":
+                workday.insert()
+            missing_dates.append(get_datetime(date))
 
         except Exception:
             message = _("Something went wrong in Workday Creation: {0}".format(traceback.format_exc()))
             frappe.msgprint(message)
             frappe.log_error("bulk_process_workdays() error", message)
+    formatted_missing_dates = []
+    for missing_date in missing_dates:
+        formatted_m_date = formatdate(missing_date,'dd.MM.yyyy')
+        formatted_missing_dates.append(formatted_m_date)
 
+    return {
+        "message": 1,
+        "missing_dates": formatted_missing_dates,
+        "flag":flag
+    }
 
 def get_month_map():
     return frappe._dict({
@@ -241,4 +264,30 @@ def get_app_branch(app):
         return branch
     except Exception:
         return ""
+    
 
+@frappe.whitelist()
+def get_created_workdays(employee, date_from, date_to):
+    workday_list = frappe.get_list(
+        "Workday",
+        filters={
+            "employee": employee,
+            "log_date": ["between", [date_from, date_to]],
+        },
+        fields=["log_date","name"],
+        order_by="log_date asc" 
+    )
+    
+    # Format the dates
+    formatted_workdays = []
+    for workday in workday_list:
+        # Convert to date object
+        date_obj = frappe.utils.getdate(workday['log_date'])
+        # Format the date to 'd.m.yy'
+        formatted_date = formatdate(date_obj, 'dd.MM.yyyy')
+        formatted_workdays.append({
+            'log_date': formatted_date,
+            'name':workday['name']
+        })
+    
+    return formatted_workdays
