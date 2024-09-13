@@ -24,10 +24,6 @@ def bulk_process_workdays_background(data):
     )
 
 
-import frappe
-from frappe.utils import getdate, get_datetime
-import traceback
-
 @frappe.whitelist()
 def bulk_process_workdays(data,flag):
     import json

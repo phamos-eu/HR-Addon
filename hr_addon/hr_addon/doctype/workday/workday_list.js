@@ -50,6 +50,19 @@ frappe.listview_settings["Workday"] = {
             fieldtype: "Date",
             reqd: 1,
             onchange: function () {
+              let start_date = dialog.fields_dict.date_from.value;
+              let end_date = dialog.fields_dict.date_to.value;
+
+              // Validation: Ensure start date is less than end date
+              if (!start_date || frappe.datetime.str_to_obj(start_date) > frappe.datetime.str_to_obj(end_date)) {
+                frappe.msgprint({
+                  title: __('Validation Error'),
+                  message: __('Start Date should be less than End Date.'),
+                  indicator: 'red'
+                });
+              return; // Stop execution if validation fails
+              }
+
               if (
                 dialog.fields_dict.employee.value &&
                 dialog.fields_dict.date_from.value
