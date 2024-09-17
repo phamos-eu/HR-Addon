@@ -116,6 +116,32 @@ frappe.listview_settings['Workday'] = {
 					hidden: 1,
 				}],
 				primary_action(data) {
+					frappe.call({
+						method: "hr_addon.hr_addon.api.utils.get_missing_workdays",
+						args: {
+							employee: dialog.fields_dict.employee.value,
+							date_to: dialog.fields_dict.date_to.value,
+							date_from: dialog.fields_dict.date_from.value
+						},
+						callback: function (r) {
+							if (r.message && r.message.length > 0) {
+								// Convert array of missing dates to a bullet-point list
+								let missing_dates = r.message.map(date => `<li>${frappe.datetime.str_to_user(date)}</li>`).join("");
+								let message_html = `<ul>${missing_dates}</ul>`;
+								
+								// Display the missing workdays to the user
+								frappe.msgprint({
+									title: __('Missing Workdays'),
+									message: __('Please create Weekly Working Hours for the following dates:<br>{0}', [message_html]),
+									indicator: 'orange'
+								});
+							} else {
+								// No missing workdays
+							}
+						}
+						
+					});
+					
 					if (cur_dialog.no_unmarked_days_left) {
 						frappe.msgprint(__("Workday for the period: {0} - {1} , has already been processed for the Employee {2}",
 							[dialog.fields_dict.date_to.value,dialog.fields_dict.date_from.value, dialog.fields_dict.employee.value]));

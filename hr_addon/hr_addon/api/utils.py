@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.utils.data import date_diff, time_diff_in_hours
-from frappe.utils import get_datetime, getdate, today, comma_sep, flt
+from frappe.utils import get_datetime, getdate, today, comma_sep, flt,add_days
 from frappe.core.doctype.role.role import get_info_based_on_role
 
 
@@ -41,6 +41,48 @@ def get_employee_default_work_hour(employee,adate):
         frappe.throw(_('There exist multiple Weekly Working Hours exist for the Date <b>{0}</b>: <br>{1} <br>').format(adate, target_work_hours))
 
     return target_work_hours[0]
+
+
+@frappe.whitelist()
+def get_missing_workdays(employee, date_from, date_to):
+    """
+    Get the list of missing workdays for an employee between two dates.
+    """
+    # Validate the date range
+    date_from = getdate(date_from)
+    date_to = getdate(date_to)
+
+    # Calculate the number of days in the range
+    total_days = date_diff(date_to, date_from) + 1
+
+    missing_workdays = []
+
+    # Loop through each day in the date range
+    for i in range(total_days):
+        current_date = add_days(date_from, i)
+
+        # Fetch the work hours for the current date
+        target_work_hours = frappe.db.sql(
+            """ 
+            SELECT w.name, w.employee, w.valid_from, w.valid_to, d.day, d.hours, d.break_minutes  
+            FROM `tabWeekly Working Hours` w  
+            LEFT JOIN `tabDaily Hours Detail` d ON w.name = d.parent 
+            WHERE w.employee=%s 
+            AND w.valid_from <= %s 
+            AND w.valid_to >= %s 
+            AND w.docstatus = 1
+            """, (employee, current_date, current_date), as_dict=1
+        )
+
+        # If no working hours are found for this date, add the date to missing workdays
+        if not target_work_hours:
+            missing_workdays.append(current_date)
+
+    # Return the list of missing workdays or 0 if none are missing
+    if missing_workdays:
+        return missing_workdays
+    else:
+        return 0
 
 
 @frappe.whitelist()
@@ -150,19 +192,29 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
 def get_actual_employee_log_for_bulk_process(aemployee, adate):
 
     employee_checkins = get_employee_checkin(aemployee, adate)
-    employee_default_work_hour = get_employee_default_work_hour(aemployee, adate)
+    #employee_default_work_hour = get_employee_default_work_hour(aemployee, adate)
 
-    if employee_checkins:
-        is_date_in_holiday_list = date_is_in_holiday_list(aemployee, adate)
-        fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"]
-        weekly_working_hours = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=fields)
-        no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
-        is_target_hours_zero_on_holiday = len(weekly_working_hours) > 0 and weekly_working_hours[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1
-        new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
-    else:
-        view_employee_attendance = get_employee_attendance(aemployee, adate)
+    target_work_hours= frappe.db.sql(
+        """ 
+    SELECT w.name,w.employee,w.valid_from,w.valid_to,d.day,d.hours,d.break_minutes  FROM `tabWeekly Working Hours` w  
+    LEFT JOIN `tabDaily Hours Detail` d ON w.name = d.parent 
+    WHERE w.employee='%s' AND d.day = DAYNAME('%s') and w.valid_from <= '%s' and w.valid_to >= '%s' and w.docstatus = 1
+    """%(aemployee,adate,adate,adate), as_dict=1
+    )
+    if len(target_work_hours) == 1:
+        employee_default_work_hour = target_work_hours[0]
 
-        new_workday = {
+        if employee_checkins:
+            is_date_in_holiday_list = date_is_in_holiday_list(aemployee, adate)
+            fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"]
+            weekly_working_hours = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=fields)
+            no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
+            is_target_hours_zero_on_holiday = len(weekly_working_hours) > 0 and weekly_working_hours[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1
+            new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
+        else:
+            view_employee_attendance = get_employee_attendance(aemployee, adate)
+
+            new_workday = {
             "target_hours": employee_default_work_hour.hours,
             "break_minutes": employee_default_work_hour.break_minutes,
             "hours_worked": 0,
@@ -170,9 +222,9 @@ def get_actual_employee_log_for_bulk_process(aemployee, adate):
             "attendance": view_employee_attendance[0].name if len(view_employee_attendance) > 0 else "",
             "break_hours": 0,
             "employee_checkins":[],
-        }
+            }
 
-    return new_workday
+        return new_workday
 
 
 def get_employee_attendance(employee,atime):
