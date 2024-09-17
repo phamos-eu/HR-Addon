@@ -42,7 +42,8 @@ def bulk_process_workdays(data):
 	for date in data.unmarked_days:
 		try:
 			single = get_actual_employee_log_for_bulk_process(data.employee, get_datetime(date))
-			doc_dict = {
+			if single:
+				doc_dict = {
 				"doctype": 'Workday',
 				"employee": data.employee,
 				"log_date": get_datetime(date),
@@ -56,30 +57,30 @@ def bulk_process_workdays(data):
 				"total_break_seconds": single.get("total_break_seconds"),
 				"total_target_seconds": single.get("total_target_seconds"),
 				"actual_working_hours": single.get("actual_working_hours")
-			}
-			workday = frappe.get_doc(doc_dict)
+				}
+				workday = frappe.get_doc(doc_dict)
 
 			# set status in 
-			if (workday.status == 'Half Day'):
-				workday.target_hours = (workday.target_hours)/2
-			elif (workday.status == 'On Leave'):
-				workday.target_hours = 0
+				if (workday.status == 'Half Day'):
+					workday.target_hours = (workday.target_hours)/2
+				elif (workday.status == 'On Leave'):
+					workday.target_hours = 0
 			# set status before 
 
-			employee_checkins = single.get("employee_checkins")
-			if employee_checkins:
-				workday.first_checkin = employee_checkins[0].time
-				workday.last_checkout = employee_checkins[-1].time
+				employee_checkins = single.get("employee_checkins")
+				if employee_checkins:
+					workday.first_checkin = employee_checkins[0].time
+					workday.last_checkout = employee_checkins[-1].time
 
-				for employee_checkin in employee_checkins:
-					workday.append("employee_checkins", {
+					for employee_checkin in employee_checkins:
+						workday.append("employee_checkins", {
 						"employee_checkin": employee_checkin.get("name"),	
 						"log_type": employee_checkin.get("log_type"),	
 						"log_time": employee_checkin.get("time"),	
 						"skip_auto_attendance": employee_checkin.get("skip_auto_attendance"),	
-					})
+						})
 
-			workday = workday.insert()
+				workday = workday.insert()
 
 		except Exception:
 			message = _("Something went wrong in Workday Creation: {0}".format(traceback.format_exc()))
