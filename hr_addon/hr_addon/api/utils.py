@@ -2,9 +2,10 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.utils.data import date_diff, time_diff_in_hours
-from frappe.utils import get_datetime, getdate, today, comma_sep, flt,add_days
+from frappe.utils import get_datetime, getdate, today, comma_sep, flt,add_days,date_diff,add_days
 from frappe.core.doctype.role.role import get_info_based_on_role
-
+from frappe.query_builder import DocType
+from datetime import datetime
 
 def get_employee_checkin(employee,atime):
     ''' select DATE('date time');'''
@@ -18,20 +19,46 @@ def get_employee_checkin(employee,atime):
     )
     return checkin_list or []
 
-def get_employee_default_work_hour(employee,adate):
+def get_employee_default_work_hour(aemployee,adate):
     ''' weekly working hour'''
-    employee = employee
+    employee = aemployee
     adate = adate    
     #validate current or active FY year WHERE --
     # AND YEAR(valid_from) = CAST(%(year)s as INT) AND YEAR(valid_to) = CAST(%(year)s as INT)
     # AND YEAR(w.valid_from) = CAST(('2022-01-01') as INT) AND YEAR(w.valid_to) = CAST(('2022-12-30') as INT);
-    target_work_hours= frappe.db.sql(
-        """ 
-    SELECT w.name,w.employee,w.valid_from,w.valid_to,d.day,d.hours,d.break_minutes  FROM `tabWeekly Working Hours` w  
-    LEFT JOIN `tabDaily Hours Detail` d ON w.name = d.parent 
-    WHERE w.employee='%s' AND d.day = DAYNAME('%s') and w.valid_from <= '%s' and w.valid_to >= '%s' and w.docstatus = 1
-    """%(employee,adate,adate,adate), as_dict=1
+    # Convert date to datetime object and get the day name
+    adate = getdate(adate)
+    dayname = adate.strftime('%A')  # Get the day name (e.g., 'Monday', 'Tuesday')
+
+    # Define the doctypes
+    WeeklyWorkingHours = DocType("Weekly Working Hours")
+    DailyHoursDetail = DocType("Daily Hours Detail")
+
+    # Build the query using Frappe's query builder
+    query = (
+        frappe.qb.from_(WeeklyWorkingHours)
+        .left_join(DailyHoursDetail)
+        .on(WeeklyWorkingHours.name == DailyHoursDetail.parent)
+        .select(
+            WeeklyWorkingHours.name,
+            WeeklyWorkingHours.employee,
+            WeeklyWorkingHours.valid_from,
+            WeeklyWorkingHours.valid_to,
+            DailyHoursDetail.day,
+            DailyHoursDetail.hours,
+            DailyHoursDetail.break_minutes
+        )
+        .where(
+            (WeeklyWorkingHours.employee == aemployee)
+            & (DailyHoursDetail.day == dayname)
+            & (WeeklyWorkingHours.valid_from <= adate)
+            & (WeeklyWorkingHours.valid_to >= adate)
+            & (WeeklyWorkingHours.docstatus == 1)
+        )
     )
+
+    # Execute the query
+    target_work_hours = query.run(as_dict=True)
 
     if not target_work_hours:
         frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{0} first.').format(employee))
@@ -46,7 +73,7 @@ def get_employee_default_work_hour(employee,adate):
 @frappe.whitelist()
 def get_missing_workdays(employee, date_from, date_to):
     """
-    Get the list of missing workdays for an employee between two dates.
+    Get the list of missing workdays for an employee between two dates using Frappe's query builder.
     """
     # Validate the date range
     date_from = getdate(date_from)
@@ -57,32 +84,51 @@ def get_missing_workdays(employee, date_from, date_to):
 
     missing_workdays = []
 
+    # Define the doctypes
+    WeeklyWorkingHours = DocType("Weekly Working Hours")
+    DailyHoursDetail = DocType("Daily Hours Detail")
+
     # Loop through each day in the date range
     for i in range(total_days):
         current_date = add_days(date_from, i)
 
-        # Fetch the work hours for the current date
-        target_work_hours = frappe.db.sql(
-            """ 
-            SELECT w.name, w.employee, w.valid_from, w.valid_to, d.day, d.hours, d.break_minutes  
-            FROM `tabWeekly Working Hours` w  
-            LEFT JOIN `tabDaily Hours Detail` d ON w.name = d.parent 
-            WHERE w.employee=%s 
-            AND w.valid_from <= %s 
-            AND w.valid_to >= %s 
-            AND w.docstatus = 1
-            """, (employee, current_date, current_date), as_dict=1
+        # Build the query using Frappe query builder
+        query = (
+            frappe.qb.from_(WeeklyWorkingHours)
+            .left_join(DailyHoursDetail)
+            .on(WeeklyWorkingHours.name == DailyHoursDetail.parent)
+            .select(
+                WeeklyWorkingHours.name,
+                WeeklyWorkingHours.employee,
+                WeeklyWorkingHours.valid_from,
+                WeeklyWorkingHours.valid_to,
+                DailyHoursDetail.day,
+                DailyHoursDetail.hours,
+                DailyHoursDetail.break_minutes
+            )
+            .where(
+                (WeeklyWorkingHours.employee == employee) &
+                (WeeklyWorkingHours.valid_from <= current_date) &
+                (WeeklyWorkingHours.valid_to >= current_date) &
+                (WeeklyWorkingHours.docstatus == 1)
+            )
         )
+
+        # Execute the query
+        target_work_hours = query.run(as_dict=True)
 
         # If no working hours are found for this date, add the date to missing workdays
         if not target_work_hours:
             missing_workdays.append(current_date)
 
-    # Return the list of missing workdays or 0 if none are missing
+    # Log missing workdays if any, and return the result
     if missing_workdays:
+        missing_workdays_str = ', '.join([date.strftime('%Y-%m-%d') for date in missing_workdays])
+        frappe.logger("During Bulk Workday Creation").error(f"Missing workdays for employee {employee}: {missing_workdays_str}")
         return missing_workdays
     else:
         return 0
+
 
 
 @frappe.whitelist()
@@ -194,13 +240,40 @@ def get_actual_employee_log_for_bulk_process(aemployee, adate):
     employee_checkins = get_employee_checkin(aemployee, adate)
     #employee_default_work_hour = get_employee_default_work_hour(aemployee, adate)
 
-    target_work_hours= frappe.db.sql(
-        """ 
-    SELECT w.name,w.employee,w.valid_from,w.valid_to,d.day,d.hours,d.break_minutes  FROM `tabWeekly Working Hours` w  
-    LEFT JOIN `tabDaily Hours Detail` d ON w.name = d.parent 
-    WHERE w.employee='%s' AND d.day = DAYNAME('%s') and w.valid_from <= '%s' and w.valid_to >= '%s' and w.docstatus = 1
-    """%(aemployee,adate,adate,adate), as_dict=1
+    # Convert date to datetime object and get the day name
+    adate = getdate(adate)
+    dayname = adate.strftime('%A')  # Get the day name (e.g., 'Monday', 'Tuesday')
+
+    # Define the doctypes
+    WeeklyWorkingHours = DocType("Weekly Working Hours")
+    DailyHoursDetail = DocType("Daily Hours Detail")
+
+    # Build the query using Frappe's query builder
+    query = (
+        frappe.qb.from_(WeeklyWorkingHours)
+        .left_join(DailyHoursDetail)
+        .on(WeeklyWorkingHours.name == DailyHoursDetail.parent)
+        .select(
+            WeeklyWorkingHours.name,
+            WeeklyWorkingHours.employee,
+            WeeklyWorkingHours.valid_from,
+            WeeklyWorkingHours.valid_to,
+            DailyHoursDetail.day,
+            DailyHoursDetail.hours,
+            DailyHoursDetail.break_minutes
+        )
+        .where(
+            (WeeklyWorkingHours.employee == aemployee)
+            & (DailyHoursDetail.day == dayname)
+            & (WeeklyWorkingHours.valid_from <= adate)
+            & (WeeklyWorkingHours.valid_to >= adate)
+            & (WeeklyWorkingHours.docstatus == 1)
+        )
     )
+
+    # Execute the query
+    target_work_hours = query.run(as_dict=True)
+
     if len(target_work_hours) == 1:
         employee_default_work_hour = target_work_hours[0]
 
