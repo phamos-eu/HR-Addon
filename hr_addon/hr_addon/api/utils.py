@@ -124,7 +124,10 @@ def get_missing_workdays(employee, date_from, date_to):
     # Log missing workdays if any, and return the result
     if missing_workdays:
         missing_workdays_str = ', '.join([date.strftime('%Y-%m-%d') for date in missing_workdays])
-        frappe.logger("During Bulk Workday Creation").error(f"Missing workdays for employee {employee}: {missing_workdays_str}")
+        frappe.log_error(
+            title="Missing Workdays During Bulk Workday Creation",
+            message=f"Missing workdays for employee {employee}: {missing_workdays_str}"
+        )
         return missing_workdays
     else:
         return 0
