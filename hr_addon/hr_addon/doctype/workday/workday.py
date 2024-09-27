@@ -7,12 +7,29 @@ from frappe.model.document import Document
 from frappe.utils import cint, get_datetime, getdate ,add_days,formatdate
 from frappe.utils.data import date_diff
 import traceback
-from hr_addon.hr_addon.api.utils import get_actual_employee_log_for_bulk_process,date_is_in_comp_off
+from hr_addon.hr_addon.api.utils import get_actual_employee_log_for_bulk_process
 
 
 class Workday(Document):
-    pass
-    
+    def validate(self):
+        self.date_is_in_comp_off()
+		
+
+    def date_is_in_comp_off(self):
+    # Check if a comp off leave application exists for the given employee and date
+        comp_off_leave_application = frappe.db.exists(
+        "Leave Application", {
+            "employee": self.employee,
+            "from_date": ("<=", self.log_date),
+            "to_date": (">=", self.log_date),
+            "leave_type": "Freizeitausgleich (Nicht buchen!)"
+        }
+        )
+    # Return True if a matching leave application exists, else False
+        if comp_off_leave_application:
+            self.hours_worked = 0.0
+            self.actual_working_hours = 0.0
+
 
 def bulk_process_workdays_background(data):
     '''bulk workday processing'''
@@ -44,7 +61,7 @@ def bulk_process_workdays(data,flag):
     for date in data.unmarked_days:
         try:
             single = get_actual_employee_log_for_bulk_process(data.employee, get_datetime(date))
-            comp_off_doc = date_is_in_comp_off(data.employee, get_datetime(date))
+            
             
             # Check if the workday already exists
             existing_workday = frappe.get_value('Workday', {
@@ -55,24 +72,7 @@ def bulk_process_workdays(data,flag):
             if existing_workday:
                 continue  # Skip creating if it already exists
 
-            if comp_off_doc:
-                doc_dict = {
-                    "doctype": 'Workday',
-                    "employee": data.employee,
-                    "log_date": get_datetime(date),
-                    "company": company,
-                    "attendance": single.get("attendance"),
-                    "hours_worked": 0,
-                    "break_hours": 0,
-                    "target_hours": single.get("target_hours"),
-                    "total_work_seconds": 0,
-                    "expected_break_hours": single.get("expected_break_hours"),
-                    "total_break_seconds": single.get("total_break_seconds"),
-                    "total_target_seconds": single.get("total_target_seconds"),
-                    "actual_working_hours": 0
-                }
-            else:
-                doc_dict = {
+            doc_dict = {
                     "doctype": 'Workday',
                     "employee": data.employee,
                     "log_date": get_datetime(date),
