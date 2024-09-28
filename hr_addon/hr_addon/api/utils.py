@@ -106,7 +106,10 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
     total_break_seconds = flt(break_hours * 60 * 60)
     break_hours = flt(break_hours)
     hours_worked = flt(hours_worked)
-    actual_working_hours = hours_worked - expected_break_hours
+    if break_hours > 0:
+        actual_working_hours = hours_worked - break_hours
+    else:    
+        actual_working_hours = hours_worked - expected_break_hours
     attendance = employee_checkins[0].attendance if len(employee_checkins) > 0 else ""
 
     if no_break_hours and hours_worked < 6: # TODO: set 6 as constant
