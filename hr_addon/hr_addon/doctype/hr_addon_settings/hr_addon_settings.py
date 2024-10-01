@@ -45,28 +45,28 @@ def generate_workdays_scheduled_job():
 	if hr_addon_settings.enabled == 0:
 		return
 	frappe.logger("Creating Workday").error(hr_addon_settings.enabled)
-	
+	generate_workdays_for_past_7_days_now()
 	# Mapping weekday numbers to names
-	number2name_dict = {
-		0: "Monday",
-		1: "Tuesday",
-		2: "Wednesday",
-		3: "Thursday",
-		4: "Friday",
-		5: "Saturday",
-		6: "Sunday"
-	}
+	#number2name_dict = {
+	#	0: "Monday",
+	#	1: "Tuesday",
+	#	2: "Wednesday",
+	#	3: "Thursday",
+	#	4: "Friday",
+	#	5: "Saturday",
+	#	6: "Sunday"
+	#}
 	
 	# Get the current date and time
-	now = frappe.utils.datetime.datetime.now()
-	today_weekday_number = now.weekday()
-	weekday_name = number2name_dict[today_weekday_number]
-	frappe.logger("Creating Workday").error(weekday_name)
+	#now = frappe.utils.datetime.datetime.now()
+	#today_weekday_number = now.weekday()
+	#weekday_name = number2name_dict[today_weekday_number]
+	#frappe.logger("Creating Workday").error(weekday_name)
 	# Check if the current day and hour match the settings
-	if weekday_name == hr_addon_settings.day:
-		if now.hour == int(hr_addon_settings.time):
+	#if weekday_name == hr_addon_settings.day:
+	#	if now.hour == int(hr_addon_settings.time):
 			# Trigger workdays generation
-			generate_workdays_for_past_7_days_now()
+			
 
 @frappe.whitelist()
 def generate_workdays_for_past_7_days_now():
