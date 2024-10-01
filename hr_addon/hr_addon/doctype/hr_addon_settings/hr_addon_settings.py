@@ -40,45 +40,48 @@ def download_ics_file():
 
 @frappe.whitelist()
 def generate_workdays_scheduled_job():
-    hr_addon_settings = frappe.get_doc("HR Addon Settings")
-    frappe.logger("Creating Workday").error(f"HR Addon Enabled: {hr_addon_settings.enabled}")
-    
-    # Check if the HR Addon is enabled
-    if hr_addon_settings.enabled == 0:
-        frappe.logger("Creating Workday").error("HR Addon is disabled. Exiting...")
-        return
-    
-    # Mapping weekday numbers to names
-    number2name_dict = {
-        0: "Monday",
-        1: "Tuesday",
-        2: "Wednesday",
-        3: "Thursday",
-        4: "Friday",
-        5: "Saturday",
-        6: "Sunday"
-    }
-    
-    # Get the current date and time
-    now = frappe.utils.datetime.datetime.now()
-    today_weekday_number = now.weekday()
-    weekday_name = number2name_dict[today_weekday_number]
-    
-    # Log the current day and hour
-    frappe.logger("Creating Workday").error(f"Today is {weekday_name}, current hour is {now.hour}")
-    frappe.logger("Creating Workday").error(f"HR Addon Settings day is {hr_addon_settings.day}, time is {hr_addon_settings.time}")
-    
-    # Check if the current day and hour match the settings
-    if weekday_name == hr_addon_settings.day:
-        frappe.logger("Creating Workday").error("Day matched.")
-        if now.hour == int(hr_addon_settings.time):
-            frappe.logger("Creating Workday").error("Time matched. Generating workdays...")
-            # Trigger workdays generation
-            generate_workdays_for_past_7_days_now()
+    try:
+        hr_addon_settings = frappe.get_doc("HR Addon Settings")
+        frappe.logger("Creating Workday").error(f"HR Addon Enabled: {hr_addon_settings.enabled}")
+        
+        # Check if the HR Addon is enabled
+        if hr_addon_settings.enabled == 0:
+            frappe.logger("Creating Workday").error("HR Addon is disabled. Exiting...")
+            return
+        
+        # Mapping weekday numbers to names
+        number2name_dict = {
+            0: "Monday",
+            1: "Tuesday",
+            2: "Wednesday",
+            3: "Thursday",
+            4: "Friday",
+            5: "Saturday",
+            6: "Sunday"
+        }
+        
+        # Get the current date and time
+        now = frappe.utils.datetime.datetime.now()
+        today_weekday_number = now.weekday()
+        weekday_name = number2name_dict[today_weekday_number]
+        
+        # Log the current day and hour
+        frappe.logger("Creating Workday").error(f"Today is {weekday_name}, current hour is {now.hour}")
+        frappe.logger("Creating Workday").error(f"HR Addon Settings day is {hr_addon_settings.day}, time is {hr_addon_settings.time}")
+        
+        # Check if the current day and hour match the settings
+        if weekday_name == hr_addon_settings.day:
+            frappe.logger("Creating Workday").error("Day matched.")
+            if now.hour == int(hr_addon_settings.time):
+                frappe.logger("Creating Workday").error("Time matched. Generating workdays...")
+                # Trigger workdays generation
+                generate_workdays_for_past_7_days_now()
+            else:
+                frappe.logger("Creating Workday").error(f"Time mismatch. Current hour: {now.hour}, Expected hour: {hr_addon_settings.time}")
         else:
-            frappe.logger("Creating Workday").error(f"Time mismatch. Current hour: {now.hour}, Expected hour: {hr_addon_settings.time}")
-    else:
-        frappe.logger("Creating Workday").error(f"Day mismatch. Today: {weekday_name}, Expected: {hr_addon_settings.day}")
+            frappe.logger("Creating Workday").error(f"Day mismatch. Today: {weekday_name}, Expected: {hr_addon_settings.day}")
+    except Exception as e:
+        frappe.log_error("Error in generate_workdays_scheduled_job: {}".format(str(e)), "Scheduled Job Error")
 
 			
 
@@ -119,10 +122,15 @@ def generate_workdays_for_past_7_days_now():
                     bulk_process_workdays_background(data, flag)
                     frappe.logger("Creating Workday").error(f"Workdays successfully processed for {employee_name}")
                 except Exception as e:
-                    frappe.logger("Creating Workday").error(f"Error during bulk processing for {employee_name}: {str(e)}")
-            
+                    frappe.log_error(
+                        "employee_name: {}, error: {} \n{}".format(employee_name, str(e), frappe.get_traceback()),
+                        "Error during bulk processing for employee"
+                    )
             except Exception as e:
-                frappe.logger("Creating Workday").error(f"Error fetching unmarked days for {employee_name}: {str(e)}")
-    
+                frappe.log_error(
+                    "Creating Workday, Got Error: {} while fetching unmarked days for: {}".format(str(e), employee_name)
+                )
     except Exception as e:
-        frappe.logger("Creating Workday").error(f"Error in generate_workdays_for_past_7_days_now: {str(e)}")
+        frappe.log_error(
+            "Creating Workday: Error in generate_workdays_for_past_7_days_now: {}".format(str(e))
+        )
