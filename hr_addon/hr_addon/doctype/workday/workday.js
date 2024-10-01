@@ -36,14 +36,6 @@ frappe.ui.form.on("Workday", {
   attendance: function (frm) {
     get_hours(frm);
   },
-  validate: function (frm) {
-    if (frm.doc.break_hours == -360 && frm.doc.hours_worked == -36) {
-      let formatted_date = frappe.datetime.str_to_user(frm.doc.log_date);
-      frappe.throw(
-        "CheckIns must be in pairs for the given date: " + formatted_date
-      );
-    }
-  },
   log_date: function (frm) {
     if (frm.doc.employee && frm.doc.log_date) {
       frappe.call({

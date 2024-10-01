@@ -37,39 +37,62 @@ def download_ics_file():
 	else:
 		frappe.throw(f"File '{file_name}' not found.")
 
+import frappe
+
+@frappe.whitelist()
 def generate_workdays_scheduled_job():
 	hr_addon_settings = frappe.get_doc("HR Addon Settings")
 	if hr_addon_settings.enabled == 0:
 		return
-	day = hr_addon_settings.day
-	time = hr_addon_settings.time
-	number2name_dict= {
-		0:"Monday",
-		1:"Tuesday",
-		2:"Wednesday",
-		3:"Thursday",
-		4:"Friday",
-		5:"Saturday",
-		6:"Sunday"
+	frappe.logger("Creating Workday").error(hr_addon_settings.enabled)
+	
+	# Mapping weekday numbers to names
+	number2name_dict = {
+		0: "Monday",
+		1: "Tuesday",
+		2: "Wednesday",
+		3: "Thursday",
+		4: "Friday",
+		5: "Saturday",
+		6: "Sunday"
 	}
+	
+	# Get the current date and time
 	now = frappe.utils.datetime.datetime.now()
 	today_weekday_number = now.weekday()
 	weekday_name = number2name_dict[today_weekday_number]
-	if weekday_name == day:
-		if now.hour == int(time):
+	frappe.logger("Creating Workday").error(weekday_name)
+	# Check if the current day and hour match the settings
+	if weekday_name == hr_addon_settings.day:
+		if now.hour == int(hr_addon_settings.time):
+			# Trigger workdays generation
 			generate_workdays_for_past_7_days_now()
-
 
 @frappe.whitelist()
 def generate_workdays_for_past_7_days_now():
-	today = frappe.utils.datetime.datetime.now()
-	a_week_ago = today - frappe.utils.datetime.timedelta(days=7)
-	employees = frappe.db.get_list("Employee", filters={"status": "Active"})
-	for employee in employees:
-		employee_name = employee["name"]
-		unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
-		data = {
-			"employee": employee_name,
-			"unmarked_days": unmarked_days
-		}
-		bulk_process_workdays_background(data)
+    today = frappe.utils.datetime.datetime.now()
+    a_week_ago = today - frappe.utils.datetime.timedelta(days=7)
+    frappe.logger("Creating Workday").error(a_week_ago)
+    # Get all active employees
+    employees = frappe.db.get_list("Employee", filters={"status": "Active"})
+    
+    # Log the list of employees for debugging
+    frappe.logger("Creating Workday").error(employees)
+    
+    # Process each employee
+    for employee in employees:
+        employee_name = employee["name"]
+        
+        # Log each employee name for debugging
+        frappe.logger("Creating Workday").error(employee_name)
+        
+        # Get unmarked workdays for the past 7 days
+        unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
+        frappe.logger("Creating Workday").error(unmarked_days)
+        # Prepare data and trigger bulk processing
+        data = {
+            "employee": employee_name,
+            "unmarked_days": unmarked_days
+        }
+        flag = "Create workday"
+        bulk_process_workdays_background(data, flag)
