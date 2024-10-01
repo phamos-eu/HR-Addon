@@ -28,16 +28,18 @@ class Workday(Document):
     # Return True if a matching leave application exists, else False
         if comp_off_leave_application:
             self.hours_worked = 0.0
-            self.actual_working_hours = 0.0
+            self.actual_working_hours = -self.target_hours
 
 
-def bulk_process_workdays_background(data):
+def bulk_process_workdays_background(data,flag):
     '''bulk workday processing'''
+    frappe.logger("Creating Workday").error("bulk_process_workdays_background")
     frappe.msgprint(_("Bulk operation is enqueued in background."), alert=True)
     frappe.enqueue(
         'hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays',
         queue='long',
-        data=data
+        data=data,
+        flag=flag
     )
 
 
@@ -110,9 +112,12 @@ def bulk_process_workdays(data,flag):
             
             if len(employee_checkins) % 2 != 0:
                 formatted_date = frappe.utils.formatdate(workday.log_date)
-                frappe.throw("CheckIns must be in pairs for the given date: " + formatted_date)
+                #frappe.msgprint("CheckIns must be in pairs for the given date: " + formatted_date)
             if flag == "Create workday":
+                frappe.logger("Creating Workday").error(flag)
                 workday.insert()
+                frappe.logger("Creating Workday").error(workday)
+
             missing_dates.append(get_datetime(date))
 
         except Exception:
