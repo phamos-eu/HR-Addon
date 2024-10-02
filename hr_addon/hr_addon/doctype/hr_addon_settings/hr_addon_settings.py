@@ -128,9 +128,11 @@ def generate_workdays_for_past_7_days_now():
                     )
             except Exception as e:
                 frappe.log_error(
-                    "Creating Workday, Got Error: {} while fetching unmarked days for: {}".format(str(e), employee_name)
+                    "Creating Workday, Got Error: {} while fetching unmarked days for: {}".format(str(e), employee_name),
+                    "Error during fetching unmarked days"
                 )
     except Exception as e:
         frappe.log_error(
-            "Creating Workday: Error in generate_workdays_for_past_7_days_now: {}".format(str(e))
+            "Creating Workday: Error in generate_workdays_for_past_7_days_now: {}".format(str(e)),
+            "Error during generate_workdays_for_past_7_days_now"
         )
