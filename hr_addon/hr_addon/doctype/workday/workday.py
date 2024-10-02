@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, get_datetime, getdate ,add_days,formatdate
+from frappe.utils import cint, get_datetime, getdate ,add_days,formatdate,flt
 from frappe.utils.data import date_diff
 import traceback
 from hr_addon.hr_addon.api.utils import get_actual_employee_log_for_bulk_process
@@ -29,6 +29,9 @@ class Workday(Document):
         if comp_off_leave_application:
             self.hours_worked = 0.0
             self.actual_working_hours = -self.target_hours
+            self.break_hours = 0.0
+            self.total_break_seconds = 0.0
+            self.total_work_seconds = flt(self.actual_working_hours * 60 * 60)
 
 
 def bulk_process_workdays_background(data,flag):
