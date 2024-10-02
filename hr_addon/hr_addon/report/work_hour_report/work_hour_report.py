@@ -38,17 +38,43 @@ def execute(filters=None):
 		
 	]
 	work_data = frappe.db.sql(
-		"""		
-		SELECT name,log_date,employee,attendance ,status,total_work_seconds,total_break_seconds,
-		actual_working_hours*60*60 actual_working_seconds, expected_break_hours*60*60 expected_break_hours,
-		target_hours, total_target_seconds, (total_work_seconds - total_target_seconds) as diff_log,
-		(actual_working_hours*60*60 - total_target_seconds) as actual_diff_log,
-		TIME(first_checkin) as first_in,TIME(last_checkout) as last_out 
-		FROM `tabWorkday` 
-		WHERE docstatus < 2 %s %s 
-		ORDER BY log_date ASC
-		"""%( condition_date, condition_employee),as_dict=1,
-	)
+    """
+    SELECT 
+        name,
+        hours_worked,
+        log_date,
+        employee,
+        attendance,
+        status,
+        CASE 
+            WHEN total_work_seconds < 0 and total_work_seconds != -129600
+            THEN 0
+            ELSE total_work_seconds
+        END AS total_work_seconds,
+        total_break_seconds,
+        actual_working_hours * 60 * 60 AS actual_working_seconds,
+        expected_break_hours * 60 * 60 AS expected_break_hours,
+        target_hours,
+        total_target_seconds,
+        (CASE 
+            WHEN total_work_seconds < 0 
+            THEN 0
+            ELSE total_work_seconds
+        END - total_target_seconds) AS diff_log,
+        CASE 
+            WHEN actual_working_hours < 0 
+            THEN (actual_working_hours * 60 * 60 + total_target_seconds)
+            ELSE (actual_working_hours * 60 * 60 - total_target_seconds)
+        END AS actual_diff_log,
+        TIME(first_checkin) AS first_in,
+        TIME(last_checkout) AS last_out 
+    FROM `tabWorkday` 
+    WHERE docstatus < 2 %s %s 
+    ORDER BY log_date ASC
+    """ % (condition_date, condition_employee),
+    as_dict=1,
+)
+
 	
 	data = work_data
 

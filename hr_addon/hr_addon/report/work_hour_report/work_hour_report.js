@@ -32,7 +32,7 @@ frappe.query_reports["Work Hour Report"] = {
 	"formatter": function (value, row, column, data, default_formatter) {
 		
 		value = default_formatter(value, row, column, data);
-
+		
 		if (column.fieldname == "name" ) {
 			//if (!(row ===undefined)) console.log('yt: ',row.meta);
 			
@@ -48,10 +48,14 @@ frappe.query_reports["Work Hour Report"] = {
 		}
 		if (column.fieldname == "total_work_seconds" ) {
 			if(value < 0) {
-				value = "<span style='color:red'>" + hitt(value) + "</span>";
+				
+				 
+					value = "<span style='color:red'>" +'-' + hitt(value ,true) + "</span>";
+				
+			
 			}
 			else if(value > 0){
-				value = "<span style='color:green'>" + hitt(value) + "</span>";
+				value = "<span style='color:green'>" + hitt(value,true) + "</span>";
 			}
 			else{
 				value = hitt(value);
@@ -74,10 +78,10 @@ frappe.query_reports["Work Hour Report"] = {
 
 		if (column.fieldname == "actual_working_seconds" ) {
 			if(value < 0) {
-				value = "<span style='color:red'>" + hitt(value) + "</span>";
+				value = "<span style='color:red'>" +'-'+ hitt(value,true) + "</span>";
 			}
 			else if(value > 0){
-				value = "<span style='color:green'>" + hitt(value) + "</span>";
+				value = "<span style='color:green'>" + hitt(value,true) + "</span>";
 			}
 			else{
 				value = hitt(value);
@@ -126,25 +130,31 @@ frappe.query_reports["Work Hour Report"] = {
 		return value;
 	},
 };
-hitt = (fir, calDiff=false) =>{
-	if(fir < 0 && !calDiff) return fir;
+hitt = (fir, calDiff=false) => {
+    // Handle negative values and calDiff case
+	if (fir < 0 && !calDiff) {
+        console.log(fir); // Log the negative value
+        return fir; // Return the negative value directly
+    }
 
-	if(fir < 0 && calDiff) {
-		fir = fir.toString().replace(/^-+/,'');
+	if (fir < 0 && calDiff) {
+		fir = fir.toString().replace(/^-+/, ''); // Convert to positive for display
+		
 	}
-	
-	d = Number(fir);
-	if (d == 0) return d;
-	
 
-	var h = Math.floor(d / (60*60));
-	var m = Math.floor(d % (60*60) / 60);
-	//var s = Math.floor(d % (60*60) % 60);
+    const d = Number(fir);
+	if (d == 0) return "0"; // Return string "0" for zero
+
+    
 	
-	//var hDisplay = h > 0 ? h + (h==1 ? "h " : "hs") : "";
+	var h = Math.floor(d / (60 * 60));
+	var m = Math.floor(d % (60 * 60) / 60);
+
 	var hDisplay = h > 0 ? h + "h " : "";
 	var mDisplay = m > 0 ? m + "m " : "";
-	const results = hDisplay+mDisplay;
-	
-	return results;
+	const results = hDisplay + mDisplay;
+
+    // If the original fir value was negative, prepend the negative sign
+    return (fir < 0 ? "-" : "") + results; 
 };
+
