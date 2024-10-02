@@ -61,7 +61,7 @@ def generate_workdays_scheduled_job():
         }
         
         # Get the current date and time
-        now = frappe.utils.datetime.datetime.now()
+        now = frappe.utils.get_datetime()
         today_weekday_number = now.weekday()
         weekday_name = number2name_dict[today_weekday_number]
         
@@ -88,7 +88,7 @@ def generate_workdays_scheduled_job():
 @frappe.whitelist()
 def generate_workdays_for_past_7_days_now():
     try:
-        today = frappe.utils.datetime.datetime.now()
+        today = frappe.utils.get_datetime()
         a_week_ago = today - frappe.utils.datetime.timedelta(days=7)
         frappe.logger("Creating Workday").error(f"Processing from {a_week_ago} to {today}")
         
