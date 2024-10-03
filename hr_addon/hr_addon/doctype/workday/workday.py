@@ -13,6 +13,7 @@ from hr_addon.hr_addon.api.utils import get_actual_employee_log_for_bulk_process
 class Workday(Document):
     def validate(self):
         self.date_is_in_comp_off()
+        self.validate_duplicate_workday()
 		
 
     def date_is_in_comp_off(self):
@@ -32,6 +33,18 @@ class Workday(Document):
             self.break_hours = 0.0
             self.total_break_seconds = 0.0
             self.total_work_seconds = flt(self.actual_working_hours * 60 * 60)
+
+    def validate_duplicate_workday(self):
+        workday = frappe.db.exists("Workday", {
+            'employee': self.employee,
+            'log_date': self.log_date
+        })
+    
+        if workday:
+            frappe.throw(
+            _("Workday already exists for employee: {0}, on the given date: {1}")
+            .format(self.employee, frappe.utils.formatdate(self.log_date))
+            )
 
 
 def bulk_process_workdays_background(data,flag):
