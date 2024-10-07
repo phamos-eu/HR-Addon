@@ -175,9 +175,9 @@ def get_actual_employee_log_for_bulk_process(aemployee, adate):
 
         break_minutes = employee_default_work_hour.break_minutes
         expected_break_hours = flt(break_minutes / 60)
-
         new_workday = {
             "target_hours": employee_default_work_hour.hours,
+            "total_target_seconds":employee_default_work_hour.hours * 60 * 60,
             "break_minutes": employee_default_work_hour.break_minutes,
             "hours_worked": 0,
             "nbreak": 0,
