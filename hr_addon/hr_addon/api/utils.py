@@ -179,7 +179,7 @@ def get_actual_employee_log_for_bulk_process(aemployee, adate):
             "target_hours": employee_default_work_hour.hours,
             "total_target_seconds":employee_default_work_hour.hours * 60 * 60,
             "break_minutes": employee_default_work_hour.break_minutes,
-            "actual_working_hours":-expected_break_hours,
+            "actual_working_hours":0,
             "hours_worked": 0,
             "nbreak": 0,
             "attendance": view_employee_attendance[0].name if len(view_employee_attendance) > 0 else "",

@@ -61,7 +61,11 @@ def execute(filters=None):
             THEN 0
             ELSE total_work_seconds
         END - total_target_seconds) AS diff_log,
-        (actual_working_hours * 60 * 60 - total_target_seconds) AS actual_diff_log,
+		(CASE 
+            WHEN actual_working_hours < 0 
+            THEN (0 - total_target_seconds)
+            ELSE (actual_working_hours * 60 * 60 - total_target_seconds)
+        END) AS actual_diff_log,
         TIME(first_checkin) AS first_in,
         TIME(last_checkout) AS last_out 
     FROM `tabWorkday` 
@@ -75,3 +79,4 @@ def execute(filters=None):
 	data = work_data
 
 	return columns, data
+#(actual_working_hours * 60 * 60 - total_target_seconds) AS actual_diff_log,64to68
