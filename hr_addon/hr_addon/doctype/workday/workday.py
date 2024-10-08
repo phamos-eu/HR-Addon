@@ -14,7 +14,6 @@ class Workday(Document):
     def validate(self):
         self.date_is_in_comp_off()
         self.validate_duplicate_workday()
-		
 
     def date_is_in_comp_off(self):
     # Check if a comp off leave application exists for the given employee and date
@@ -33,6 +32,9 @@ class Workday(Document):
             self.break_hours = 0.0
             self.total_break_seconds = 0.0
             self.total_work_seconds = flt(self.actual_working_hours * 60 * 60)
+        elif self.hours_worked <= 0:
+            self.actual_working_hours = 0.0
+    
 
     def validate_duplicate_workday(self):
         workday = frappe.db.exists("Workday", {
