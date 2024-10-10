@@ -47,22 +47,57 @@ def get_employee_default_work_hour(employee,adate):
 def get_actual_employee_log(aemployee, adate):
     '''total actual log'''
     employee_checkins = get_employee_checkin(aemployee,adate)
-
-    # check empty or none
-    if not employee_checkins:
-        frappe.msgprint("No Checkin found for {0} on date {1}".format(frappe.get_desk_link("Employee", aemployee) ,adate))
-        #return
-
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
     is_date_in_holiday_list = date_is_in_holiday_list(aemployee,adate)
     fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"]
-    weekly_working_hours = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=fields)
-    no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
+    weekly_working_hours = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=fields)    
     is_target_hours_zero_on_holiday = len(weekly_working_hours) > 0 and weekly_working_hours[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1
-    
-    new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
+      
+    # check empty or none
+    if employee_checkins:
+        no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
+        new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
+        return new_workday
+    else :
+        view_employee_attendance = get_employee_attendance(aemployee, adate)
+        
+        break_minutes = employee_default_work_hour.break_minutes
+        expected_break_hours = flt(break_minutes / 60)
+        
+        if is_target_hours_zero_on_holiday and is_date_in_holiday_list:
+            new_workday = {
+                "target_hours": 0,
+                "total_target_seconds": 0,
+                "break_minutes": employee_default_work_hour.break_minutes,
+                "actual_working_hours": 0,
+                "hours_worked": 0,
+                "nbreak": 0,
+                "attendance": view_employee_attendance[0].name if len(view_employee_attendance) > 0 else "",
+                "break_hours": 0,
+                "total_work_seconds": 0,
+                "total_break_seconds": 0,
+                "employee_checkins": [],
+                "first_checkin": "",
+                "last_checkout": "",
+                "expected_break_hours": 0,
+            }
+        else:
+            new_workday = {
+                "target_hours": employee_default_work_hour.hours,
+                "total_target_seconds": employee_default_work_hour.hours * 60 * 60,
+                "break_minutes": employee_default_work_hour.break_minutes,
+                "actual_working_hours": -employee_default_work_hour.hours,
+                "hours_worked": 0,
+                "nbreak": 0,
+                "attendance": view_employee_attendance[0].name if len(view_employee_attendance) > 0 else "",
+                "break_hours": 0,
+                "employee_checkins": [],
+                "expected_break_hours": expected_break_hours,
+            }
 
     return new_workday
+
+    
 
 
 def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday,is_date_in_holiday_list=False):
