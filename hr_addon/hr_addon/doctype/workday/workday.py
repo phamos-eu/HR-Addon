@@ -14,6 +14,42 @@ class Workday(Document):
     def validate(self):
         self.date_is_in_comp_off()
         self.validate_duplicate_workday()
+        self.set_status_for_leave_application()
+
+    def set_status_for_leave_application(self):
+        leave_application_erholungsurlaub = frappe.db.exists(
+        "Leave Application", {
+            "employee": self.employee,
+            "from_date": ("<=", self.log_date),
+            "to_date": (">=", self.log_date),
+            "leave_type": "Erholungsurlaub",
+            'docstatus': 1
+        }
+        )
+        #'Compensatory Off'
+        if leave_application_erholungsurlaub :
+            self.target_hours = 0
+            self.expected_break_hours= 0
+            self.actual_working_hours= 0
+            self.total_target_seconds= 0
+            self.total_break_seconds= 0
+            self.total_work_seconds= 0
+            self.status = "On Leave"
+
+        leave_application_compensatory_off = frappe.db.exists(
+        "Leave Application", {
+            "employee": self.employee,
+            "from_date": ("<=", self.log_date),
+            "to_date": (">=", self.log_date),
+            "leave_type": "Compensatory Off",
+            'docstatus': 1
+        }
+        )
+        #'Compensatory Off'
+        if leave_application_compensatory_off :
+            self.actual_working_hours= -self.target_hours
+            self.total_work_seconds= -self.target_hours*60*60
+            self.status = "On Leave"    
 
     def date_is_in_comp_off(self):
     # Check if a comp off leave application exists for the given employee and date
@@ -32,8 +68,7 @@ class Workday(Document):
             self.break_hours = 0.0
             self.total_break_seconds = 0.0
             self.total_work_seconds = flt(self.actual_working_hours * 60 * 60)
-        elif self.hours_worked <= 0:
-            self.actual_working_hours = 0.0
+        
     
 
     def validate_duplicate_workday(self):
