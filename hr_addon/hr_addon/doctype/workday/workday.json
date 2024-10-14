@@ -60,26 +60,26 @@
    "fieldname": "target_hours",
    "fieldtype": "Float",
    "label": "Target Hours",
-   "read_only": 1
+   "permlevel": 1
   },
   {
    "fieldname": "hours_worked",
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Hours worked",
-   "read_only": 1
+   "permlevel": 1
   },
   {
    "fieldname": "number_of_breaks",
    "fieldtype": "Int",
    "label": "Number of Breaks",
-   "read_only": 1
+   "permlevel": 1
   },
   {
    "fieldname": "break_hours",
    "fieldtype": "Float",
    "label": "Break Hours",
-   "read_only": 1
+   "permlevel": 1
   },
   {
    "fieldname": "employee_checkins",
@@ -155,17 +155,17 @@
    "fieldname": "actual_working_hours",
    "fieldtype": "Float",
    "label": "Actual Working Hours",
-   "read_only": 1
+   "permlevel": 1
   },
   {
    "fieldname": "expected_break_hours",
    "fieldtype": "Float",
    "label": "Expected Break Hours",
-   "read_only": 1
+   "permlevel": 1
   }
  ],
  "links": [],
- "modified": "2024-09-01 13:44:04.729173",
+ "modified": "2024-10-11 16:53:27.398465",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
@@ -195,6 +195,26 @@
    "role": "HR Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1
   }
  ],
  "sort_field": "modified",
