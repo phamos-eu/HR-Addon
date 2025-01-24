@@ -15,7 +15,7 @@ app_license = "MIT"
 fixtures = [
     {"dt": "Custom Field", "filters": [
         ["module", "=", "HR Addon"]
-    ]}
+    ]}   
 ]
 
 # include js, css files in header of desk.html
@@ -208,7 +208,8 @@ doc_events = {
 
 scheduler_events = {
 	"hourly": [
-		"hr_addon.hr_addon.doctype.workday.workday.generate_workdays_scheduled_job"
+		"hr_addon.hr_addon.doctype.workday.workday.generate_workdays_scheduled_job",
+        "hr_addon.hr_addon.doctype.hr_addon_settings.hr_addon_settings.failed_schedule_job_monitoring"
 	],
     "yearly": [
         "hr_addon.hr_addon.doctype.weekly_working_hours.weekly_working_hours.set_from_to_dates",

@@ -20,6 +20,13 @@
   "column_break_jozi",
   "workday_break_calculation_mechanism",
   "swap_hours_worked_and_actual_working_hours",
+  "section_break_ri1da",
+  "enable_failed_scheduled_job_log_monitoring",
+  "receiver_by",
+  "notification",
+  "recipient_email",
+  "column_break_a90yg",
+  "monitored_scheduled_job_type",
   "notification_section",
   "anniversary_notification_email_list",
   "enable_work_anniversaries_notification",
@@ -161,12 +168,59 @@
    "fieldname": "swap_hours_worked_and_actual_working_hours",
    "fieldtype": "Check",
    "label": "Swap Hours worked and Actual Working Hours"
+  },
+  {
+   "fieldname": "section_break_ri1da",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.enable_failed_scheduled_job_log_monitoring",
+   "fieldname": "notification",
+   "fieldtype": "Link",
+   "label": "Notification",
+   "mandatory_depends_on": "eval: doc.enable_failed_scheduled_job_log_monitoring",
+   "options": "Notification"
+  },
+  {
+   "depends_on": "eval: doc.enable_failed_scheduled_job_log_monitoring && doc.receiver_by==\"Email\"",
+   "fieldname": "recipient_email",
+   "fieldtype": "Data",
+   "label": "Recipient Email",
+   "mandatory_depends_on": "eval: doc.receiver_by==\"Email\"",
+   "options": "Email"
+  },
+  {
+   "fieldname": "column_break_a90yg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.enable_failed_scheduled_job_log_monitoring",
+   "fieldname": "monitored_scheduled_job_type",
+   "fieldtype": "Table",
+   "label": "Monitored Scheduled Job Type",
+   "mandatory_depends_on": "eval: doc.enable_failed_scheduled_job_log_monitoring",
+   "options": "HR Addon Scheduled Job Type"
+  },
+  {
+   "depends_on": "eval: doc.enable_failed_scheduled_job_log_monitoring",
+   "fieldname": "receiver_by",
+   "fieldtype": "Select",
+   "label": "Receiver By",
+   "mandatory_depends_on": "eval: doc.enable_failed_scheduled_job_log_monitoring",
+   "options": "Role\nEmail"
+  },
+  {
+   "default": "0",
+   "description": "Enable email notifications to alert specified recipients whenever a scheduled job fails.",
+   "fieldname": "enable_failed_scheduled_job_log_monitoring",
+   "fieldtype": "Check",
+   "label": "Enable Failed Scheduled Job Log Monitoring"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-11-19 13:18:51.730286",
+ "modified": "2025-01-23 15:25:51.878702",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",

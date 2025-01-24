@@ -1,0 +1,36 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-23 15:07:48.891293",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_zuyj",
+  "scheduled_job_type"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_zuyj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "scheduled_job_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Scheduled Job Type"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-01-23 15:07:48.891293",
+ "modified_by": "Administrator",
+ "module": "HR Addon",
+ "name": "HR Addon Scheduled Job Type",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

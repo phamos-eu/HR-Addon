@@ -9,6 +9,7 @@ from frappe.utils.data import date_diff
 from frappe.utils import getdate, today, comma_sep
 from frappe.core.doctype.role.role import get_info_based_on_role
 from icalendar import Event, Calendar
+from frappe.email.doctype.notification.notification import evaluate_alert
 
 
 class HRAddonSettings(Document):
@@ -282,3 +283,44 @@ def create_file(file_name, file_content, doc_name):
     file_path = os.path.join(folder_path, file_name)
     with open(file_path, 'wb') as ical_file:
         ical_file.write(file_content)
+
+
+def failed_schedule_job_monitoring():
+    hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
+    if not hr_addon_settings.enable_failed_scheduled_job_log_monitoring:
+         return
+    
+    notification = hr_addon_settings.notification
+    scheduled_job_type = [d.scheduled_job_type for d in hr_addon_settings.monitored_scheduled_job_type]
+    if notification and scheduled_job_type:
+        failed_jobs = frappe.get_all("Scheduled Job Log", filters={"status": "Failed", "scheduled_job_type": ["in", scheduled_job_type],  "custom_job_error_reported": 0})
+        for job in failed_jobs:
+            send_alert(job, notification, hr_addon_settings, "Custom")
+
+
+def send_alert(job, alert, hr_addon_settings, event):
+    receiver_by = hr_addon_settings.receiver_by
+    notification_doc = frappe.get_doc("Notification", alert)
+    job = frappe.get_doc("Scheduled Job Log", job.name)
+    context = {
+        "doc": {
+            "scheduled_job_type": job.scheduled_job_type,
+            "details": job.details
+        }
+    }
+    if receiver_by == "Email":
+        recipients = hr_addon_settings.recipient_email
+        subject = notification_doc.subject
+        message = notification_doc.message
+        if "{" in subject:
+            subject = frappe.render_template(subject, context)
+        message = frappe.render_template(message, context)
+
+        frappe.sendmail(
+            recipients=recipients,
+            subject=subject,
+            message=message
+        )
+    else:
+        evaluate_alert(job, alert, event)
+    frappe.db.set_value("Scheduled Job Log", job.name, "custom_job_error_reported", 1)
