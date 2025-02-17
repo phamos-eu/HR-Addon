@@ -457,10 +457,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
     break_minutes = employee_default_work_hour.break_minutes
     target_hours = employee_default_work_hour.hours
 
-    total_target_seconds = target_hours * 60 * 60
-    total_work_seconds = flt(hours_worked * 60 * 60)
     expected_break_hours = flt(break_minutes / 60)
-    total_break_seconds = flt(break_hours * 60 * 60)
     break_hours = flt(break_hours)
     hours_worked = flt(hours_worked)
     actual_working_hours = hours_worked - expected_break_hours
@@ -468,13 +465,11 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
 
     if no_break_hours and hours_worked < 6: # TODO: set 6 as constant
         break_minutes = 0
-        total_break_seconds = 0
         expected_break_hours = 0
         actual_working_hours = hours_worked
 
     if is_target_hours_zero_on_holiday and is_date_in_holiday_list:
         target_hours = 0
-        total_target_seconds = 0
 
     hr_addon_settings = frappe.get_doc("HR Addon Settings")
     if hr_addon_settings.enable_default_break_hour_for_shorter_breaks:
@@ -484,20 +479,16 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
 
     # if target_hours == 0:
     #     expected_break_hours = 0
-    #     total_break_seconds = 0
 
     new_workday.update({
         "target_hours": target_hours,
-        "total_target_seconds": total_target_seconds,
         "break_minutes": break_minutes,
         "hours_worked": hours_worked,
         "expected_break_hours": expected_break_hours,
         "actual_working_hours": actual_working_hours,
-        "total_work_seconds": total_work_seconds,
         "nbreak": 0,
         "attendance": attendance,        
         "break_hours": break_hours,
-        "total_break_seconds": total_break_seconds,
         "employee_checkins":employee_checkins,
     })
 

@@ -64,9 +64,6 @@ frappe.ui.form.on('Workday', {
 				frm.set_value("target_hours", 0)
 				frm.set_value("expected_break_hours", 0)
 				frm.set_value("actual_working_hours", 0)
-				frm.set_value("total_target_seconds", 0)
-				frm.set_value("total_break_seconds", 0)
-				frm.set_value("total_work_seconds", 0)
 			}, 1000);
 		} // TODO: consider case of frm.doc.status === "Half Day"
 	},
@@ -85,11 +82,8 @@ var get_hours = function(frm){
 				let alog = r.message;
 				frm.set_value("hours_worked",alog.hours_worked);
 				frm.set_value("break_hours",alog.break_hours);
-				frm.set_value("total_work_seconds",alog.total_work_seconds);
-				frm.set_value("total_break_seconds",alog.total_break_seconds);
 				frm.set_value("target_hours",alog.target_hours);
 				frm.set_value("expected_break_hours",(alog.expected_break_hours));
-				frm.set_value("total_target_seconds",alog.total_target_seconds);
 	
 				frm.set_value("actual_working_hours", alog.actual_working_hours);
 				let employee_checkins = alog.employee_checkins;
@@ -116,10 +110,7 @@ var get_hours = function(frm){
 var unset_fields = function(frm) {
 	frm.set_value("hours_worked", 0);
 	frm.set_value("break_hours", 0);
-	frm.set_value("total_work_seconds", 0);
-	frm.set_value("total_break_seconds", 0);
 	frm.set_value("target_hours", 0);
-	frm.set_value("total_target_seconds", 0);
 	frm.set_value("expected_break_hours", 0);
 	frm.set_value("actual_working_hours", 0);
 	frm.set_value("employee_checkins", []);
