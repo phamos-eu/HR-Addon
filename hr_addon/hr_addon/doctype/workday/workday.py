@@ -15,7 +15,7 @@ import traceback
 class Workday(Document):
 	def validate(self):
 		self.set_actual_employee_log()
-		self.date_is_in_comp_off()
+		# self.date_is_in_comp_off()
 		# self.validate_duplicate_workday()
 		self.set_status_for_leave_application()
 
@@ -119,11 +119,9 @@ def get_month_map():
 	
 @frappe.whitelist()
 def get_unmarked_days(employee, month, exclude_holidays=0):
-	'''get_umarked_days(employee,month,excludee_holidays=0, year)'''
 	import calendar
 	month_map = get_month_map()	
-	today = get_datetime() #get year from year
-	
+	today = get_datetime()	
 
 	joining_date, relieving_date = frappe.get_cached_value("Employee", employee, ["date_of_joining", "relieving_date"])
 	start_day = 1
@@ -138,13 +136,6 @@ def get_unmarked_days(employee, month, exclude_holidays=0):
 	dates_of_month = ['{}-{}-{}'.format(today.year, month_map[month], r) for r in range(start_day, end_day)]
 	month_start, month_end = dates_of_month[0], dates_of_month[-1]
 
-	""" ["docstatus", "!=", 2]"""
-	rcords = frappe.get_list("Workday", fields=['log_date','employee'], filters=[
-		["log_date",">=",month_start],
-		["log_date","<=",month_end],
-		["employee","=",employee]
-	])
-	
 	marked_days = [] 
 	if cint(exclude_holidays):
 		holiday_dates = get_holiday_dates_for_employee(employee, month_start, month_end)
@@ -159,22 +150,16 @@ def get_unmarked_days(employee, month, exclude_holidays=0):
 			break
 		if date_time not in marked_days:
 			unmarked_days.append(date)
-	
 
 	return unmarked_days
 
 
 @frappe.whitelist()
 def get_unmarked_range(employee, from_day, to_day):
-	'''get_umarked_days(employee,month,excludee_holidays=0, year)'''
-	import calendar
-	month_map = get_month_map()	
-	today = get_datetime() #get year from year	
-
 	joining_date, relieving_date = frappe.get_cached_value("Employee", employee, ["date_of_joining", "relieving_date"])
 	
 	start_day = from_day
-	end_day = to_day #calendar.monthrange(today.year, month_map[month])[1] + 1	
+	end_day = to_day
 
 	if joining_date and joining_date >= getdate(from_day):
 		start_day = joining_date
@@ -185,21 +170,17 @@ def get_unmarked_range(employee, from_day, to_day):
 	days_of_list = ['{}'.format(add_days(start_day,i)) for i in range(delta + 1)]	
 	month_start, month_end = days_of_list[0], days_of_list[-1]	
 
-	""" ["docstatus", "!=", 2]"""
 	rcords = frappe.get_list("Workday", fields=['log_date','employee'], filters=[
 		["log_date",">=",month_start],
 		["log_date","<=",month_end],
 		["employee","=",employee]
 	])
 	
-	marked_days = [get_datetime(rcord.log_date) for rcord in rcords] #[]
+	marked_days = [get_datetime(rcord.log_date) for rcord in rcords]
 	unmarked_days = []
 
 	for date in days_of_list:
 		date_time = get_datetime(date)
-		# considering today date
-		# if today.day <= date_time.day and today.month <= date_time.month and today.year <= date_time.year:
-		# 	break
 		if date_time not in marked_days:
 			unmarked_days.append(date)
 
@@ -207,9 +188,6 @@ def get_unmarked_range(employee, from_day, to_day):
 
 
 def get_employee_checkin(employee,atime):
-    employee = employee
-    atime = atime
-
     EmployeeCheckin = frappe.qb.DocType('Employee Checkin')
     checkin_list = (
         frappe.qb.from_(EmployeeCheckin)
@@ -227,22 +205,13 @@ def get_employee_checkin(employee,atime):
 
     return checkin_list or []
 
-def get_employee_default_work_hour(aemployee,adate):
-    ''' weekly working hour'''
-    employee = aemployee
-    adate = adate    
-    #validate current or active FY year WHERE --
-    # AND YEAR(valid_from) = CAST(%(year)s as INT) AND YEAR(valid_to) = CAST(%(year)s as INT)
-    # AND YEAR(w.valid_from) = CAST(('2022-01-01') as INT) AND YEAR(w.valid_to) = CAST(('2022-12-30') as INT);
-    # Convert date to datetime object and get the day name
+def get_employee_default_work_hour(employee,adate):
     adate = getdate(adate)
-    dayname = adate.strftime('%A')  # Get the day name (e.g., 'Monday', 'Tuesday')
+    dayname = adate.strftime('%A')
 
-    # Define the doctypes
     WeeklyWorkingHours = DocType("Weekly Working Hours")
     DailyHoursDetail = DocType("Daily Hours Detail")
 
-    # Build the query using Frappe's query builder
     query = (
         frappe.qb.from_(WeeklyWorkingHours)
         .left_join(DailyHoursDetail)
@@ -257,7 +226,7 @@ def get_employee_default_work_hour(aemployee,adate):
             DailyHoursDetail.break_minutes
         )
         .where(
-            (WeeklyWorkingHours.employee == aemployee)
+            (WeeklyWorkingHours.employee == employee)
             & (DailyHoursDetail.day == dayname)
             & (WeeklyWorkingHours.valid_from <= adate)
             & (WeeklyWorkingHours.valid_to >= adate)
@@ -265,11 +234,10 @@ def get_employee_default_work_hour(aemployee,adate):
         )
     )
 
-    # Execute the query
     target_work_hours = query.run(as_dict=True)
 
     if not target_work_hours:
-        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{0} first.').format(employee))
+        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{0} first for date : {1}.').format(employee,adate))
 
     if len(target_work_hours) > 1:
         target_work_hours= "<br> ".join([frappe.get_desk_link("Weekly Working Hours", w.name) for w in target_work_hours])
@@ -421,6 +389,7 @@ def get_actual_employee_log(aemployee, adate):
                 "expected_break_hours": expected_break_hours,
             }
 
+    return new_workday
 
 
 def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list=False):
@@ -428,6 +397,8 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
 
     hours_worked = 0.0
     break_hours = 0.0
+    first_checkin = ""
+    last_checkout = ""
 
     # not pair of IN/OUT either missing
     if len(employee_checkins)% 2 != 0:
@@ -453,6 +424,10 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
             if ((i+1) < len(clockout_list)):
                 wh = time_diff_in_hours(clockin_list[i+1],clockout_list[i])
                 break_hours += float(str(wh))
+
+        if clockin_list and clockout_list:
+            first_checkin = clockin_list[0]
+            last_checkout = clockout_list[-1] 
 
     break_minutes = employee_default_work_hour.break_minutes
     target_hours = employee_default_work_hour.hours
@@ -489,6 +464,8 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
         "nbreak": 0,
         "attendance": attendance,        
         "break_hours": break_hours,
+        "first_checkin": first_checkin,
+        "last_checkout": last_checkout,
         "employee_checkins":employee_checkins,
     })
 
