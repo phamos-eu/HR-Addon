@@ -116,52 +116,77 @@ frappe.listview_settings['Workday'] = {
 					hidden: 1,
 				}],
 				primary_action(data) {
-					frappe.call({
-						method: "hr_addon.hr_addon.doctype.workday.workday.get_missing_workdays",
-						args: {
-							employee: dialog.fields_dict.employee.value,
-							date_to: dialog.fields_dict.date_to.value,
-							date_from: dialog.fields_dict.date_from.value
-						},
-						callback: function (r) {
-							if (r.message && r.message.length > 0) {
-								// Convert array of missing dates to a bullet-point list
-								let missing_dates = r.message.map(date => `<li>${frappe.datetime.str_to_user(date)}</li>`).join("");
-								let message_html = `<ul>${missing_dates}</ul>`;
-								
-								// Display the missing workdays to the user
-								frappe.msgprint({
-									title: __('Missing Workdays'),
-									message: __('Please create Weekly Working Hours for the following dates:<br>{0}', [message_html]),
-									indicator: 'orange'
-								});
-							} else {
-								// No missing workdays
-							}
-						}
-						
-					});
-					
 					if (cur_dialog.no_unmarked_days_left) {
-						frappe.msgprint(__("Workday for the period: {0} - {1} , has already been processed for the Employee {2}",
-							[dialog.fields_dict.date_to.value,dialog.fields_dict.date_from.value, dialog.fields_dict.employee.value]));
-					} else {
-						frappe.confirm(__('Process workday for {0} for the period of {1} to {2}?', [data.employee, data.date_from,data.date_to]), () => {
-							frappe.call({
-								method: "hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays",
-								args: {
-									data: data
-								},
-								callback: function (r) {
-									if (r.message === 1) {
-										frappe.show_alert({
-											message: __("Workdays Processed"),
-											indicator: 'blue'
-										});
-										cur_dialog.hide();
-									}
+
+						frappe.call({
+							method: "hr_addon.hr_addon.doctype.workday.workday.get_created_workdays",
+							args: {
+								employee: dialog.fields_dict.employee.value,
+								date_from: dialog.fields_dict.date_from.value,
+								date_to: dialog.fields_dict.date_to.value
+							},
+							callback: function(response) {
+								if (response.message) {
+									let workdays = response.message;
+						
+									let workday_dates = workdays.map(workday => workday.log_date);
+						
+									let workday_dates_string = workday_dates.map(date => `• ${date.trim()}`).join('<br>'); 
+									frappe.msgprint(
+									__("Workday for the period: {0} - {1}, has already been processed for the Employee {2}. <br><br>For following dates workdays are available:<br>{3}",
+									[
+									  frappe.datetime.str_to_user(dialog.fields_dict.date_to.value) ,
+									  frappe.datetime.str_to_user(dialog.fields_dict.date_from.value),
+									  dialog.fields_dict.employee.value,
+									  workday_dates_string
+									]));
 								}
-							});
+							}
+						});
+					} else {
+						frappe.call({
+							method: "hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays",
+							args: {
+								data: data,
+								flag : "Do not create workday"
+							},
+							callback: function (response) {
+								if (response.message) {
+									let missingDates = response.message.missing_dates;
+									let missing_dates_string = missingDates.length > 0 ? missingDates.join(", ") : "None";
+									frappe.confirm(
+										__("Are you sure you want to process the workday for {0} from {1} to {2}?<br><br>For the following dates workdays will be created:<br>{3}", [
+											data.employee,
+											frappe.datetime.str_to_user(data.date_from),
+											frappe.datetime.str_to_user(data.date_to),
+											missing_dates_string.split(',').map(date => `• ${date.trim()}`).join('<br>')
+										]),
+										function () {
+											flag = ""
+											frappe.call({
+												method: "hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays",
+												args: {
+													data: data,
+													flag : "Create workday"
+													
+												},
+												callback: function (r) {
+													if (r.message === 1) {
+														frappe.show_alert({
+															message: __("Workdays Processed"),
+															indicator: "blue",
+														});
+														cur_dialog.hide();
+													}
+												},
+											});
+										},
+										function () {
+											// frappe.msgprint('Maybe next time!');
+										}
+									);
+								}
+							}
 						});
 					}
 					dialog.hide();

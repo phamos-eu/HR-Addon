@@ -187,6 +187,30 @@ def get_unmarked_range(employee, from_day, to_day):
 	return unmarked_days
 
 
+@frappe.whitelist()
+def get_created_workdays(employee, date_from, date_to):
+	workday_list = frappe.get_list(
+		"Workday",
+		filters={
+			"employee": employee,
+			"log_date": ["between", [date_from, date_to]],
+		},
+		fields=["log_date","name"],
+		order_by="log_date asc" 
+	)
+	
+	formatted_workdays = []
+	for workday in workday_list:
+		date_obj = getdate(workday['log_date'])
+		formatted_date = formatdate(date_obj, 'dd.MM.yyyy')
+		formatted_workdays.append({
+			'log_date': formatted_date,
+			'name':workday['name']
+		})
+	
+	return formatted_workdays
+
+
 def get_employee_checkin(employee,atime):
     EmployeeCheckin = frappe.qb.DocType('Employee Checkin')
     checkin_list = (
@@ -629,7 +653,7 @@ def bulk_process_workdays_background(data):
 
 
 @frappe.whitelist()
-def bulk_process_workdays(data):
+def bulk_process_workdays(data,flag):
 	import json
 	if isinstance(data, str):
 		data = json.loads(data)
@@ -643,6 +667,8 @@ def bulk_process_workdays(data):
 		frappe.throw(_("Please select a date"))
 		return
 
+	missing_dates = []
+
 	for date in data.unmarked_days:
 		try:
 			if not frappe.db.exists('Workday', {'employee': data.employee,'log_date': get_datetime(date)}):
@@ -650,9 +676,23 @@ def bulk_process_workdays(data):
 				workday.employee = data.employee
 				workday.company = company
 				workday.log_date = get_datetime(date)
-				workday.save()
+				if flag == "Create workday":
+					workday.save()
+
+			missing_dates.append(get_datetime(date))
 
 		except Exception:
 			message = _("Something went wrong in Workday Creation: {0}".format(traceback.format_exc()))
 			frappe.msgprint(message)
 			frappe.log_error("bulk_process_workdays() error", message)
+
+	formatted_missing_dates = []
+	for missing_date in missing_dates:
+		formatted_m_date = formatdate(missing_date,'dd.MM.yyyy')
+		formatted_missing_dates.append(formatted_m_date)
+
+	return {
+		"message": 1,
+		"missing_dates": formatted_missing_dates,
+		"flag":flag
+	}
