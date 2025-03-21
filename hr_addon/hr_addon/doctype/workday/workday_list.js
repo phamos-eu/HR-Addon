@@ -182,7 +182,7 @@ frappe.listview_settings['Workday'] = {
 											});
 										},
 										function () {
-											// frappe.msgprint('Maybe next time!');
+											
 										}
 									);
 								}
