@@ -229,6 +229,7 @@ def get_employee_checkin(employee,atime):
 
     return checkin_list or []
 
+
 def get_employee_default_work_hour(employee,adate):
     adate = getdate(adate)
     dayname = adate.strftime('%A')
@@ -273,11 +274,6 @@ def get_employee_default_work_hour(employee,adate):
 @frappe.whitelist()
 def get_actual_employee_log(aemployee, adate):
     employee_checkins = get_employee_checkin(aemployee,adate)
-
-    # check empty or none
-    if not employee_checkins:
-        frappe.msgprint("No Checkin found for {0} on date {1}".format(frappe.get_desk_link("Employee", aemployee) ,adate))
-
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
     is_date_in_holiday_list = date_is_in_holiday_list(aemployee,adate)
     fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"]
@@ -289,7 +285,7 @@ def get_actual_employee_log(aemployee, adate):
         no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
         new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
         return new_workday
-    else :
+    else:
         view_employee_attendance = get_employee_attendance(aemployee, adate)
         
         break_minutes = employee_default_work_hour.break_minutes
