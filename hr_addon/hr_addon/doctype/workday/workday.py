@@ -471,10 +471,6 @@ def get_actual_employee_log_for_bulk_process(aemployee, adate):
 
 
 def get_employee_attendance(employee,atime):
-    ''' select DATE('date time');'''
-    employee = employee
-    atime = atime
-    
     Attendance = frappe.qb.DocType('Attendance')
     attendance_list = (
         frappe.qb.from_(Attendance)
