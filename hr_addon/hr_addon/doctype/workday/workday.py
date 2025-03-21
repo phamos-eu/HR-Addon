@@ -471,22 +471,31 @@ def generate_workdays_for_past_7_days_now():
 	a_week_ago = today - frappe.utils.datetime.timedelta(days=7)
 	employees = frappe.db.get_list("Employee", filters={"status": "Active"})
 	for employee in employees:
-		employee_name = employee["name"]
-		unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
-		data = {
-			"employee": employee_name,
-			"unmarked_days": unmarked_days
-		}
-		bulk_process_workdays_background(data)
+		try:
+			employee_name = employee["name"]
+			unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
+			data = {
+				"employee": employee_name,
+				"unmarked_days": unmarked_days
+			}
+			flag = "Create workday"
+
+			bulk_process_workdays_background(data, flag)
+		except Exception as e:
+			frappe.log_error(
+				"Creating Workday, Got Error: {} while fetching unmarked days for: {}".format(str(e), employee_name),
+				"Error during fetching unmarked days"
+			)
 
 
-def bulk_process_workdays_background(data):
+def bulk_process_workdays_background(data,flag):
 	'''bulk workday processing'''
 	frappe.msgprint(_("Bulk operation is enqueued in background."), alert=True)
 	frappe.enqueue(
 		'hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays',
 		queue='long',
-		data=data
+		data=data,
+		flag=flag
 	)
 
 
