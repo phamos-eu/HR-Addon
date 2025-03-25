@@ -246,6 +246,8 @@ def get_employee_default_work_hour(employee,adate):
             WeeklyWorkingHours.employee,
             WeeklyWorkingHours.valid_from,
             WeeklyWorkingHours.valid_to,
+			WeeklyWorkingHours.no_break_hours,
+			WeeklyWorkingHours.set_target_hours_to_zero_when_date_is_holiday,
             DailyHoursDetail.day,
             DailyHoursDetail.hours,
             DailyHoursDetail.break_minutes
@@ -276,13 +278,11 @@ def get_actual_employee_log(aemployee, adate):
     employee_checkins = get_employee_checkin(aemployee,adate)
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
     is_date_in_holiday_list = date_is_in_holiday_list(aemployee,adate)
-    fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"]
-    weekly_working_hours = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=fields)
-    no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
-    is_target_hours_zero_on_holiday = len(weekly_working_hours) > 0 and weekly_working_hours[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1
+    no_break_hours = employee_default_work_hour.no_break_hours
+    is_target_hours_zero_on_holiday = employee_default_work_hour.set_target_hours_to_zero_when_date_is_holiday
+    is_holiday_with_zero_target_hours = is_target_hours_zero_on_holiday and is_date_in_holiday_list
 
-    if employee_checkins:
-        no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
+    if employee_checkins and not is_holiday_with_zero_target_hours:
         new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
         return new_workday
     else:
@@ -291,7 +291,7 @@ def get_actual_employee_log(aemployee, adate):
         break_minutes = employee_default_work_hour.break_minutes
         expected_break_hours = flt(break_minutes / 60)
         
-        if is_target_hours_zero_on_holiday and is_date_in_holiday_list:
+        if is_holiday_with_zero_target_hours:
             new_workday = {
                 "target_hours": 0,
                 "break_minutes": employee_default_work_hour.break_minutes,
