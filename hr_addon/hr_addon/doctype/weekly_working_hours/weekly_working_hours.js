@@ -24,8 +24,6 @@ frappe.ui.form.on('Weekly Working Hours', {
 				t_hour_time += flt(tm.hour_time);
 			})
 			frm.set_value("total_work_hours",total_hour);
-			// set total in seconds			
-			frm.set_value("total_hours_time",t_hour_time);
 		}
 
 		frm.set_work_hour_in_seconds = function(frm,tm){
