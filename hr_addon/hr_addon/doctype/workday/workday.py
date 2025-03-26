@@ -241,8 +241,8 @@ def get_employee_default_work_hour(employee,adate):
             WeeklyWorkingHours.employee,
             WeeklyWorkingHours.valid_from,
             WeeklyWorkingHours.valid_to,
-			WeeklyWorkingHours.no_break_hours,
-			WeeklyWorkingHours.set_target_hours_to_zero_when_date_is_holiday,
+            WeeklyWorkingHours.no_break_hours,
+            WeeklyWorkingHours.set_target_hours_to_zero_when_date_is_holiday,
             DailyHoursDetail.day,
             DailyHoursDetail.hours,
             DailyHoursDetail.break_minutes
