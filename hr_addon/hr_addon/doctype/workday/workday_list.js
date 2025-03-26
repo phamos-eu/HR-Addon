@@ -1,5 +1,4 @@
 frappe.listview_settings['Workday'] = {
-    //add_fields: ["status", "attendance_date"],
 	add_fields: ["status"],
 	get_indicator: function (doc) {
 		if (["Present", "Work From Home"].includes(doc.status)) {
@@ -28,9 +27,7 @@ frappe.listview_settings['Workday'] = {
 					reqd: 1,
 					onchange: function() {
 						dialog.set_df_property("unmarked_days", "hidden", 1);
-						//dialog.set_df_property("status", "hidden", 1);
 						dialog.set_df_property("exclude_holidays", "hidden", 1);
-						//dialog.set_df_property("month", "value", '');
 						dialog.set_df_property("date_from", "value", '');
 						dialog.set_df_property("date_to", "value", '');
 						dialog.set_df_property("unmarked_days", "options", []);
@@ -58,7 +55,6 @@ frappe.listview_settings['Workday'] = {
 								dialog.fields_dict.date_to.value,
 							).then(options => {
 								if (options.length > 0) {
-									//dialog.set_df_property("unmarked_days", "hidden", 0);
 									dialog.set_df_property("unmarked_days", "hidden", 1);
 									dialog.set_df_property("unmarked_days", "options", options);
 								} else {
@@ -88,7 +84,6 @@ frappe.listview_settings['Workday'] = {
 					read_only: 1,
 					onchange: function() {
 						if (dialog.fields_dict.employee.value && dialog.fields_dict.month.value) {
-							//dialog.set_df_property("status", "hidden", 0);
 							dialog.set_df_property("unmarked_days", "options", []);
 							dialog.no_unmarked_days_left = false;
 							me.get_multi_select_options(
@@ -97,7 +92,6 @@ frappe.listview_settings['Workday'] = {
 								dialog.fields_dict.exclude_holidays.get_value()
 							).then(options => {
 								if (options.length > 0) {
-									//dialog.set_df_property("unmarked_days", "hidden", 0);
 									dialog.set_df_property("unmarked_days", "hidden", 1);
 									dialog.set_df_property("unmarked_days", "options", options);									
 								} else {
@@ -195,7 +189,6 @@ frappe.listview_settings['Workday'] = {
 				primary_action_label: __('Process Workdays')
 
 			});
-			//dialog.$wrapper.find('.btn-modal-primary').css("color","red");
 			dialog.$wrapper.find('.btn-modal-primary').removeClass('btn-primary').addClass('btn-dark');
 			dialog.show();
 		});
