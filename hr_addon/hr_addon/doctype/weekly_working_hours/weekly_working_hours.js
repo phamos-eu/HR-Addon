@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Jide Olayinka and contributors
+// Copyright (c) 2022, phamos.eu and contributors
 // For license information, please see license.txt
 
 frappe.ui.form.on('Weekly Working Hours', {
@@ -24,8 +24,6 @@ frappe.ui.form.on('Weekly Working Hours', {
 				t_hour_time += flt(tm.hour_time);
 			})
 			frm.set_value("total_work_hours",total_hour);
-			// set total in seconds			
-			frm.set_value("total_hours_time",t_hour_time);
 		}
 
 		frm.set_work_hour_in_seconds = function(frm,tm){

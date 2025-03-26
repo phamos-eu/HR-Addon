@@ -23,7 +23,6 @@
   "no_break_hours",
   "set_target_hours_to_zero_when_date_is_holiday",
   "column_break_14",
-  "total_hours_time",
   "amended_from",
   "company"
  ],
@@ -102,12 +101,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "total_hours_time",
-   "fieldtype": "Data",
-   "label": "Total Hours (Time)",
-   "read_only": 1
-  },
-  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -149,7 +142,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2023-07-27 09:16:56.101160",
+ "modified": "2025-03-25 16:28:30.306002",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Weekly Working Hours",
@@ -177,10 +170,12 @@
    "report": 1,
    "role": "HR Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

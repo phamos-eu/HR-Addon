@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Jide Olayinka and contributors
+# Copyright (c) 2022, phamos.eu and contributors
 # For license information, please see license.txt
 
 import frappe
@@ -44,14 +44,15 @@ class Workday(Document):
 			})
 
 	def set_status_for_leave_application(self):
+		leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
 		leave_application = frappe.db.exists(
-		"Leave Application", {
-			"employee": self.employee,
-			"from_date": ("<=", self.log_date),
-			"to_date": (">=", self.log_date),
-			"leave_type": ['not in',["Freizeitausgleich (Nicht buchen!)","Compensatory Off"]],
-			'docstatus': 1
-		}
+			"Leave Application", {
+				"employee": self.employee,
+				"from_date": ("<=", self.log_date),
+				"to_date": (">=", self.log_date),
+				"leave_type": ['not in', leave_types],
+				"docstatus": 1
+			}
 		)
 		#'Compensatory Off'
 		if leave_application :
@@ -66,28 +67,22 @@ class Workday(Document):
 			self.target_hours = 0
 
 	def date_is_in_comp_off(self):
-		leave_application_freizeit = frappe.db.exists(
-		"Leave Application", {
-			"employee": self.employee,
-			"from_date": ("<=", self.log_date),
-			"to_date": (">=", self.log_date),
-			"leave_type": "Freizeitausgleich (Nicht buchen!)"
-		}
+		leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
+		leave_application = frappe.db.exists(
+			"Leave Application", {
+				"employee": self.employee,
+				"from_date": ("<=", self.log_date),
+				"to_date": (">=", self.log_date),
+				"leave_type": ["in", leave_types],
+				"docstatus": 1
+			}
 		)
-		leave_application_comp_off = frappe.db.exists(
-		"Leave Application", {
-			"employee": self.employee,
-			"from_date": ("<=", self.log_date),
-			"to_date": (">=", self.log_date),
-			"leave_type": "Compensatory Off",
-			'docstatus': 1
-		}
-		)
-		if leave_application_comp_off or leave_application_freizeit:
+
+		if leave_application:
 			self.hours_worked = 0.0
 			self.actual_working_hours = -self.target_hours
 			self.break_hours = 0.0
-		
+
 	def validate_duplicate_workday(self):
 		workday = frappe.db.exists("Workday", {
 			'employee': self.employee,
@@ -96,8 +91,8 @@ class Workday(Document):
 	
 		if workday and self.is_new():
 			frappe.throw(
-			_("Workday already exists for employee: {0}, on the given date: {1}")
-			.format(self.employee, formatdate(self.log_date))
+			_("{0} already exists for employee: {1}, on the given date: {2}")
+			.format(frappe.get_desk_link("Workday", workday),self.employee, formatdate(self.log_date))
 			)
 	
 
@@ -246,6 +241,8 @@ def get_employee_default_work_hour(employee,adate):
             WeeklyWorkingHours.employee,
             WeeklyWorkingHours.valid_from,
             WeeklyWorkingHours.valid_to,
+            WeeklyWorkingHours.no_break_hours,
+            WeeklyWorkingHours.set_target_hours_to_zero_when_date_is_holiday,
             DailyHoursDetail.day,
             DailyHoursDetail.hours,
             DailyHoursDetail.break_minutes
@@ -276,13 +273,11 @@ def get_actual_employee_log(aemployee, adate):
     employee_checkins = get_employee_checkin(aemployee,adate)
     employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
     is_date_in_holiday_list = date_is_in_holiday_list(aemployee,adate)
-    fields=["name", "no_break_hours", "set_target_hours_to_zero_when_date_is_holiday"]
-    weekly_working_hours = frappe.db.get_list(doctype="Weekly Working Hours", filters={"employee": aemployee}, fields=fields)
-    no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
-    is_target_hours_zero_on_holiday = len(weekly_working_hours) > 0 and weekly_working_hours[0]["set_target_hours_to_zero_when_date_is_holiday"] == 1
+    no_break_hours = employee_default_work_hour.no_break_hours
+    is_target_hours_zero_on_holiday = employee_default_work_hour.set_target_hours_to_zero_when_date_is_holiday
+    is_holiday_with_zero_target_hours = is_target_hours_zero_on_holiday and is_date_in_holiday_list
 
-    if employee_checkins:
-        no_break_hours = True if len(weekly_working_hours) > 0 and weekly_working_hours[0]["no_break_hours"] == 1 else False
+    if employee_checkins and not is_holiday_with_zero_target_hours:
         new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
         return new_workday
     else:
@@ -291,7 +286,7 @@ def get_actual_employee_log(aemployee, adate):
         break_minutes = employee_default_work_hour.break_minutes
         expected_break_hours = flt(break_minutes / 60)
         
-        if is_target_hours_zero_on_holiday and is_date_in_holiday_list:
+        if is_holiday_with_zero_target_hours:
             new_workday = {
                 "target_hours": 0,
                 "break_minutes": employee_default_work_hour.break_minutes,

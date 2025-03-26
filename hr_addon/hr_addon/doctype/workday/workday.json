@@ -22,7 +22,6 @@
   "column_break_5",
   "expected_break_hours",
   "break_hours",
-  "number_of_breaks",
   "section_break_14",
   "first_checkin",
   "last_checkout",
@@ -66,12 +65,6 @@
    "in_list_view": 1,
    "label": "Hours worked",
    "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "number_of_breaks",
-   "fieldtype": "Int",
-   "label": "Number of Breaks",
    "read_only": 1
   },
   {
@@ -153,7 +146,7 @@
   }
  ],
  "links": [],
- "modified": "2025-02-17 18:36:23.219195",
+ "modified": "2025-03-25 16:03:45.327857",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
