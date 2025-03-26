@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Jide Olayinka and contributors
+// Copyright (c) 2022, phamos.eu and contributors
 // For license information, please see license.txt
 
 frappe.ui.form.on('Weekly Working Hours', {
