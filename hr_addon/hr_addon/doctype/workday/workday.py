@@ -44,14 +44,15 @@ class Workday(Document):
 			})
 
 	def set_status_for_leave_application(self):
+		leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
 		leave_application = frappe.db.exists(
-		"Leave Application", {
-			"employee": self.employee,
-			"from_date": ("<=", self.log_date),
-			"to_date": (">=", self.log_date),
-			"leave_type": ['not in',["Freizeitausgleich (Nicht buchen!)","Compensatory Off"]],
-			'docstatus': 1
-		}
+			"Leave Application", {
+				"employee": self.employee,
+				"from_date": ("<=", self.log_date),
+				"to_date": (">=", self.log_date),
+				"leave_type": ['not in', leave_types],
+				"docstatus": 1
+			}
 		)
 		#'Compensatory Off'
 		if leave_application :
@@ -66,28 +67,22 @@ class Workday(Document):
 			self.target_hours = 0
 
 	def date_is_in_comp_off(self):
-		leave_application_freizeit = frappe.db.exists(
-		"Leave Application", {
-			"employee": self.employee,
-			"from_date": ("<=", self.log_date),
-			"to_date": (">=", self.log_date),
-			"leave_type": "Freizeitausgleich (Nicht buchen!)"
-		}
+		leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
+		leave_application = frappe.db.exists(
+			"Leave Application", {
+				"employee": self.employee,
+				"from_date": ("<=", self.log_date),
+				"to_date": (">=", self.log_date),
+				"leave_type": ["in", leave_types],
+				"docstatus": 1
+			}
 		)
-		leave_application_comp_off = frappe.db.exists(
-		"Leave Application", {
-			"employee": self.employee,
-			"from_date": ("<=", self.log_date),
-			"to_date": (">=", self.log_date),
-			"leave_type": "Compensatory Off",
-			'docstatus': 1
-		}
-		)
-		if leave_application_comp_off or leave_application_freizeit:
+
+		if leave_application:
 			self.hours_worked = 0.0
 			self.actual_working_hours = -self.target_hours
 			self.break_hours = 0.0
-		
+
 	def validate_duplicate_workday(self):
 		workday = frappe.db.exists("Workday", {
 			'employee': self.employee,
