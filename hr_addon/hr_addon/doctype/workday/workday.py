@@ -391,7 +391,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
         "actual_working_hours": actual_working_hours,
         "nbreak": 0,
         "attendance": attendance,
-		"status": status,
+        "status": status,
         "break_hours": break_hours,
         "first_checkin": first_checkin,
         "last_checkout": last_checkout,
