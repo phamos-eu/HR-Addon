@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, datetime, get_datetime, getdate, add_days, formatdate, flt
+from frappe.utils import cint, get_datetime, getdate, add_days, formatdate, flt
 from frappe.utils.data import date_diff, time_diff_in_hours
 from frappe.query_builder import DocType
 from pypika import Order
@@ -282,7 +282,7 @@ def get_actual_employee_log(aemployee, adate):
     is_holiday_with_zero_target_hours = is_target_hours_zero_on_holiday and is_date_in_holiday_list
 
     if employee_checkins and not is_holiday_with_zero_target_hours:
-        new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
+        new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours)
         return new_workday
     else:
         view_employee_attendance = get_employee_attendance(aemployee, adate)
@@ -325,7 +325,7 @@ def get_actual_employee_log(aemployee, adate):
     return new_workday
 
 
-def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list=False):
+def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     new_workday = {}
 
     hours_worked = 0.0
@@ -376,9 +376,6 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
         break_minutes = 0
         expected_break_hours = 0
         actual_working_hours = hours_worked
-
-    if is_target_hours_zero_on_holiday and is_date_in_holiday_list:
-        target_hours = 0
 
     hr_addon_settings = frappe.get_doc("HR Addon Settings")
     if hr_addon_settings.enable_default_break_hour_for_shorter_breaks:
