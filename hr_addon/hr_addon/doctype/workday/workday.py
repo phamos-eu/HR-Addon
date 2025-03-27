@@ -408,7 +408,7 @@ def get_employee_attendance(employee,atime):
         .select(
             Attendance.name,
             Attendance.employee,
-            # Attendance.status,
+            Attendance.status,
             Attendance.attendance_date,
             Attendance.shift
         )
