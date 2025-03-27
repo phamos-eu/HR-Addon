@@ -383,9 +383,6 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
         if break_hours <= default_break_hours:
             break_hours = flt(default_break_hours)
 
-    # if target_hours == 0:
-    #     expected_break_hours = 0
-
     new_workday.update({
         "target_hours": target_hours,
         "break_minutes": break_minutes,
