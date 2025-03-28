@@ -2,11 +2,11 @@ from . import __version__ as app_version
 
 app_name = "hr_addon"
 app_title = "HR Addon"
-app_publisher = "Jide Olayinka"
+app_publisher = "phamos.eu"
 app_description = "Addon for Erpnext attendance and employee checkins"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"
-app_email = "olajamesjide@gmail.com"
+app_email = "support@phamos.eu"
 app_license = "MIT"
 
 # Includes in <head>
