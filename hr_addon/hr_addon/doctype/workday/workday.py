@@ -277,7 +277,7 @@ def get_actual_employee_log(aemployee, adate):
     is_holiday_with_zero_target_hours = is_target_hours_zero_on_holiday and is_date_in_holiday_list
 
     if employee_checkins and not is_holiday_with_zero_target_hours:
-        new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday, is_date_in_holiday_list)
+        new_workday = get_workday(employee_checkins, employee_default_work_hour, no_break_hours)
         return new_workday
     else:
         view_employee_attendance = get_employee_attendance(aemployee, adate)
@@ -320,7 +320,7 @@ def get_actual_employee_log(aemployee, adate):
     return new_workday
 
 
-def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, is_target_hours_zero_on_holiday,is_date_in_holiday_list=False):
+def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
     is_break_from_checkins_with_swapped_hours = hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Employee Checkins" and hr_addon_settings.swap_hours_worked_and_actual_working_hours
     new_workday = {}
@@ -405,9 +405,6 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
         default_break_minutes = 0
         #expected_break_hours = 0
         actual_working_hours = hours_worked
-
-    if is_target_hours_zero_on_holiday and is_date_in_holiday_list:
-        target_hours = 0
 
     new_workday.update({
         "target_hours": target_hours,
