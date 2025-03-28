@@ -31,6 +31,7 @@ class Workday(Document):
         self.first_checkin = new_workday_dict.get("first_checkin")
         self.last_checkout = new_workday_dict.get("last_checkout")
         self.attendance = new_workday_dict.get("attendance")
+        self.status = new_workday_dict.get("status")
 
         employee_checkins = new_workday_dict.get("employee_checkins") or []
 
@@ -292,6 +293,7 @@ def get_actual_employee_log(aemployee, adate):
                 "hours_worked": 0,
                 "nbreak": 0,
                 "attendance": view_employee_attendance[0].name if len(view_employee_attendance) > 0 else "",
+                "status": view_employee_attendance[0].status if len(view_employee_attendance) > 0 else "",
                 "break_hours": 0,
                 "employee_checkins": [],
                 "first_checkin": "",
@@ -307,6 +309,7 @@ def get_actual_employee_log(aemployee, adate):
                 "hours_worked": 0,
                 "nbreak": 0,
                 "attendance": view_employee_attendance[0].name if len(view_employee_attendance) > 0 else "",
+                "status": view_employee_attendance[0].status if len(view_employee_attendance) > 0 else "",
                 "break_hours": 0,
                 "employee_checkins": [],
                 "first_checkin": "",
@@ -396,6 +399,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
         else:    
             actual_working_hours = hours_worked - expected_break_hours
     attendance = employee_checkins[0].attendance if len(employee_checkins) > 0 else ""
+    status = frappe.db.get_value("Attendance", attendance, "status") if attendance else ""
 
     if no_break_hours and hours_worked < 6 and not is_break_from_checkins_with_swapped_hours: # TODO: set 6 as constant
         default_break_minutes = 0
@@ -412,7 +416,8 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours, i
         "expected_break_hours": expected_break_hours,
         "actual_working_hours": actual_working_hours,
         "nbreak": 0,
-        "attendance": attendance,        
+        "attendance": attendance,
+        "status": status,
         "break_hours": break_hours,
         "first_checkin": first_checkin,
         "last_checkout": last_checkout,
