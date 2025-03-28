@@ -92,8 +92,8 @@ class Workday(Document):
     
         if workday and self.is_new():
             frappe.throw(
-            _("Workday already exists for employee: {0}, on the given date: {1}")
-            .format(self.employee, formatdate(self.log_date))
+            _("{0} already exists for employee: {1}, on the given date: {2}")
+            .format(frappe.get_desk_link("Workday", workday), self.employee, formatdate(self.log_date))
             )
 
 
