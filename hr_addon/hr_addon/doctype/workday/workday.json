@@ -22,7 +22,6 @@
   "column_break_5",
   "expected_break_hours",
   "break_hours",
-  "number_of_breaks",
   "section_break_14",
   "first_checkin",
   "last_checkout",
@@ -67,12 +66,6 @@
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Hours worked",
-   "permlevel": 1
-  },
-  {
-   "fieldname": "number_of_breaks",
-   "fieldtype": "Int",
-   "label": "Number of Breaks",
    "permlevel": 1
   },
   {
@@ -152,7 +145,7 @@
   }
  ],
  "links": [],
- "modified": "2025-01-02 15:23:49.959667",
+ "modified": "2025-03-28 17:08:04.384046",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",

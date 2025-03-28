@@ -17,15 +17,10 @@ frappe.ui.form.on('Weekly Working Hours', {
 
 		frm.get_total_hours = function(frm){
 			let total_hour = 0;
-			let t_hour_time = 0;
 			frm.doc.hours.forEach(tm=>{
 				total_hour += flt(tm.hours);
-				//in sec total
-				t_hour_time += flt(tm.hour_time);
 			})
 			frm.set_value("total_work_hours",total_hour);
-			// set total in seconds			
-			frm.set_value("total_hours_time",t_hour_time);
 		}
 
 		frm.set_work_hour_in_seconds = function(frm,tm){
