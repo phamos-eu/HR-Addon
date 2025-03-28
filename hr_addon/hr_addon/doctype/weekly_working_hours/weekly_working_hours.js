@@ -8,9 +8,7 @@ frappe.ui.form.on('Weekly Working Hours', {
 				if(!( row.day =='' || tm.idx==row.idx)){
 					if(row.day==tm.day){
 						row.hours = '';	
-						//console.log('Work hour already set for ');				
-					}
-					
+					}					
 				}
 			});
 		}
@@ -30,16 +28,11 @@ frappe.ui.form.on('Weekly Working Hours', {
 			
 		}
 	}
-	
-	// refresh: function(frm) {
-
-	// }
 });
 
 frappe.ui.form.on('Daily Hours Detail',{
 
 	hours: function(frm, cdt, cdn){
-		//set in time		
 		let row = locals[cdt][cdn];
 		frm.set_work_hour_in_seconds(frm);
 
@@ -47,7 +40,6 @@ frappe.ui.form.on('Daily Hours Detail',{
 		frm.get_total_hours(frm);
 		
 		frm.refresh_field('hours');
-		
 	},
 	
 	hours_remove: function(frm,cdt,cdn){
