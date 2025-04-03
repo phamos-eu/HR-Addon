@@ -22,27 +22,25 @@
   "column_break_5",
   "expected_break_hours",
   "break_hours",
-  "number_of_breaks",
   "section_break_14",
   "first_checkin",
   "last_checkout",
   "column_break_17",
-  "company",
-  "total_work_seconds",
-  "total_break_seconds",
-  "total_target_seconds"
+  "company"
  ],
  "fields": [
   {
    "fieldname": "employee",
    "fieldtype": "Link",
    "label": "Employee",
-   "options": "Employee"
+   "options": "Employee",
+   "reqd": 1
   },
   {
    "fieldname": "log_date",
    "fieldtype": "Date",
-   "label": "Date"
+   "label": "Date",
+   "reqd": 1
   },
   {
    "fieldname": "attendance",
@@ -71,12 +69,6 @@
    "permlevel": 1
   },
   {
-   "fieldname": "number_of_breaks",
-   "fieldtype": "Int",
-   "label": "Number of Breaks",
-   "permlevel": 1
-  },
-  {
    "fieldname": "break_hours",
    "fieldtype": "Float",
    "label": "Break Hours",
@@ -93,7 +85,8 @@
    "fieldname": "company",
    "fieldtype": "Link",
    "label": "Company",
-   "options": "Company"
+   "options": "Company",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_5",
@@ -132,27 +125,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "total_work_seconds",
-   "fieldtype": "Float",
-   "hidden": 1,
-   "label": "Worked In Seconds",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_break_seconds",
-   "fieldtype": "Float",
-   "hidden": 1,
-   "label": "Break In Seconds",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_target_seconds",
-   "fieldtype": "Float",
-   "hidden": 1,
-   "label": " Target In Seconds",
-   "read_only": 1
-  },
-  {
    "fieldname": "actual_working_hours",
    "fieldtype": "Float",
    "label": "Actual Working Hours",
@@ -173,7 +145,7 @@
   }
  ],
  "links": [],
- "modified": "2024-12-05 22:28:58.266573",
+ "modified": "2025-03-28 17:08:04.384046",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",

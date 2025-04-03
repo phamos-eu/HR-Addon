@@ -1,0 +1,28 @@
+{
+ "attach_print": 0,
+ "channel": "Email",
+ "creation": "2025-01-23 16:40:09.087994",
+ "days_in_advance": 0,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "Scheduled Job Log",
+ "enabled": 1,
+ "event": "Custom",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "<p>Dear User,</p>\n<p>An error occurred during the workday generation process: {{ doc.scheduled_job_type }}</p>\n<pre>Error: {{ doc.details }}</pre>\n<p>Please check the logs or contact the administrator for more details.</p>",
+ "message_type": "Markdown",
+ "modified": "2025-01-24 14:15:16.862836",
+ "modified_by": "Administrator",
+ "module": "HR Addon",
+ "name": "HR Addon Failed Scheduled Job Log Notification",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "receiver_by_role": "HR Manager"
+  }
+ ],
+ "send_system_notification": 0,
+ "send_to_all_assignees": 0,
+ "subject": "Error in {{ doc.scheduled_job_type }}"
+}
