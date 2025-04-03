@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Jide Olayinka and contributors
+// Copyright (c) 2022, phamos.eu and contributors
 // For license information, please see license.txt
 
 frappe.ui.form.on("Workday", {
@@ -14,25 +14,7 @@ frappe.ui.form.on("Workday", {
         ],
       };
     });
-    /* frm.set_query('Employee Checkins','employee_checkins', function(){
-			return{
-				'filters':[
-					['employee_checkins','employee_checkin','=',frm.doc.attendance]
-					
-				],
-			};
-		}); */
   },
-  /* onload: function(frm){
-		frm.set_query('Employee Checkins','employee_checkins', function(){
-			return{
-				'filters':{
-					'employee_checkin':['=',frm.attendance]
-				}
-			};
-		});
-	}, */
-
   attendance: function (frm) {
     get_hours(frm);
   },

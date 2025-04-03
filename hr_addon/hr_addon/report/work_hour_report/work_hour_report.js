@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Jide Olayinka and contributors
+// Copyright (c) 2022, phamos.eu and contributors
 // For license information, please see license.txt
 /* eslint-disable */
 
@@ -32,27 +32,9 @@ frappe.query_reports["Work Hour Report"] = {
 	"formatter": function (value, row, column, data, default_formatter) {
 		
 		value = default_formatter(value, row, column, data);
-		
-		if (column.fieldname == "name" ) {
-			//if (!(row ===undefined)) console.log('yt: ',row.meta);
-			
-			if (!(row ===undefined)) {
-				//console.log('yt: ',row.length);
-				//console.log(row);
-				if (row.meta.rowIndex===row.length){
-					//console.log('yt: ',row.meta.rowIndex);
-					
-				}
-			}
-			
-		}
 		if (column.fieldname == "total_work_seconds" ) {
 			if(value < 0) {
-				
-				 
-					value = "<span style='color:red'>" +'-' + hitt(value ,true) + "</span>";
-				
-			
+				value = "<span style='color:red'>" +'-' + hitt(value ,true) + "</span>";
 			}
 			else if(value > 0){
 				value = "<span style='color:green'>" + hitt(value,true) + "</span>";
@@ -60,7 +42,6 @@ frappe.query_reports["Work Hour Report"] = {
 			else{
 				value = hitt(value);
 			}	
-			
 		}
 
 		if (column.fieldname == "total_break_seconds" ) {
@@ -73,7 +54,6 @@ frappe.query_reports["Work Hour Report"] = {
 			else{
 				value = hitt(value);
 			}
-			
 		}
 
 		if (column.fieldname == "actual_working_seconds" ) {
@@ -86,7 +66,6 @@ frappe.query_reports["Work Hour Report"] = {
 			else{
 				value = hitt(value);
 			}
-			
 		}
 
 		if (column.fieldname == "total_target_seconds" ) {
@@ -99,21 +78,17 @@ frappe.query_reports["Work Hour Report"] = {
 		if (column.fieldname == "diff_log" ) {
 			if(value < 0) {
 				value = "<span style='color:#FF8C00'>" + hitt(value,true) + "</span>";
-				
 			}
 			else if(value > 0){
 				value = "<span style='color:blue'>" + hitt(value,true) + "</span>";
 			}
 			else{
 				value = hitt(value,true);
-			}
-			
-			
+			}	
 		}
 
 		if (column.fieldname == "actual_diff_log" ) {
 			if(value < 0) {
-				// value = "<span style='color:#FF8C00'>" + hitt(value,true) + "</span>";
 				value = "<span style='color:red'>" +"-"+ hitt(value,true) + "</span>";
 			}
 			else if(value > 0){
@@ -122,30 +97,22 @@ frappe.query_reports["Work Hour Report"] = {
 			else{
 				value = hitt(value,true);
 			}
-			
-			
 		}
-		
-
 		return value;
 	},
 };
 hitt = (fir, calDiff=false) => {
     // Handle negative values and calDiff case
 	if (fir < 0 && !calDiff) {
-        console.log(fir); // Log the negative value
         return fir; // Return the negative value directly
     }
 
 	if (fir < 0 && calDiff) {
 		fir = fir.toString().replace(/^-+/, ''); // Convert to positive for display
-		
 	}
 
     const d = Number(fir);
 	if (d == 0) return "0"; // Return string "0" for zero
-
-    
 	
 	var h = Math.floor(d / (60 * 60));
 	var m = Math.floor(d % (60 * 60) / 60);

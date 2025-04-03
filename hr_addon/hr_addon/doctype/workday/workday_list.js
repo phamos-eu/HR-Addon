@@ -1,5 +1,4 @@
 frappe.listview_settings["Workday"] = {
-  //add_fields: ["status", "attendance_date"],
   add_fields: ["status"],
   get_indicator: function (doc) {
     if (["Present", "Work From Home"].includes(doc.status)) {
@@ -29,9 +28,7 @@ frappe.listview_settings["Workday"] = {
             reqd: 1,
             onchange: function () {
               dialog.set_df_property("unmarked_days", "hidden", 1);
-              //dialog.set_df_property("status", "hidden", 1);
               dialog.set_df_property("exclude_holidays", "hidden", 1);
-              //dialog.set_df_property("month", "value", '');
               dialog.set_df_property("date_from", "value", "");
               dialog.set_df_property("date_to", "value", "");
               dialog.set_df_property("unmarked_days", "options", []);
@@ -75,7 +72,6 @@ frappe.listview_settings["Workday"] = {
                   dialog.fields_dict.date_to.value
                 ).then((options) => {
                   if (options.length > 0) {
-                    //dialog.set_df_property("unmarked_days", "hidden", 0);
                     dialog.set_df_property("unmarked_days", "hidden", 1);
                     dialog.set_df_property("unmarked_days", "options", options);
                   } else {
@@ -119,7 +115,6 @@ frappe.listview_settings["Workday"] = {
                 dialog.fields_dict.employee.value &&
                 dialog.fields_dict.month.value
               ) {
-                //dialog.set_df_property("status", "hidden", 0);
                 dialog.set_df_property("unmarked_days", "options", []);
                 dialog.no_unmarked_days_left = false;
                 me.get_multi_select_options(
@@ -128,7 +123,6 @@ frappe.listview_settings["Workday"] = {
                   dialog.fields_dict.exclude_holidays.get_value()
                 ).then((options) => {
                   if (options.length > 0) {
-                    //dialog.set_df_property("unmarked_days", "hidden", 0);
                     dialog.set_df_property("unmarked_days", "hidden", 1);
                     dialog.set_df_property("unmarked_days", "options", options);
                   } else {
@@ -159,7 +153,6 @@ frappe.listview_settings["Workday"] = {
               callback: function(response) {
                   if (response.message) {
                       let workdays = response.message;
-                      console.log("Matched Workdays: ", workdays);
           
                       // Extract the list of dates from the matched workdays
                       let workday_dates = workdays.map(workday => workday.log_date);
@@ -189,7 +182,6 @@ frappe.listview_settings["Workday"] = {
               callback: function (response) {
                   if (response.message) {
                       let missingDates = response.message.missing_dates;
-                      console.log(response.message.flag)
                       let missing_dates_string = missingDates.length > 0 ? missingDates.join(", ") : "None";
                       frappe.confirm(
                         __("Are you sure you want to process the workday for {0} from {1} to {2}?<br><br>For the following dates workdays will be created:<br>{3}", [
@@ -210,7 +202,6 @@ frappe.listview_settings["Workday"] = {
                             },
                             callback: function (r) {
                                 if (r.message === 1) {
-                                  console.log(r.message.flag)
                                     frappe.show_alert({
                                         message: __("Workdays Processed"),
                                         indicator: "blue",
@@ -221,10 +212,7 @@ frappe.listview_settings["Workday"] = {
                         });
                         },
                         function () {
-                          console.log('no')
                           // If user clicks "No"
-                          //frappe.msgprint('You clicked No!');
-                          // Cancel the action here or do nothing
                         }
                       );
                       
@@ -239,7 +227,6 @@ frappe.listview_settings["Workday"] = {
         },
         primary_action_label: __("Process Workdays"),
       });
-      //dialog.$wrapper.find('.btn-modal-primary').css("color","red");
       dialog.$wrapper
         .find(".btn-modal-primary")
         .removeClass("btn-primary")
