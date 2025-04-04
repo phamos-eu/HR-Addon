@@ -1,13 +1,9 @@
-// Copyright (c) 2022, Jide Olayinka and contributors
+// Copyright (c) 2022, phamos.eu and contributors
 // For license information, please see license.txt
 
 frappe.ui.form.on('Workday', {
-	// refresh: function(frm) {
-
-	// }
 	setup: function(frm){
 		frm.set_query("attendance",function(){
-			
 			return{
 				"filters":[
 					['Attendance','employee','=',frm.doc.employee],
@@ -15,24 +11,7 @@ frappe.ui.form.on('Workday', {
 				]
 			};
 		});
-		/* frm.set_query('Employee Checkins','employee_checkins', function(){
-			return{
-				'filters':[
-					['employee_checkins','employee_checkin','=',frm.doc.attendance]
-					
-				],
-			};
-		}); */
 	},
-	/* onload: function(frm){
-		frm.set_query('Employee Checkins','employee_checkins', function(){
-			return{
-				'filters':{
-					'employee_checkin':['=',frm.attendance]
-				}
-			};
-		});
-	}, */
 
 	attendance: function(frm){
 		get_hours(frm)
@@ -41,7 +20,7 @@ frappe.ui.form.on('Workday', {
 	log_date: function(frm){
 		if (frm.doc.employee && frm.doc.log_date) {
 			frappe.call({
-				method: "hr_addon.hr_addon.api.utils.date_is_in_holiday_list",
+				method: "hr_addon.hr_addon.doctype.workday.workday.date_is_in_holiday_list",
 				args: {
 					employee: frm.doc.employee,
 					date: frm.doc.log_date
@@ -64,9 +43,6 @@ frappe.ui.form.on('Workday', {
 				frm.set_value("target_hours", 0)
 				frm.set_value("expected_break_hours", 0)
 				frm.set_value("actual_working_hours", 0)
-				frm.set_value("total_target_seconds", 0)
-				frm.set_value("total_break_seconds", 0)
-				frm.set_value("total_work_seconds", 0)
 			}, 1000);
 		} // TODO: consider case of frm.doc.status === "Half Day"
 	},
@@ -77,7 +53,7 @@ var get_hours = function(frm){
 	let adate = frm.doc.log_date;
 	if(aemployee && adate){
 		frappe.call({
-			method:'hr_addon.hr_addon.api.utils.get_actual_employee_log',
+			method:'hr_addon.hr_addon.doctype.workday.workday.get_actual_employee_log',
 			args:{aemployee:aemployee,adate:adate}
 		}).done((r)=>{
 			if (r.message && Object.keys(r.message).length > 0) {
@@ -85,11 +61,8 @@ var get_hours = function(frm){
 				let alog = r.message;
 				frm.set_value("hours_worked",alog.hours_worked);
 				frm.set_value("break_hours",alog.break_hours);
-				frm.set_value("total_work_seconds",alog.total_work_seconds);
-				frm.set_value("total_break_seconds",alog.total_break_seconds);
 				frm.set_value("target_hours",alog.target_hours);
 				frm.set_value("expected_break_hours",(alog.expected_break_hours));
-				frm.set_value("total_target_seconds",alog.total_target_seconds);
 	
 				frm.set_value("actual_working_hours", alog.actual_working_hours);
 				let employee_checkins = alog.employee_checkins;
@@ -116,10 +89,7 @@ var get_hours = function(frm){
 var unset_fields = function(frm) {
 	frm.set_value("hours_worked", 0);
 	frm.set_value("break_hours", 0);
-	frm.set_value("total_work_seconds", 0);
-	frm.set_value("total_break_seconds", 0);
 	frm.set_value("target_hours", 0);
-	frm.set_value("total_target_seconds", 0);
 	frm.set_value("expected_break_hours", 0);
 	frm.set_value("actual_working_hours", 0);
 	frm.set_value("employee_checkins", []);

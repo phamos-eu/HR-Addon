@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Jide Olayinka and contributors
+# Copyright (c) 2022, phamos.eu and contributors
 # For license information, please see license.txt
 
 import frappe
@@ -9,7 +9,14 @@ from frappe import _
 
 class WeeklyWorkingHours(Document):
 	def autoname(self):
-		coy = frappe.db.sql("select abbr from tabCompany where name=%s", self.company)[0][0]
+		Company = frappe.qb.DocType('Company')
+		query = (
+			frappe.qb.from_(Company)
+			.select(Company.abbr)
+			.where(Company.name == self.company)
+		).run()
+
+		coy = query[0][0] if query else None
 		e_name = self.employee
 		name_key = coy+'-.YYYY.-'+e_name+'-.####'
 		self.name = make_autoname(name_key)
@@ -36,22 +43,67 @@ class WeeklyWorkingHours(Document):
 
 		filters = {"valid_from": valid_from, "valid_to": valid_to, "employee": self.employee}
 
-		condition = ""
-		if not self.is_new():
-			condition += "AND name != %(name)s "
-			filters["name"] = self.name
-
-		overlapping_records = frappe.db.sql("""
-			SELECT name 
-			FROM `tabWeekly Working Hours`
-			WHERE 
+		wwh = frappe.qb.DocType("Weekly Working Hours")
+		overlapping_records = (
+			frappe.qb.from_(wwh)
+			.select(wwh.name)
+			.where(
 				(
-					(valid_from <= %(valid_from)s AND valid_to >= %(valid_to)s) OR
-					(valid_from <= %(valid_from)s AND valid_to >= %(valid_to)s) OR
-					(valid_from >= %(valid_from)s AND valid_to <= %(valid_to)s)
-				) AND employee = %(employee)s AND docstatus = 1 {condition}
-			""".format(condition=condition), filters, as_dict=True)
+					(wwh.valid_from <= filters["valid_from"])
+					& (wwh.valid_to >= filters["valid_to"])
+				)
+				| (
+					(wwh.valid_from >= filters["valid_from"])
+					& (wwh.valid_to <= filters["valid_to"])
+				)
+			)
+			.where(wwh.employee == filters["employee"])
+			.where(wwh.docstatus == 1)
+		)
 
-		if overlapping_records:
-			overlapping_records = "<br> ".join([frappe.get_desk_link("Weekly Working Hours", d.name) for d in overlapping_records])
-			frappe.throw("Following Weekly Working Hours record already exists for {0} for the specified date range:<br> {1}".format(frappe.get_desk_link("Employee", self.employee), overlapping_records))
+		if not self.is_new():
+			filters["name"] = self.name
+			overlapping_records = overlapping_records.where(wwh.name != filters["name"])
+
+		results = overlapping_records.run(as_dict=True)
+
+		if results:
+			overlapping_links = "<br> ".join([frappe.get_desk_link("Weekly Working Hours", d.name) for d in results])
+			frappe.throw("Following Weekly Working Hours record already exists for {0} for the specified date range:<br> {1}".format(
+				frappe.get_desk_link("Employee", self.employee), overlapping_links))
+
+
+@frappe.whitelist()
+def set_from_to_dates():
+    # Ensure fiscal year data is present
+	FiscalYear = frappe.qb.DocType('Fiscal Year')
+	fiscal_year = (
+		frappe.qb.from_(FiscalYear)
+		.select(FiscalYear.year_start_date ,FiscalYear.year_end_date)
+		.where(FiscalYear.disabled == 0)
+	).run(as_dict=True)
+
+	if not fiscal_year:
+		frappe.throw("No active fiscal year found.")
+    
+	year_start_date = fiscal_year[0].year_start_date
+	year_end_date = fiscal_year[0].year_end_date
+
+	# Update the valid_from and valid_to fields
+	wwh = frappe.qb.DocType("Weekly Working Hours")
+	Employee = frappe.qb.DocType("Employee")
+
+	subquery = (
+		frappe.qb.from_(Employee)
+		.select(Employee.name)
+		.where(Employee.permanent == 1)
+	)
+
+	update_query = (
+		frappe.qb.update(wwh)
+		.set(wwh.valid_from, year_start_date)
+		.set(wwh.valid_to, year_end_date)
+		.where(wwh.employee.isin(subquery))
+	).run()
+
+	frappe.db.commit()
