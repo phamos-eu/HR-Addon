@@ -471,9 +471,17 @@ def generate_workdays_for_past_7_days_now():
 		try:
 			employee_name = employee["name"]
 			unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
+			valid_unmarked_days = []
+			for date in unmarked_days:
+				if has_valid_weekly_working_hours(employee_name, date):
+					valid_unmarked_days.append(date)
+			
+			if not valid_unmarked_days:
+				continue  # No valid dates, skip
+
 			data = {
 				"employee": employee_name,
-				"unmarked_days": unmarked_days
+				"unmarked_days": valid_unmarked_days
 			}
 			flag = "Create workday"
 
@@ -483,6 +491,36 @@ def generate_workdays_for_past_7_days_now():
 				"Creating Workday, Got Error: {} while fetching unmarked days for: {}".format(str(e), employee_name),
 				"Error during fetching unmarked days"
 			)
+
+def has_valid_weekly_working_hours(employee, date):
+	date = frappe.utils.getdate(date)
+	dayname = date.strftime('%A')
+
+	weekly_hours = frappe.db.get_all(
+		"Weekly Working Hours",
+		filters={
+			"employee": employee,
+			"docstatus": 1,
+			"valid_from": ["<=", date],
+			"valid_to": [">=", date],
+		},
+		fields=["name"]
+	)
+
+	if not weekly_hours:
+		return False
+
+	parent_names = [wh.name for wh in weekly_hours]
+
+	daily_hours = frappe.db.exists(
+		"Daily Hours Detail",
+		{
+			"parent": ["in", parent_names],
+			"day": dayname
+		}
+	)
+
+	return True if daily_hours else False 			
 
 
 def bulk_process_workdays_background(data,flag):
