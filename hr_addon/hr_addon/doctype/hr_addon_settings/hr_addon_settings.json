@@ -18,7 +18,8 @@
   "generate_workdays_for_past_7_days_now",
   "enabled",
   "column_break_jozi",
-  "enable_default_break_hour_for_shorter_breaks",
+  "workday_break_calculation_mechanism",
+  "swap_hours_worked_and_actual_working_hours",
   "notification_section",
   "anniversary_notification_email_list",
   "enable_work_anniversaries_notification",
@@ -148,17 +149,24 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "Break Hours from Employee Checkins",
+   "fieldname": "workday_break_calculation_mechanism",
+   "fieldtype": "Select",
+   "label": "Workday break Calculation Mechanism",
+   "options": "Break Hours from Employee Checkins\nBreak Hours from Weekly Working Hours\nBreak Hours from Weekly Working Hours if Shorter breaks"
+  },
+  {
    "default": "0",
-   "description": "While Generating Workdays, if user took shorter breaks than default break defined in 'Weekly Working Hours'. Then use default break time in calculation",
-   "fieldname": "enable_default_break_hour_for_shorter_breaks",
+   "depends_on": "doc.workday_break_calculation_mechanism == \"Break Hours from Employee Checkins\"",
+   "fieldname": "swap_hours_worked_and_actual_working_hours",
    "fieldtype": "Check",
-   "label": "Enable default break hour for shorter breaks"
+   "label": "Swap Hours worked and Actual Working Hours"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-07-01 16:50:41.571435",
+ "modified": "2025-07-24 12:53:32.868699",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
@@ -185,6 +193,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
