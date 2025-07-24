@@ -157,7 +157,7 @@
   },
   {
    "default": "0",
-   "depends_on": "doc.workday_break_calculation_mechanism == \"Break Hours from Employee Checkins\"",
+   "depends_on": "eval: doc.workday_break_calculation_mechanism == 'Break Hours from Employee Checkins'",
    "fieldname": "swap_hours_worked_and_actual_working_hours",
    "fieldtype": "Check",
    "label": "Swap Hours worked and Actual Working Hours"
@@ -166,7 +166,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-24 12:53:32.868699",
+ "modified": "2025-07-24 13:39:05.665243",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
