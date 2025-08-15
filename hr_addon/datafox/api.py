@@ -8,10 +8,10 @@ def handle_rfid_scan(**kwargs):
     """Handle incoming Datafox RFID scan requests"""
     
     # Validate mandatory parameters
-    if not all(k in kwargs for k in ['df_col_df_name', 'df_col_Datum']):
-        frappe.throw(_("Missing required parameters: df_col_df_name and df_col_Datum"))
+    if not all(k in kwargs for k in ['df_col_Ausweis_NR', 'df_col_Datum']):
+        frappe.throw(_("Missing required parameters: df_col_Ausweis_NR and df_col_Datum"))
 
-    badge_id = kwargs.get('df_col_df_name')
+    badge_id = kwargs.get('df_col_Ausweis_NR')
     scan_time = kwargs.get('df_col_Datum')
     device_id = kwargs.get('df_col_df_serial', 'Unknown Device')
     log_direction = kwargs.get('df_col_Kennung')  # "K" or "G"
@@ -26,10 +26,13 @@ def handle_rfid_scan(**kwargs):
             as_dict=True)
 
         if not employee:
-            return {
-                "df_api": 0,
-                "df_msg": "Employee not found"
-            }
+            frappe.log_error(f"Datafox RFID Error: Employee {badge_id} not Found in ERP")
+            frappe.local.response.update({
+                "df_api": 1,
+                "df_msg": "Employee not found",
+                "http_status_code": 400
+            })
+            return
 
         # Convert Kennung to log_type
         log_type = "IN" if log_direction.upper() == "K" else "OUT"
@@ -42,10 +45,13 @@ def handle_rfid_scan(**kwargs):
         })
 
         if existing:
-            return {
-                "df_api": 0,
-                "df_msg": f"{log_type} already recorded at {scan_datetime}"
-            }
+            frappe.log_error(f"Datafox RFID Error: {log_type} already recorded at {scan_datetime}")
+            frappe.local.response.update({
+                "df_api": 1,
+                "df_msg": f"{log_type} already recorded at {scan_datetime}",
+                "http_status_code": 400
+            })
+            return 
         
         # Save new Employee Checkin
         doc = frappe.get_doc({
@@ -59,19 +65,24 @@ def handle_rfid_scan(**kwargs):
         doc.insert()
         frappe.db.commit()
 
-        return {
+        frappe.local.response.update({
             "df_api": 1,
             "df_time": now_datetime().strftime("%Y-%m-%dT%H:%M:%S"),
             "df_beep": 1 if log_type == "IN" else 2,
-            "df_msg": f"{'Checked in' if log_type == 'IN' else 'Checked out'}: {employee.employee_name}"
-        }
+            "df_msg": f"{'Checked in' if log_type == 'IN' else 'Checked out'}: {employee.employee_name}",
+            "http_status_code": 200
+        })
+        return 
+         
 
     except Exception as e:
         frappe.log_error(f"Datafox RFID Error: {str(e)}")
-        return {
-            "df_api": 0,
-            "df_msg": "System error. Please report."
-        }
+        frappe.local.response.update({
+            "df_api": 1,
+            "df_msg": "System error. Please report.",
+            "http_status_code": 400
+        })
+        return 
 
 def calculate_working_hours(check_in, check_out):
     """Calculate working hours between two time objects"""
