@@ -14,7 +14,7 @@ def handle_rfid_scan(**kwargs):
     badge_id = kwargs.get('df_col_Ausweis_NR')
     scan_time = kwargs.get('df_col_Datum')
     device_id = kwargs.get('df_col_df_serial', 'Unknown Device')
-    log_direction = kwargs.get('df_col_Kennung')  # "K" or "G"
+    log_direction = kwargs.get('df_col_Kennung') or kwargs.get('df_col_Gehtgrund')
     try:
         # Parse datetime
         scan_datetime = datetime.strptime(scan_time, "%Y-%m-%dT%H:%M:%S")
@@ -35,7 +35,7 @@ def handle_rfid_scan(**kwargs):
             return
 
         # Convert Kennung to log_type
-        log_type = "IN" if log_direction.upper() == "K" else "OUT"
+        log_type = "IN" if str(log_direction).upper() in ["K", "1"] else "OUT"
 
         # Check for existing checkin with same time and log_type
         existing = frappe.db.exists("Employee Checkin", {
