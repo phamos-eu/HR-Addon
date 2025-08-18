@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils import now_datetime, getdate
 from datetime import datetime
+from werkzeug.wrappers import Response
 
 @frappe.whitelist(allow_guest=True)
 def handle_rfid_scan(**kwargs):
@@ -14,7 +15,8 @@ def handle_rfid_scan(**kwargs):
     badge_id = kwargs.get('df_col_Ausweis_NR')
     scan_time = kwargs.get('df_col_Datum')
     device_id = kwargs.get('df_col_df_serial', 'Unknown Device')
-    log_direction = kwargs.get('df_col_Kennung') or kwargs.get('df_col_Gehtgrund')
+    log_direction = kwargs.get('df_col_Kennung') # 'K' for IN, 'G' for OUT
+    
     try:
         # Parse datetime
         scan_datetime = datetime.strptime(scan_time, "%Y-%m-%dT%H:%M:%S")
@@ -27,15 +29,10 @@ def handle_rfid_scan(**kwargs):
 
         if not employee:
             frappe.log_error(f"Datafox RFID Error: Employee {badge_id} not Found in ERP")
-            frappe.local.response.update({
-                "df_api": 1,
-                "df_msg": "Employee not found",
-                "http_status_code": 400
-            })
-            return
+            return Response("df_api=1&df_msg='Employee not found'", status=400, content_type="text/plain")
 
         # Convert Kennung to log_type
-        log_type = "IN" if str(log_direction).upper() in ["K", "1"] else "OUT"
+        log_type = "IN" if str(log_direction).upper() == "K" else "OUT"
 
         # Check for existing checkin with same time and log_type
         existing = frappe.db.exists("Employee Checkin", {
@@ -46,12 +43,7 @@ def handle_rfid_scan(**kwargs):
 
         if existing:
             frappe.log_error(f"Datafox RFID Error: {log_type} already recorded at {scan_datetime}")
-            frappe.local.response.update({
-                "df_api": 1,
-                "df_msg": f"{log_type} already recorded at {scan_datetime}",
-                "http_status_code": 400
-            })
-            return 
+            return Response(f"df_api=1&df_msg='{log_type} already recorded at {scan_datetime}'", status=400, content_type="text/plain")
         
         # Save new Employee Checkin
         doc = frappe.get_doc({
@@ -62,27 +54,23 @@ def handle_rfid_scan(**kwargs):
             "time": scan_datetime,
             "device_id": device_id
         })
-        doc.insert()
+        doc.insert(ignore_permissions=True)
         frappe.db.commit()
 
-        frappe.local.response.update({
-            "df_api": 1,
-            "df_time": now_datetime().strftime("%Y-%m-%dT%H:%M:%S"),
-            "df_beep": 1 if log_type == "IN" else 2,
-            "df_msg": f"{'Checked in' if log_type == 'IN' else 'Checked out'}: {employee.employee_name}",
-            "http_status_code": 200
-        })
-        return 
-         
+        # Success response
+        current_time = now_datetime().strftime("%Y-%m-%dT%H:%M:%S")
+        beep_code = 1 if log_type == "IN" else 2
+        action_msg = 'Checked in' if log_type == 'IN' else 'Checked out'
+        
+        response_body = (f"df_api=1&df_time={current_time}&df_beep={beep_code}&df_msg='{action_msg}: {employee.employee_name}'")
+        
+        return Response(response_body, 
+                      status=200, 
+                      content_type="text/plain")
 
     except Exception as e:
         frappe.log_error(f"Datafox RFID Error: {str(e)}")
-        frappe.local.response.update({
-            "df_api": 1,
-            "df_msg": "System error. Please report.",
-            "http_status_code": 400
-        })
-        return 
+        return Response("df_api=1&df_msg='System error. Please report.'", status=400, content_type="text/plain")
 
 def calculate_working_hours(check_in, check_out):
     """Calculate working hours between two time objects"""
