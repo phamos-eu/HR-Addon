@@ -484,7 +484,7 @@ def generate_workdays_scheduled_job():
 		5:"Saturday",
 		6:"Sunday"
 	}
-	now = frappe.utils.datetime.datetime.now()
+	now = frappe.utils.now_datetime()
 	today_weekday_number = now.weekday()
 	weekday_name = number2name_dict[today_weekday_number]
 	if weekday_name == day:
