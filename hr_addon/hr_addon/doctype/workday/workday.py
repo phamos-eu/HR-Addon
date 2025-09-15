@@ -325,6 +325,28 @@ def get_actual_employee_log(aemployee, adate):
     return new_workday
 
 
+@frappe.whitelist()
+def set_attendance_in_employee_checkins(employee_checkins, attendance):
+	if isinstance(employee_checkins, str):
+		import json
+		employee_checkins = json.loads(employee_checkins)
+	if not employee_checkins:
+		return
+
+	checkin_updated = False
+	for checkin in employee_checkins:
+		checkin
+		if checkin.get("employee_checkin") is None:
+			continue
+		checkin_doc = frappe.get_doc("Employee Checkin", checkin.get("employee_checkin"))
+		if checkin_doc.attendance == attendance:
+			continue
+		checkin_doc.attendance = attendance
+		checkin_doc.save()
+		checkin_updated = True
+
+	return checkin_updated
+
 def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
     is_break_from_checkins_with_swapped_hours = hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Employee Checkins" and hr_addon_settings.swap_hours_worked_and_actual_working_hours
