@@ -7,7 +7,8 @@ frappe.ui.form.on('Workday', {
 			return{
 				"filters":[
 					['Attendance','employee','=',frm.doc.employee],
-					['Attendance','attendance_date','=',frm.doc.log_date]
+					['Attendance','attendance_date','=',frm.doc.log_date],
+					['Attendance','docstatus','=',1]
 				]
 			};
 		});
@@ -46,6 +47,27 @@ frappe.ui.form.on('Workday', {
 			}, 1000);
 		} // TODO: consider case of frm.doc.status === "Half Day"
 	},
+
+	attendance: function(frm){
+		if (frm.doc.employee_checkins && frm.doc.attendance){
+			frappe.call({
+				method: "hr_addon.hr_addon.doctype.workday.workday.set_attendance_in_employee_checkins",
+				args: {
+					employee_checkins: frm.doc.employee_checkins,
+					attendance: frm.doc.attendance
+				},
+				callback: function(r){
+					if (r.message == true){
+						frm.save();
+						frappe.show_alert({
+							message:__('Attendance updated in Employee Checkins'),
+							indicator:'green'
+						}, 5);
+					}
+				}
+			})
+		}
+	}
 });
 
 var get_hours = function(frm){
