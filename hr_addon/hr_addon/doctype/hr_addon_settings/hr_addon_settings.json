@@ -11,6 +11,7 @@
   "ics_folder_path",
   "download_ics_file",
   "scheduled_job_section",
+  "background_job_frequency",
   "day",
   "time",
   "generate_workdays_for_past_7_days_now",
@@ -63,16 +64,20 @@
   },
   {
    "default": "Sunday",
+   "depends_on": "eval: doc.enabled && doc.background_job_frequency == \"Weekly\"",
    "fieldname": "day",
    "fieldtype": "Select",
    "label": "Day",
+   "mandatory_depends_on": "eval: doc.enabled && doc.background_job_frequency == \"Weekly\"",
    "options": "Sunday\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday"
   },
   {
    "default": "00",
+   "depends_on": "eval: doc.enabled",
    "fieldname": "time",
    "fieldtype": "Select",
    "label": "Time",
+   "mandatory_depends_on": "eval: doc.enabled",
    "options": "00\n01\n02\n03\n04\n05\n06\n07\n08\n09\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23"
   },
   {
@@ -147,12 +152,21 @@
    "fieldname": "swap_hours_worked_and_actual_working_hours",
    "fieldtype": "Check",
    "label": "Swap Hours worked and Actual Working Hours"
+  },
+  {
+   "default": "Weekly",
+   "depends_on": "eval: doc.enabled",
+   "fieldname": "background_job_frequency",
+   "fieldtype": "Select",
+   "label": "Background Job Frequency",
+   "mandatory_depends_on": "eval: doc.enabled",
+   "options": "Weekly\nDaily"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-12 13:58:40.030291",
+ "modified": "2025-10-15 17:27:08.028619",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
