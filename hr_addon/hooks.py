@@ -9,6 +9,7 @@ app_color = "grey"
 app_email = "support@phamos.eu"
 app_license = "MIT"
 
+after_migrate = ["hr_addon.hr_addon.doctype.workday.workday.create_background_job_for_workday_generation_after_migrate"]
 
 fixtures = [
 	{"dt": "Custom Field", "filters": [
@@ -29,9 +30,6 @@ doc_events = {
 }
 
 scheduler_events = {
-	"hourly": [
-		"hr_addon.hr_addon.doctype.workday.workday.generate_workdays_scheduled_job"
-	],
 	"yearly": [
 		"hr_addon.hr_addon.doctype.weekly_working_hours.weekly_working_hours.set_from_to_dates",
 	],
