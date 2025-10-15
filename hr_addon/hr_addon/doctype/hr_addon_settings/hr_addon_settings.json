@@ -57,6 +57,7 @@
    "label": "Generate Workdays automatically"
   },
   {
+   "depends_on": "eval: doc.enabled",
    "description": "It will be generated for every Employee",
    "fieldname": "generate_workdays_for_past_7_days_now",
    "fieldtype": "Button",
@@ -166,7 +167,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-10-15 17:27:08.028619",
+ "modified": "2025-10-15 17:44:47.996847",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
