@@ -10,6 +10,7 @@ from frappe.utils import getdate, today, comma_sep, date_diff
 from frappe.core.doctype.role.role import get_info_based_on_role
 from frappe.query_builder import DocType
 from icalendar import Event, Calendar
+from hr_addon.hr_addon.doctype.workday.workday import create_background_job_for_workday_generation
 
 
 class HRAddonSettings(Document):
@@ -24,7 +25,12 @@ class HRAddonSettings(Document):
 		# remove also the Urlaubskalender.ics, if exist
 		if os.path.exists("{}/public/files/Urlaubskalender.ics".format(frappe.utils.get_site_path())):
 			os.remove("{}/public/files/Urlaubskalender.ics".format(frappe.utils.get_site_path()))
+	
+	def validate(self):
+		self.create_background_job_if_not_exists()
 
+	def create_background_job_if_not_exists(self):
+		create_background_job_for_workday_generation(self)
 
 @frappe.whitelist()
 def download_ics_file():

@@ -491,27 +491,51 @@ def date_is_in_holiday_list(employee, date):
     return len(holidays) > 0
 
 
+def create_background_job_for_workday_generation(hr_addon_settings):
+	from frappe.core.doctype.scheduled_job_type.scheduled_job_type import insert_single_event	
+	if hr_addon_settings.enabled == 0:
+		return
+
+	time = hr_addon_settings.time
+	background_job_frequency = hr_addon_settings.background_job_frequency
+	
+	name2number_dict = {
+		"Sunday": 0,
+		"Monday": 1,
+		"Tuesday": 2,
+		"Wednesday": 3,
+		"Thursday": 4,
+		"Friday": 5,
+		"Saturday": 6
+	}
+	
+	if background_job_frequency == "Daily":
+		cron_string = "0 {0} * * *".format(time)
+		frequency = "Cron"
+	elif background_job_frequency == "Weekly":
+		day_number = name2number_dict.get(hr_addon_settings.day)
+		cron_string = "0 {0} * * {1}".format(time, day_number)
+		frequency = "Cron"
+	else:
+		cron_string = "0 {0} * * *".format(time)
+		frequency = "Cron"
+	
+	insert_single_event(
+		frequency=frequency,
+		event="hr_addon.hr_addon.doctype.workday.workday.generate_workdays_scheduled_job",
+		cron_format=cron_string
+	)
+
+
+def create_background_job_for_workday_generation_after_migrate():
+	hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
+	create_background_job_for_workday_generation(hr_addon_settings)
+
 def generate_workdays_scheduled_job():
 	hr_addon_settings = frappe.get_doc("HR Addon Settings")
 	if hr_addon_settings.enabled == 0:
 		return
-	day = hr_addon_settings.day
-	time = hr_addon_settings.time
-	number2name_dict= {
-		0:"Monday",
-		1:"Tuesday",
-		2:"Wednesday",
-		3:"Thursday",
-		4:"Friday",
-		5:"Saturday",
-		6:"Sunday"
-	}
-	now = frappe.utils.now_datetime()
-	today_weekday_number = now.weekday()
-	weekday_name = number2name_dict[today_weekday_number]
-	if weekday_name == day:
-		if now.hour == int(time):
-			generate_workdays_for_past_7_days_now()
+	generate_workdays_for_past_7_days_now()
 
 
 @frappe.whitelist()
