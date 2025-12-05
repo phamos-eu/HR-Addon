@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "creation": "2024-12-05 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_checkin",
+  "log_type",
+  "log_time",
+  "column_break_3",
+  "skip_auto_attendance",
+  "attendance",
+  "processed"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee_checkin",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee Checkin",
+   "options": "Employee Checkin"
+  },
+  {
+   "fieldname": "log_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Log Type",
+   "options": "IN\nOUT"
+  },
+  {
+   "fieldname": "log_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Log Time"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_auto_attendance",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Skip Auto Attendance"
+  },
+  {
+   "fieldname": "attendance",
+   "fieldtype": "Link",
+   "label": "Attendance",
+   "options": "Attendance"
+  },
+  {
+   "default": "0",
+   "description": "Whether this checkin was processed in workday calculation",
+   "fieldname": "processed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Processed"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-12-05 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HR Addon",
+ "name": "Workday Creation Log Checkin",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

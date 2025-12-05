@@ -9,7 +9,8 @@ app_color = "grey"
 app_email = "support@phamos.eu"
 app_license = "MIT"
 
-after_migrate = ["hr_addon.hr_addon.doctype.workday.workday.create_background_job_for_workday_generation_after_migrate"]
+after_install = "hr_addon.hr_addon.doctype.workday.workday.create_background_job_for_workday_generation_after_install"
+after_migrate = "hr_addon.hr_addon.doctype.workday.workday.create_background_job_for_workday_generation_after_install"
 
 fixtures = [
 	{"dt": "Custom Field", "filters": [

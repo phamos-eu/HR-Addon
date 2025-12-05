@@ -1,0 +1,254 @@
+{
+ "actions": [],
+ "autoname": "format:WCL-{####}",
+ "creation": "2024-12-05 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "log_date",
+  "workday",
+  "column_break_2",
+  "creation_time",
+  "status",
+  "section_break_5",
+  "checkins_found",
+  "checkins_processed",
+  "column_break_8",
+  "first_checkin",
+  "last_checkout",
+  "checkin_details_section",
+  "checkin_details",
+  "calculated_values_section",
+  "hours_worked",
+  "break_hours",
+  "expected_break_hours",
+  "column_break_14",
+  "actual_working_hours",
+  "target_hours",
+  "manual_workday",
+  "workday_status_section",
+  "workday_status",
+  "attendance",
+  "column_break_19",
+  "is_holiday",
+  "is_on_leave",
+  "error_section",
+  "error_message",
+  "traceback"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "log_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Log Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "creation_time",
+   "fieldtype": "Datetime",
+   "label": "Creation Time"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Success\nFailed\nSkipped"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break",
+   "label": "Checkin Details"
+  },
+  {
+   "description": "Total checkins found for this date",
+   "fieldname": "checkins_found",
+   "fieldtype": "Int",
+   "label": "Checkins Found"
+  },
+  {
+   "description": "Checkins actually processed (paired IN/OUT)",
+   "fieldname": "checkins_processed",
+   "fieldtype": "Int",
+   "label": "Checkins Processed"
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "first_checkin",
+   "fieldtype": "Datetime",
+   "label": "First Check-in"
+  },
+  {
+   "fieldname": "last_checkout",
+   "fieldtype": "Datetime",
+   "label": "Last Checkout"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "checkin_details_section",
+   "fieldtype": "Section Break",
+   "label": "Checkin Details"
+  },
+  {
+   "fieldname": "checkin_details",
+   "fieldtype": "Table",
+   "label": "Checkin Details",
+   "options": "Workday Creation Log Checkin"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "calculated_values_section",
+   "fieldtype": "Section Break",
+   "label": "Calculated Values"
+  },
+  {
+   "fieldname": "hours_worked",
+   "fieldtype": "Float",
+   "label": "Hours Worked",
+   "precision": "2"
+  },
+  {
+   "fieldname": "break_hours",
+   "fieldtype": "Float",
+   "label": "Break Hours",
+   "precision": "2"
+  },
+  {
+   "fieldname": "expected_break_hours",
+   "fieldtype": "Float",
+   "label": "Expected Break Hours",
+   "precision": "2"
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "actual_working_hours",
+   "fieldtype": "Float",
+   "label": "Actual Working Hours",
+   "precision": "2"
+  },
+  {
+   "fieldname": "target_hours",
+   "fieldtype": "Float",
+   "label": "Target Hours",
+   "precision": "2"
+  },
+  {
+   "default": "0",
+   "fieldname": "manual_workday",
+   "fieldtype": "Check",
+   "label": "Manual Workday"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "workday_status_section",
+   "fieldtype": "Section Break",
+   "label": "Workday Status"
+  },
+  {
+   "fieldname": "workday_status",
+   "fieldtype": "Data",
+   "label": "Workday Status"
+  },
+  {
+   "fieldname": "attendance",
+   "fieldtype": "Link",
+   "label": "Attendance",
+   "options": "Attendance"
+  },
+  {
+   "fieldname": "column_break_19",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_holiday",
+   "fieldtype": "Check",
+   "label": "Is Holiday"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_on_leave",
+   "fieldtype": "Check",
+   "label": "Is On Leave"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "error_section",
+   "fieldtype": "Section Break",
+   "label": "Error Details"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message"
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback"
+  },
+  {
+   "fieldname": "workday",
+   "fieldtype": "Link",
+   "label": "Workday",
+   "options": "Workday"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-12-05 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HR Addon",
+ "name": "Workday Creation Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
