@@ -212,6 +212,13 @@ def get_created_workdays(employee, date_from, date_to):
 
 def get_employee_checkin(employee,atime):
     EmployeeCheckin = frappe.qb.DocType('Employee Checkin')
+    
+    # Convert atime to date for consistent comparison
+    target_date = getdate(atime)
+    
+    # Log for debugging
+    frappe.logger().debug(f"get_employee_checkin: employee={employee}, target_date={target_date}")
+    
     checkin_list = (
         frappe.qb.from_(EmployeeCheckin)
         .select(
@@ -222,9 +229,14 @@ def get_employee_checkin(employee,atime):
             EmployeeCheckin.attendance
         )
         .where(EmployeeCheckin.employee == employee)
-        .where(Date(EmployeeCheckin.time) == getdate(atime))
+        .where(Date(EmployeeCheckin.time) == target_date)
         .orderby(EmployeeCheckin.time, order=Order.asc)
     ).run(as_dict=1)
+    
+    # Log results for debugging
+    frappe.logger().debug(f"get_employee_checkin: found {len(checkin_list)} checkins for {employee} on {target_date}")
+    if checkin_list:
+        frappe.logger().debug(f"get_employee_checkin: checkins={[c.get('name') for c in checkin_list]}")
 
     return checkin_list or []
 
@@ -520,6 +532,7 @@ def create_background_job_for_workday_generation(hr_addon_settings):
 		cron_string = "0 {0} * * *".format(time)
 		frequency = "Cron"
 	
+	# This is creating Schedule Job Type which is already a cronjob
 	insert_single_event(
 		frequency=frequency,
 		event="hr_addon.hr_addon.doctype.workday.workday.generate_workdays_scheduled_job",
@@ -527,8 +540,9 @@ def create_background_job_for_workday_generation(hr_addon_settings):
 	)
 
 
-def create_background_job_for_workday_generation_after_migrate():
-	hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
+def create_background_job_for_workday_generation_after_install():
+	"""Called once after app installation to create the scheduled job"""
+	hr_addon_settings = frappe.get_doc("HR Addon Settings")
 	create_background_job_for_workday_generation(hr_addon_settings)
 
 def generate_workdays_scheduled_job():
@@ -540,33 +554,160 @@ def generate_workdays_scheduled_job():
 
 @frappe.whitelist()
 def generate_workdays_for_past_7_days_now():
-	today = frappe.utils.datetime.datetime.now()
-	a_week_ago = today - frappe.utils.datetime.timedelta(days=7)
-	employees = frappe.db.get_list("Employee", filters={"status": "Active"})
-	for employee in employees:
-		try:
-			employee_name = employee["name"]
-			unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
-			valid_unmarked_days = []
-			for date in unmarked_days:
-				if has_valid_weekly_working_hours(employee_name, date):
-					valid_unmarked_days.append(date)
-			
-			if not valid_unmarked_days:
-				continue  # No valid dates, skip
+	import time
+	start_time = time.time()
+	
+	# Create log document
+	log_doc = frappe.get_doc({
+		"doctype": "Workday Generation Log",
+		"execution_time": frappe.utils.now_datetime(),
+		"execution_type": "Scheduled Job" if frappe.flags.in_scheduler else "Manual Button",
+		"status": "Running"
+	})
+	log_doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	
+	try:
+		today = frappe.utils.datetime.datetime.now()
+		a_week_ago = today - frappe.utils.datetime.timedelta(days=7)
+		
+		# Uncomment below line to test error handling in Workday Generation Log
+		# raise Exception("Test error: Simulating critical failure in workday generation")
+		
+		employees = frappe.db.get_list("Employee", filters={"status": "Active"})
+		
+		total_employees = 0
+		total_workdays_created = 0
+		total_workdays_failed = 0
+		total_dates = 0
+		errors = []
+		
+		for employee in employees:
+			try:
+				employee_name = employee["name"]
+				
+				# Uncomment below line to test per-employee error handling
+				# if employee_name == "HR-EMP-00001": raise Exception("Test error: Simulating employee-specific failure")
+				
+				unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
+				valid_unmarked_days = []
+				for date in unmarked_days:
+					if has_valid_weekly_working_hours(employee_name, date):
+						valid_unmarked_days.append(date)
+				
+				if not valid_unmarked_days:
+					continue  # No valid dates, skip
 
-			data = {
-				"employee": employee_name,
-				"unmarked_days": valid_unmarked_days
-			}
-			flag = "Create workday"
+				total_employees += 1
+				total_dates += len(valid_unmarked_days)
+				
+				# Count checkins and categorize absence reasons for this employee
+				checkins_found = 0
+				dates_with_no_checkins = 0
+				dates_with_incomplete_checkins = 0
+				dates_on_leave = 0
+				dates_on_holiday = 0
+				
+				for date in valid_unmarked_days:
+					checkins = get_employee_checkin(employee_name, date)
+					checkin_count = len(checkins)
+					checkins_found += checkin_count
+					
+					# Categorize absence reason
+					if checkin_count == 0:
+						# Check if on leave
+						leave_filters = {
+							"employee": employee_name,
+							"from_date": ("<=", date),
+							"to_date": (">=", date),
+							"docstatus": 1
+						}
+						leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
+						if leave_types:
+							leave_filters["leave_type"] = ['not in', leave_types]
+						
+						if frappe.db.exists("Leave Application", leave_filters):
+							dates_on_leave += 1
+						# Check if holiday
+						elif date_is_in_holiday_list(employee_name, date):
+							dates_on_holiday += 1
+						else:
+							dates_with_no_checkins += 1
+					elif checkin_count % 2 != 0:
+						# Odd number of checkins = incomplete
+						dates_with_incomplete_checkins += 1
+				
+				# Add employee log detail
+				log_doc.append("employee_logs", {
+					"employee": employee_name,
+					"status": "Success",
+					"unmarked_days": len(valid_unmarked_days),
+					"checkins_found": checkins_found,
+					"dates_with_no_checkins": dates_with_no_checkins,
+					"dates_with_incomplete_checkins": dates_with_incomplete_checkins,
+					"dates_on_leave": dates_on_leave,
+					"dates_on_holiday": dates_on_holiday,
+					"workdays_created": 0,  # Will be updated later
+					"workdays_failed": 0
+				})
 
-			bulk_process_workdays_background(data, flag)
-		except Exception as e:
-			frappe.log_error(
-				"Creating Workday, Got Error: {} while fetching unmarked days for: {}".format(str(e), employee_name),
-				"Error during fetching unmarked days"
-			)
+				data = {
+					"employee": employee_name,
+					"unmarked_days": valid_unmarked_days,
+					"log_name": log_doc.name  # Pass log name to background job
+				}
+				flag = "Create workday"
+
+				bulk_process_workdays_background(data, flag)
+				total_workdays_created += len(valid_unmarked_days)
+				
+			except Exception as e:
+				total_workdays_failed += 1
+				error_msg = "Creating Workday, Got Error: {} while fetching unmarked days for: {}".format(str(e), employee_name)
+				errors.append(error_msg)
+				frappe.log_error(error_msg, "Error during fetching unmarked days")
+				
+				# Add failed employee log
+				log_doc.append("employee_logs", {
+					"employee": employee_name,
+					"status": "Failed",
+					"error_message": str(e)
+				})
+		
+		# Update log document with final results
+		end_time = time.time()
+		duration = end_time - start_time
+		
+		log_doc.total_employees = total_employees
+		log_doc.total_dates_processed = total_dates
+		log_doc.workdays_created = total_workdays_created
+		log_doc.workdays_failed = total_workdays_failed
+		log_doc.duration = duration
+		log_doc.status = "Failed" if total_workdays_failed == total_employees else ("Partially Failed" if total_workdays_failed > 0 else "Completed")
+		
+		if errors:
+			log_doc.error_log = "\n\n".join(errors)
+		
+		log_doc.save(ignore_permissions=True)
+		frappe.db.commit()
+		
+		frappe.logger().info(f"Workday generation completed. Log: {log_doc.name}, Duration: {duration:.2f}s")
+		
+	except Exception as e:
+		# Catch any unexpected errors in the main function
+		end_time = time.time()
+		duration = end_time - start_time
+		
+		error_msg = "Critical Error in generate_workdays_for_past_7_days_now: {}".format(str(e))
+		frappe.log_error(traceback.format_exc(), "Critical Error in Workday Generation")
+		
+		log_doc.status = "Failed"
+		log_doc.duration = duration
+		log_doc.error_log = "{}\n\n{}".format(error_msg, traceback.format_exc())
+		log_doc.save(ignore_permissions=True)
+		frappe.db.commit()
+		
+		frappe.logger().error(f"Workday generation failed critically. Log: {log_doc.name}, Error: {error_msg}")
 
 def has_valid_weekly_working_hours(employee, date):
 	date = frappe.utils.getdate(date)
@@ -628,7 +769,79 @@ def bulk_process_workdays(data,flag):
 	missing_dates = []
 
 	for date in data.unmarked_days:
+		creation_log = None
 		try:
+			# Create creation log for this workday
+			creation_log = frappe.get_doc({
+				"doctype": "Workday Creation Log",
+				"employee": data.employee,
+				"log_date": get_datetime(date),
+				"creation_time": frappe.utils.now_datetime(),
+				"status": "Success"
+			})
+			
+			# Get checkins for logging
+			employee_checkins = get_employee_checkin(data.employee, date)
+			creation_log.checkins_found = len(employee_checkins)
+			
+			# Uncomment below line to test error handling in Workday Creation Log
+			# raise Exception("Test error: Simulating workday creation failure")
+			
+			# Capture first and last checkin times based on log type
+			if employee_checkins:
+				# Find first IN checkin
+				first_in = next((c for c in employee_checkins if c.get("log_type") == "IN"), None)
+				if first_in:
+					creation_log.first_checkin = first_in.get("time")
+				elif employee_checkins:
+					# Fallback: if no IN found, use the first checkin of any type
+					creation_log.first_checkin = employee_checkins[0].get("time")
+				
+				# Find last OUT checkin
+				last_out = next((c for c in reversed(employee_checkins) if c.get("log_type") == "OUT"), None)
+				if last_out:
+					creation_log.last_checkout = last_out.get("time")
+			
+			# Log each checkin
+			for checkin in employee_checkins:
+				creation_log.append("checkin_details", {
+					"employee_checkin": checkin.get("name"),
+					"log_type": checkin.get("log_type"),
+					"log_time": checkin.get("time"),
+					"skip_auto_attendance": checkin.get("skip_auto_attendance"),
+					"attendance": checkin.get("attendance"),
+					"processed": 1 if len(employee_checkins) % 2 == 0 else 0
+				})
+			
+			# Get actual employee log data to capture all calculated values
+			workday_data = get_actual_employee_log(data.employee, date)
+			
+			# Populate calculated values
+			creation_log.hours_worked = workday_data.get("hours_worked", 0)
+			creation_log.break_hours = workday_data.get("break_hours", 0)
+			creation_log.expected_break_hours = workday_data.get("expected_break_hours", 0)
+			creation_log.actual_working_hours = workday_data.get("actual_working_hours", 0)
+			creation_log.target_hours = workday_data.get("target_hours", 0)
+			creation_log.manual_workday = workday_data.get("manual_workday", 0)
+			creation_log.workday_status = workday_data.get("status", "")
+			creation_log.attendance = workday_data.get("attendance", "")
+			creation_log.checkins_processed = len(employee_checkins) if len(employee_checkins) % 2 == 0 else 0
+			
+			# Check if holiday or leave
+			creation_log.is_holiday = date_is_in_holiday_list(data.employee, date)
+			
+			leave_filters = {
+				"employee": data.employee,
+				"from_date": ("<=", date),
+				"to_date": (">=", date),
+				"docstatus": 1
+			}
+			leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
+			if leave_types:
+				leave_filters["leave_type"] = ['not in', leave_types]
+			creation_log.is_on_leave = 1 if frappe.db.exists("Leave Application", leave_filters) else 0
+			
+			# Create workday if it doesn't exist
 			if not frappe.db.exists('Workday', {'employee': data.employee,'log_date': get_datetime(date)}):
 				workday = frappe.new_doc("Workday")
 				workday.employee = data.employee
@@ -636,13 +849,43 @@ def bulk_process_workdays(data,flag):
 				workday.log_date = get_datetime(date)
 				if flag == "Create workday":
 					workday.save()
+					creation_log.workday = workday.name
+			else:
+				creation_log.status = "Skipped"
+				existing_workday = frappe.db.get_value('Workday', 
+					{'employee': data.employee,'log_date': get_datetime(date)}, 'name')
+				creation_log.workday = existing_workday
 
 			missing_dates.append(get_datetime(date))
+			
+			# Save creation log
+			creation_log.insert(ignore_permissions=True)
+			frappe.db.commit()
 
-		except Exception:
-			message = _("Something went wrong in Workday Creation: {0}".format(traceback.format_exc()))
-			frappe.msgprint(message)
-			frappe.log_error("bulk_process_workdays() error", message)
+		except Exception as e:
+			error_trace = traceback.format_exc()
+			message = _("Something went wrong in Workday Creation: {0}".format(str(e)))
+			frappe.log_error(message, "Error in bulk_process_workdays")
+			
+			# Update creation log with error details
+			if creation_log:
+				creation_log.status = "Failed"
+				creation_log.error_message = str(e)
+				creation_log.traceback = error_trace
+				creation_log.insert(ignore_permissions=True)
+				frappe.db.commit()
+			else:
+				# Create a minimal error log if we couldn't create the initial log
+				frappe.get_doc({
+					"doctype": "Workday Creation Log",
+					"employee": data.employee,
+					"log_date": get_datetime(date),
+					"creation_time": frappe.utils.now_datetime(),
+					"status": "Failed",
+					"error_message": str(e),
+					"traceback": error_trace
+				}).insert(ignore_permissions=True)
+				frappe.db.commit()
 
 	formatted_missing_dates = []
 	for missing_date in missing_dates:

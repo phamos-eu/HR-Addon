@@ -1,0 +1,159 @@
+{
+ "actions": [],
+ "creation": "2025-12-04 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "column_break_2",
+  "status",
+  "dates_section",
+  "unmarked_days",
+  "column_break_6",
+  "workdays_created",
+  "workdays_failed",
+  "checkins_section",
+  "checkins_found",
+  "column_break_10",
+  "checkins_processed",
+  "absence_section",
+  "dates_with_no_checkins",
+  "dates_with_incomplete_checkins",
+  "dates_on_leave",
+  "dates_on_holiday",
+  "error_details_section",
+  "error_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Success\nPartially Failed\nFailed\nSkipped",
+   "reqd": 1
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates Processing"
+  },
+  {
+   "description": "Total unmarked days found for this employee",
+   "fieldname": "unmarked_days",
+   "fieldtype": "Int",
+   "label": "Unmarked Days"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "workdays_created",
+   "fieldtype": "Int",
+   "label": "Workdays Created"
+  },
+  {
+   "fieldname": "workdays_failed",
+   "fieldtype": "Int",
+   "label": "Workdays Failed"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "checkins_section",
+   "fieldtype": "Section Break",
+   "label": "Checkins Info"
+  },
+  {
+   "description": "Total checkins found for all dates",
+   "fieldname": "checkins_found",
+   "fieldtype": "Int",
+   "label": "Checkins Found"
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Checkins that were actually processed in workdays",
+   "fieldname": "checkins_processed",
+   "fieldtype": "Int",
+   "label": "Checkins Processed"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "absence_section",
+   "fieldtype": "Section Break",
+   "label": "Absence Reasons"
+  },
+  {
+   "description": "Number of dates where no checkins were found",
+   "fieldname": "dates_with_no_checkins",
+   "fieldtype": "Int",
+   "label": "Dates with No Checkins"
+  },
+  {
+   "description": "Number of dates where checkins were found but incomplete (odd number)",
+   "fieldname": "dates_with_incomplete_checkins",
+   "fieldtype": "Int",
+   "label": "Dates with Incomplete Checkins"
+  },
+  {
+   "description": "Number of dates where employee was on leave",
+   "fieldname": "dates_on_leave",
+   "fieldtype": "Int",
+   "label": "Dates on Leave"
+  },
+  {
+   "description": "Number of dates that were holidays",
+   "fieldname": "dates_on_holiday",
+   "fieldtype": "Int",
+   "label": "Dates on Holiday"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "error_details_section",
+   "fieldtype": "Section Break",
+   "label": "Error Details"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Long Text",
+   "label": "Error Message"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-04 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HR Addon",
+ "name": "Workday Generation Log Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
