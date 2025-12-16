@@ -61,6 +61,8 @@ class Workday(Document):
 			if half_day:
 				self.target_hours = self.target_hours / 2
 				self.expected_break_hours= self.expected_break_hours/2
+				if self.hours_worked == 0: 
+					self.actual_working_hours= -self.target_hours  
 				self.status = "Half Day"
 			else: 
 				self.target_hours = 0
