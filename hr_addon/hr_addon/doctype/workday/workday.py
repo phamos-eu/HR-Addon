@@ -57,15 +57,16 @@ class Workday(Document):
 
 		leave_application = frappe.db.exists("Leave Application", filters)
 		if leave_application :
-			self.target_hours = 0
-			self.expected_break_hours= 0
-			self.actual_working_hours= 0
-			self.status = "On Leave"
-
-		if (self.status == 'Half Day'):
-			self.target_hours = self.target_hours / 2
-		elif (self.status == 'On Leave'):
-			self.target_hours = 0
+			half_day = frappe.db.get_value("Leave Application", leave_application, "half_day") 
+			if half_day:
+				self.target_hours = self.target_hours / 2
+				self.expected_break_hours= self.expected_break_hours/2
+				self.status = "Half Day"
+			else: 
+				self.target_hours = 0
+				self.expected_break_hours= 0
+				self.actual_working_hours= 0
+				self.status = "On Leave"
 
 	def date_is_in_comp_off(self):
 		leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
