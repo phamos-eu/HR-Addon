@@ -57,8 +57,13 @@ class Workday(Document):
 
 		leave_application = frappe.db.exists("Leave Application", filters)
 		if leave_application :
-			half_day = frappe.db.get_value("Leave Application", leave_application, "half_day") 
-			if half_day:
+			half_day, half_day_date = frappe.db.get_value("Leave Application", leave_application, ["half_day", "half_day_date"])
+			
+			# Apply half-day logic only if this specific date is the half day
+			# For single-day leaves, half_day_date is None
+			is_half_day_for_this_date = half_day and (not half_day_date or getdate(half_day_date) == getdate(self.log_date))
+			
+			if is_half_day_for_this_date:
 				self.target_hours = self.target_hours / 2
 				self.expected_break_hours= self.expected_break_hours/2
 				if self.hours_worked == 0: 
