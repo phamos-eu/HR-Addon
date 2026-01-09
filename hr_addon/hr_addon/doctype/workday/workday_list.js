@@ -16,15 +16,13 @@ frappe.listview_settings['Workday'] = {
 		list_view.page.add_inner_button(__("Process Workdays"), function() {
 			let dialog = new frappe.ui.Dialog({
 				title: __("Process Workdays"),
-				fields: [{
+				fields: [				{
 					fieldname: 'employee',
-					label: __('For Employee'),
-					fieldtype: 'Link',
-					options: 'Employee',
-					get_query: () => {
-						return {query: "erpnext.controllers.queries.employee_query"};
+					label: __('For Employee(s) - Leave empty for all active'),
+					fieldtype: 'MultiSelectList',
+					get_data: function(txt) {
+						return frappe.db.get_link_options('Employee', txt, {status: 'Active'});
 					},
-					reqd: 1,
 					onchange: function() {
 						dialog.set_df_property("unmarked_days", "hidden", 1);
 						dialog.set_df_property("exclude_holidays", "hidden", 1);
@@ -46,11 +44,12 @@ frappe.listview_settings['Workday'] = {
 					fieldtype: 'Date',
 					reqd: 1,
 					onchange: function() {
-						if (dialog.fields_dict.employee.value && dialog.fields_dict.date_from.value) {
+						let employees = dialog.fields_dict.employee.value;
+						if (employees && employees.length > 0 && dialog.fields_dict.date_from.value) {
 							dialog.set_df_property("unmarked_days", "options", []);
 							dialog.no_unmarked_days_left = false;
 							me.get_day_range_options(
-								dialog.fields_dict.employee.value,
+								employees,
 								dialog.fields_dict.date_from.value,
 								dialog.fields_dict.date_to.value,
 							).then(options => {
@@ -69,8 +68,9 @@ frappe.listview_settings['Workday'] = {
 					fieldtype: "Check",
 					fieldname: "toggle_days",
 					hidden: 0,
-					onchange: function() {						
-						if (dialog.fields_dict.employee.value && dialog.fields_dict.date_to.value) {
+					onchange: function() {
+						let employees = dialog.fields_dict.employee.value;
+						if (employees && employees.length > 0 && dialog.fields_dict.date_to.value) {
 							dialog.set_df_property("unmarked_days", "hidden", !dialog.fields_dict.toggle_days.get_value());
 							dialog.set_df_property("exclude_holidays", "hidden", !dialog.fields_dict.toggle_days.get_value());
 						}
@@ -110,81 +110,142 @@ frappe.listview_settings['Workday'] = {
 					hidden: 1,
 				}],
 				primary_action(data) {
-					if (cur_dialog.no_unmarked_days_left) {
-
-						frappe.call({
-							method: "hr_addon.hr_addon.doctype.workday.workday.get_created_workdays",
-							args: {
-								employee: dialog.fields_dict.employee.value,
-								date_from: dialog.fields_dict.date_from.value,
-								date_to: dialog.fields_dict.date_to.value
-							},
-							callback: function(response) {
-								if (response.message) {
-									let workdays = response.message;
-						
-									let workday_dates = workdays.map(workday => workday.log_date);
-						
-									let workday_dates_string = workday_dates.map(date => `• ${date.trim()}`).join('<br>'); 
-									frappe.msgprint(
-									__("Workday for the period: {0} - {1}, has already been processed for the Employee {2}. <br><br>For following dates workdays are available:<br>{3}",
-									[
-									  frappe.datetime.str_to_user(dialog.fields_dict.date_to.value) ,
-									  frappe.datetime.str_to_user(dialog.fields_dict.date_from.value),
-									  dialog.fields_dict.employee.value,
-									  workday_dates_string
-									]));
-								}
-							}
-						});
-					} else {
-						frappe.call({
-							method: "hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays",
-							args: {
-								data: data,
-								flag : "Do not create workday"
-							},
-							callback: function (response) {
-								if (response.message) {
-									let missingDates = response.message.missing_dates;
-									let missing_dates_string = missingDates.length > 0 ? missingDates.join(", ") : "None";
-									frappe.confirm(
-										__("Are you sure you want to process the workday for {0} from {1} to {2}?<br><br>For the following dates workdays will be created:<br>{3}", [
-											data.employee,
-											frappe.datetime.str_to_user(data.date_from),
-											frappe.datetime.str_to_user(data.date_to),
-											missing_dates_string.split(',').map(date => `• ${date.trim()}`).join('<br>')
-										]),
-										function () {
-											flag = ""
-											frappe.call({
-												method: "hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays",
-												args: {
-													data: data,
-													flag : "Create workday"
-													
-												},
-												callback: function (r) {
-													if (r.message === 1) {
-														frappe.show_alert({
-															message: __("Workdays Processed"),
-															indicator: "blue",
-														});
-														cur_dialog.hide();
-													}
-												},
-											});
+					// Check if no employees are selected
+					if (!data.employee || data.employee.length === 0) {
+						frappe.confirm(
+							__('No employee selected. Do you want to process workdays for all active employees?'),
+							function() {
+								// User confirmed - get all active employees
+								frappe.call({
+									method: 'frappe.client.get_list',
+									args: {
+										doctype: 'Employee',
+										filters: {
+											status: 'Active'
 										},
-										function () {
-											
+										fields: ['name']
+									},
+									callback: function(r) {
+										if (r.message && r.message.length > 0) {
+											let all_employees = r.message.map(emp => emp.name);
+											data.employee = all_employees;
+											processWorkdays(data);
+										} else {
+											frappe.msgprint(__('No active employees found'));
 										}
-									);
-								}
+									}
+								});
+							},
+							function() {
+								// User cancelled
+								frappe.msgprint(__('Please select at least one employee'));
 							}
-						});
+						);
+						return;
 					}
-					dialog.hide();
-					list_view.refresh();
+					
+					// Process workdays for selected employees
+					processWorkdays(data);
+					
+					// Helper function to process workdays
+					function processWorkdays(data) {
+						if (dialog.no_unmarked_days_left) {
+							frappe.call({
+								method: "hr_addon.hr_addon.doctype.workday.workday.get_created_workdays",
+								args: {
+									employees: data.employee,
+									date_from: data.date_from,
+									date_to: data.date_to
+								},
+								callback: function(response) {
+									if (response.message) {
+										let workdays = response.message;
+							
+										let workday_dates = workdays.map(workday => workday.log_date);
+							
+										let workday_dates_string = workday_dates.map(date => `• ${date.trim()}`).join('<br>'); 
+										frappe.msgprint(
+										__("Workday for the period: {0} - {1}, has already been processed for the selected Employee(s). <br><br>For following dates workdays are available:<br>{2}",
+										[
+										  frappe.datetime.str_to_user(data.date_from),
+										  frappe.datetime.str_to_user(data.date_to),
+										  workday_dates_string
+										]));
+									}
+								}
+							});
+						} else {
+							frappe.call({
+								method: "hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays",
+								args: {
+									data: data,
+									flag: "Do not create workday"
+								},
+								callback: function(response) {
+									if (response.message) {
+										let missingDates = response.message.missing_dates;
+										let missing_dates_string = missingDates.length > 0 ? missingDates.join(", ") : "None";
+										let employee_list = Array.isArray(data.employee) ? data.employee : [data.employee];
+										let employee_count = employee_list.length;
+										
+										// Fetch employee names
+										frappe.call({
+											method: 'frappe.client.get_list',
+											args: {
+												doctype: 'Employee',
+												filters: {
+													name: ['in', employee_list]
+												},
+												fields: ['name', 'employee_name']
+											},
+											callback: function(emp_response) {
+												let employee_names = '';
+												if (emp_response.message && emp_response.message.length > 0) {
+													employee_names = emp_response.message.map(emp => 
+														`• ${emp.employee_name} (${emp.name})`
+													).join('<br>');
+												} else {
+													employee_names = employee_list.map(emp => `• ${emp}`).join('<br>');
+												}
+												
+												frappe.confirm(
+													__("Are you sure you want to process workdays for the following {0} employee(s) from {1} to {2}?<br><br><b>Employees:</b><br>{3}<br><br><b>Dates to process:</b><br>{4}", [
+														employee_count,
+														frappe.datetime.str_to_user(data.date_from),
+														frappe.datetime.str_to_user(data.date_to),
+														employee_names,
+														missing_dates_string.split(',').map(date => `• ${date.trim()}`).join('<br>')
+													]),
+													function() {
+														frappe.call({
+															method: "hr_addon.hr_addon.doctype.workday.workday.bulk_process_workdays",
+															args: {
+																data: data,
+																flag: "Create workday"
+															},
+															callback: function(r) {
+																if (r.message && r.message.message === 1) {
+																	frappe.show_alert({
+																		message: __("Workdays Processed"),
+																		indicator: "blue",
+																	});
+																	dialog.hide();
+																	list_view.refresh();
+																}
+															},
+														});
+													},
+													function() {
+														// User cancelled
+													}
+												);
+											}
+										});
+									}
+								}
+							});
+						}
+					}
 				},
 				primary_action_label: __('Process Workdays')
 
