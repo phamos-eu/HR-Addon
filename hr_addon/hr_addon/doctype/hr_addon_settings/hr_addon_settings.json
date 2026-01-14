@@ -16,6 +16,7 @@
   "time",
   "generate_workdays_for_past_7_days_now",
   "enabled",
+  "skip_workday_if_no_weekly_hours",
   "column_break_jozi",
   "workday_break_calculation_mechanism",
   "swap_hours_worked_and_actual_working_hours",
@@ -162,12 +163,19 @@
    "label": "Background Job Frequency",
    "mandatory_depends_on": "eval: doc.enabled",
    "options": "Weekly\nDaily"
+  },
+  {
+   "default": "0",
+   "description": "When enabled, automatic and manual workday generation will skip employees who do not have Weekly Working Hours configured. Only employees with defined Weekly Working Hours will have workdays created.",
+   "fieldname": "skip_workday_if_no_weekly_hours",
+   "fieldtype": "Check",
+   "label": "Skip Workdays for Employees without Weekly Hours"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-10-15 17:44:47.996847",
+ "modified": "2026-01-13 16:06:46.566155",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",

@@ -311,7 +311,7 @@ def get_employee_checkin(employee,atime):
     return checkin_list or []
 
 
-def get_employee_default_work_hour(employee, adate):
+def get_employee_default_work_hour(employee, adate, skip_workday_if_no_weekly_hours=None):
     adate = getdate(adate)
     dayname = adate.strftime('%A')
 
@@ -344,8 +344,18 @@ def get_employee_default_work_hour(employee, adate):
 
     target_work_hours = query.run(as_dict=True)
 
+	# If parameter not passed, fetch from settings (for scheduler)
+    if skip_workday_if_no_weekly_hours is None:
+       skip_workday_if_no_weekly_hours = frappe.db.get_single_value(
+            'HR Addon Settings', 
+            'skip_workday_if_no_weekly_hours'
+       ) or 0
+
     if not target_work_hours:
-        frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{0} first for date : {1}.').format(employee,adate))
+        if skip_workday_if_no_weekly_hours:
+           return None  # Skip enabled - return None gracefully
+        else:
+            frappe.throw(_('Please create Weekly Working Hours for the selected Employee:{0} first for date : {1}.').format(employee,adate))
 
     if len(target_work_hours) > 1:
         target_work_hours= "<br> ".join([frappe.get_desk_link("Weekly Working Hours", w.name) for w in target_work_hours])
@@ -355,9 +365,12 @@ def get_employee_default_work_hour(employee, adate):
 
 
 @frappe.whitelist()
-def get_actual_employee_log(aemployee, adate):
+def get_actual_employee_log(aemployee, adate, skip_workday_if_no_weekly_hours=None):
     employee_checkins = get_employee_checkin(aemployee,adate)
-    employee_default_work_hour = get_employee_default_work_hour(aemployee,adate)
+    employee_default_work_hour = get_employee_default_work_hour(aemployee,adate,skip_workday_if_no_weekly_hours)
+    # If None, employee has no weekly hours and skip is enabled
+    if employee_default_work_hour is None:
+       return None
     is_date_in_holiday_list = date_is_in_holiday_list(aemployee,adate)
     no_break_hours = employee_default_work_hour.no_break_hours
     is_target_hours_zero_on_holiday = employee_default_work_hour.set_target_hours_to_zero_when_date_is_holiday
@@ -626,6 +639,9 @@ def generate_workdays_scheduled_job():
 def generate_workdays_for_past_7_days_now():
 	import time
 	start_time = time.time()
+	# Fetch setting value
+	hr_addon_settings = frappe.get_doc("HR Addon Settings")
+	skip_if_no_weekly_hours = getattr(hr_addon_settings, 'skip_workday_if_no_weekly_hours', 0) or 0
 	
 	# Create log document
 	log_doc = frappe.get_doc({
@@ -660,13 +676,21 @@ def generate_workdays_for_past_7_days_now():
 				# if employee_name == "HR-EMP-00001": raise Exception("Test error: Simulating employee-specific failure")
 				
 				unmarked_days = get_unmarked_range(employee_name, a_week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
-				valid_unmarked_days = []
-				for date in unmarked_days:
-					if has_valid_weekly_working_hours(employee_name, date):
-						valid_unmarked_days.append(date)
 				
-				if not valid_unmarked_days:
-					continue  # No valid dates, skip
+				if not unmarked_days: 
+					continue  # No unmarked days, skip to next employee 
+
+				if skip_if_no_weekly_hours:
+					# Filter unmarked days to only those with valid weekly working hours 
+					valid_unmarked_days = []
+					for date in unmarked_days:
+						if has_valid_weekly_working_hours(employee_name, date):
+							valid_unmarked_days.append(date)
+				
+					if not valid_unmarked_days:
+						continue  # No valid dates, skip
+				else:
+					valid_unmarked_days = unmarked_days 	
 
 				total_employees += 1
 				total_dates += len(valid_unmarked_days)
@@ -724,7 +748,8 @@ def generate_workdays_for_past_7_days_now():
 				data = {
 					"employee": employee_name,
 					"unmarked_days": valid_unmarked_days,
-					"log_name": log_doc.name  # Pass log name to background job
+					"log_name": log_doc.name,  # Pass log name to background job
+					"skip_workday_if_no_weekly_hours": skip_if_no_weekly_hours
 				}
 				flag = "Create workday"
 
@@ -913,8 +938,15 @@ def bulk_process_workdays(data,flag):
 					})
 				
 				# Get actual employee log data to capture all calculated values
-				workday_data = get_actual_employee_log(emp, date)
-				
+				workday_data = get_actual_employee_log(emp, date, data.get('skip_workday_if_no_weekly_hours'))
+
+				if workday_data is None: 
+					creation_log.status = "Skipped"
+					creation_log.error_message = ("No Weekly Working Hours found and skipping is enabled.")
+					creation_log.insert(ignore_permissions=True)
+					frappe.db.commit()
+					continue  # Skip to next date 
+
 				# Populate calculated values
 				creation_log.hours_worked = workday_data.get("hours_worked", 0)
 				creation_log.break_hours = workday_data.get("break_hours", 0)
