@@ -16,7 +16,14 @@ frappe.listview_settings['Workday'] = {
 		list_view.page.add_inner_button(__("Process Workdays"), function() {
 			let dialog = new frappe.ui.Dialog({
 				title: __("Process Workdays"),
-				fields: [				{
+				fields: [		
+					{
+					fieldname: 'skip_workday_if_no_weekly_hours',
+					label: __('Skip Workday if No Weekly Working Hours'),
+					fieldtype: 'Check',
+					default: 0
+				},
+					{
 					fieldname: 'employee',
 					label: __('For Employee(s) - Leave empty for all active'),
 					fieldtype: 'MultiSelectList',
@@ -207,8 +214,8 @@ frappe.listview_settings['Workday'] = {
 												} else {
 													employee_names = employee_list.map(emp => `• ${emp}`).join('<br>');
 												}
-												
-												frappe.confirm(
+												if(missing_dates_string != "None") {
+													frappe.confirm(
 													__("Are you sure you want to process workdays for the following {0} employee(s) from {1} to {2}?<br><br><b>Employees:</b><br>{3}<br><br><b>Dates to process:</b><br>{4}", [
 														employee_count,
 														frappe.datetime.str_to_user(data.date_from),
@@ -238,7 +245,10 @@ frappe.listview_settings['Workday'] = {
 													function() {
 														// User cancelled
 													}
-												);
+													);}
+												else{
+													frappe.msgprint(__("No new workdays to process for the selected employee(s) in the given date range.") ); 
+												}	
 											}
 										});
 									}
@@ -250,9 +260,15 @@ frappe.listview_settings['Workday'] = {
 				primary_action_label: __('Process Workdays')
 
 			});
-			dialog.$wrapper.find('.btn-modal-primary').removeClass('btn-primary').addClass('btn-dark');
-			dialog.show();
-		});
+		dialog.$wrapper.find('.btn-modal-primary').removeClass('btn-primary').addClass('btn-dark');
+		dialog.show();
+		
+		// Fetch default value from HR Addon Settings
+		frappe.db.get_single_value('HR Addon Settings', 'skip_workday_if_no_weekly_hours')
+			.then(value => {
+				dialog.set_value('skip_workday_if_no_weekly_hours', value || 0);
+			});
+	});
 		list_view.page.change_inner_button_type('Process Workdays',null, 'dark');
 	},
 	get_day_range_options: function(employee, from_day, to_day) {
