@@ -21,6 +21,12 @@ class Workday(Document):
 
 	def set_actual_employee_log(self):
 		new_workday_dict = get_actual_employee_log(self.employee, self.log_date)
+		if new_workday_dict is None:
+			frappe.throw(_("Cannot create workday for employee {0} on date {1}. Weekly Working Hours not configured. Please configure Weekly Working Hours.").format(
+            self.employee, 
+            frappe.format(self.log_date, {"fieldtype": "Date"})
+        ))
+			
 		self.employee_checkins = []
 
 		self.hours_worked = new_workday_dict.get("hours_worked")
