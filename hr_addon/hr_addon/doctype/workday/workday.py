@@ -908,9 +908,10 @@ def bulk_process_workdays(data,flag):
 			frappe.throw(_("No unmarked days found for the selected date range"))
 			return
 
-	all_missing_dates = []
+	all_missing_dates = set()
 	skipped_by_employee = {}
 	created_by_employee = {}
+	existing_workdays = {}
 
 	# Process workdays for each employee
 	for emp in employee_list:
@@ -1025,8 +1026,17 @@ def bulk_process_workdays(data,flag):
 					existing_workday = frappe.db.get_value('Workday', 
 						{'employee': emp,'log_date': get_datetime(date)}, 'name')
 					creation_log.workday = existing_workday
+					if existing_workday:
+						if emp not in existing_workdays:
+							emp_name = frappe.get_value('Employee', emp, 'employee_name') 
+							existing_workdays[emp] = {
+								"employee_name": emp_name or emp,
+								"reason": "Already Exists",
+								"dates": []
+							}
+						existing_workdays[emp]["dates"].append(date)
 
-				all_missing_dates.append(get_datetime(date))
+				all_missing_dates.add(get_datetime(date))
 			
 				# Save creation log
 				creation_log.insert(ignore_permissions=True)
@@ -1058,7 +1068,7 @@ def bulk_process_workdays(data,flag):
 					frappe.db.commit()
 
 	formatted_missing_dates = []
-	for missing_date in all_missing_dates:
+	for missing_date in sorted(all_missing_dates):
 		formatted_m_date = formatdate(missing_date,'dd.MM.yyyy')
 		formatted_missing_dates.append(formatted_m_date)
 
@@ -1067,5 +1077,6 @@ def bulk_process_workdays(data,flag):
 		"missing_dates": formatted_missing_dates,
 		"flag":flag,
 		"created_summary": created_by_employee,
-		"skipped_summary": skipped_by_employee 
+		"skipped_summary": skipped_by_employee,
+		"existing_summary": existing_workdays 
 	}
