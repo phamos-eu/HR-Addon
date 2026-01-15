@@ -232,6 +232,41 @@ frappe.listview_settings['Workday'] = {
 															},
 															callback: function(r) {
 																if (r.message && r.message.message === 1) {
+																	const summary = r.message.created_summary || {}; 
+																	const skipped_summary = r.message.skipped_summary || {}; 
+																	const existing_summary = r.message.existing_summary || {}; 
+																	let lines = [];
+																	
+																	Object.keys(summary).forEach(empId => { 
+																		const emp = summary[empId];
+																		if(emp.workdays.length){
+																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.workdays.join(", ")}`
+																		); }
+																		})
+																	Object.keys(skipped_summary).forEach(empId => { 
+																		const emp = skipped_summary[empId];
+																		if(emp.dates.length){
+																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.reason} (${emp.dates.join(", ")})`
+																		); }
+																		})
+																	Object.keys(existing_summary).forEach(empId => { 
+																		const emp = existing_summary[empId];
+																		if(emp.dates.length){
+																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.reason} (${emp.dates.join(", ")})`
+																		); }
+																		})
+																	if(lines.length){
+																		frappe.msgprint(
+																			{
+																				title: __('Workdays Created'), 
+																				message: lines.join("<br>"), 
+																			}
+																		)
+																	}
+																	else{
+																		frappe.msgprint(__("No workdays were created.") ); 
+																	}
+																		
 																	frappe.show_alert({
 																		message: __("Workdays Processed"),
 																		indicator: "blue",
