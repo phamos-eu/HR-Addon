@@ -236,6 +236,8 @@ frappe.listview_settings['Workday'] = {
 																	const skipped_summary = r.message.skipped_summary || {}; 
 																	const existing_summary = r.message.existing_summary || {}; 
 																	let lines = [];
+																	const formatDates = (dates) =>
+    																	dates.map(d => frappe.datetime.str_to_user(d)).join(", ");
 																	
 																	Object.keys(summary).forEach(empId => { 
 																		const emp = summary[empId];
@@ -246,13 +248,13 @@ frappe.listview_settings['Workday'] = {
 																	Object.keys(skipped_summary).forEach(empId => { 
 																		const emp = skipped_summary[empId];
 																		if(emp.dates.length){
-																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.reason} (${emp.dates.join(", ")})`
+																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.reason} (${formatDates(emp.dates)})`
 																		); }
 																		})
 																	Object.keys(existing_summary).forEach(empId => { 
 																		const emp = existing_summary[empId];
 																		if(emp.dates.length){
-																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.reason} (${emp.dates.join(", ")})`
+																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.reason} (${formatDates(emp.dates)})`
 																		); }
 																		})
 																	if(lines.length){
