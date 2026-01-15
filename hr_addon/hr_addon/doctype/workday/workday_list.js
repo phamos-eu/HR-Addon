@@ -117,6 +117,12 @@ frappe.listview_settings['Workday'] = {
 					hidden: 1,
 				}],
 				primary_action(data) {
+					let from = data.date_from;
+					let to = data.date_to; 
+					if (from && to && frappe.datetime.str_to_obj(from) > frappe.datetime.str_to_obj(to) ){
+						frappe.msgprint(__('End Date cannot be before Start Date.')); 
+						return;
+					} 
 					// Check if no employees are selected
 					if (!data.employee || data.employee.length === 0) {
 						frappe.confirm(
@@ -235,33 +241,52 @@ frappe.listview_settings['Workday'] = {
 																	const summary = r.message.created_summary || {}; 
 																	const skipped_summary = r.message.skipped_summary || {}; 
 																	const existing_summary = r.message.existing_summary || {}; 
-																	let lines = [];
+																	console.log(summary, skipped_summary, existing_summary); 
+
+																	const createdLines = []; 
+																	const skippedLines = []; 
+																	const existingLines = []; 
+																	const blocks = []; 
+
 																	const formatDates = (dates) =>
     																	dates.map(d => frappe.datetime.str_to_user(d)).join(", ");
 																	
 																	Object.keys(summary).forEach(empId => { 
 																		const emp = summary[empId];
 																		if(emp.workdays.length){
-																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.workdays.join(", ")}`
+																			createdLines.push(`${emp.employee_name} (${empId}): ${emp.workdays.join(", ")}`
 																		); }
 																		})
 																	Object.keys(skipped_summary).forEach(empId => { 
 																		const emp = skipped_summary[empId];
 																		if(emp.dates.length){
-																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.reason} (${formatDates(emp.dates)})`
+																			skippedLines.push(`${emp.employee_name} (${empId}): ${emp.reason} (${formatDates(emp.dates)})`
 																		); }
 																		})
 																	Object.keys(existing_summary).forEach(empId => { 
 																		const emp = existing_summary[empId];
 																		if(emp.dates.length){
-																			lines.push(`<b>${emp.employee_name} (${empId})</b>: ${emp.reason} (${formatDates(emp.dates)})`
+																			existingLines.push(`${emp.employee_name} (${empId}): ${emp.reason} (${formatDates(emp.dates)})`
 																		); }
 																		})
-																	if(lines.length){
+																	
+																	if(createdLines.length){ 
+																		blocks.push("<b>Created Workdays:</b><br>" + createdLines.join("<br>")); 
+																	}
+																	if(skippedLines.length){ 
+																		blocks.push("<br><b>Skipped Workdays:</b><br>" + skippedLines.join("<br>"));  
+																	} 
+																	if(existingLines.length){ 
+																		blocks.push("<br><b>Existing Workdays:</b><br>" + existingLines.join("<br>"));   
+																	} 
+																		
+																	if(blocks.length){
+
+																		console.log(blocks.join("<br><br>")); 
 																		frappe.msgprint(
 																			{
-																				title: __('Workdays Created'), 
-																				message: lines.join("<br>"), 
+																				title: __('Workdays Summary'), 
+																				message: blocks.join("<br><br>"), 
 																			}
 																		)
 																	}
