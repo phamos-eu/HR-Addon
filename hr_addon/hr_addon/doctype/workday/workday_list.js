@@ -284,13 +284,16 @@ frappe.listview_settings['Workday'] = {
 																	const finalMessage = summaryMessage.length
 																		? summaryMessage
 																		: __("No workdays were created.");
-																	console.log(finalMessage);
-																	frappe.msgprint(
-																		{
-																			title: __('Workdays Summary'),
-																			message: finalMessage,
-																		}
-																	);
+																	const showSummary = () => {
+																		console.log(finalMessage);
+																		frappe.msgprint(
+																			{
+																				title: __('Workdays Summary'),
+																				message: finalMessage,
+																			}
+																		);
+																	};
+																	frappe.after_server_call().then(showSummary);
 																		
 																	frappe.show_alert({
 																		message: __("Workdays Processed"),
