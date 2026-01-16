@@ -280,19 +280,17 @@ frappe.listview_settings['Workday'] = {
 																		blocks.push("<br><b>Existing Workdays:</b><br>" + existingLines.join("<br>"));   
 																	} 
 																		
-																	if(blocks.length){
-
-																		console.log(blocks.join("<br><br>")); 
-																		frappe.msgprint(
-																			{
-																				title: __('Workdays Summary'), 
-																				message: blocks.join("<br><br>"), 
-																			}
-																		)
-																	}
-																	else{
-																		frappe.msgprint(__("No workdays were created.") ); 
-																	}
+																	const summaryMessage = blocks.filter(Boolean).join("<br><br>").trim();
+																	const finalMessage = summaryMessage.length
+																		? summaryMessage
+																		: __("No workdays were created.");
+																	console.log(finalMessage);
+																	frappe.msgprint(
+																		{
+																			title: __('Workdays Summary'),
+																			message: finalMessage,
+																		}
+																	);
 																		
 																	frappe.show_alert({
 																		message: __("Workdays Processed"),
