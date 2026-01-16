@@ -241,7 +241,7 @@ frappe.listview_settings['Workday'] = {
 																	const summary = r.message.created_summary || {}; 
 																	const skipped_summary = r.message.skipped_summary || {}; 
 																	const existing_summary = r.message.existing_summary || {}; 
-																	console.log(summary, skipped_summary, existing_summary); 
+																	
 
 																	const createdLines = []; 
 																	const skippedLines = []; 
@@ -280,19 +280,19 @@ frappe.listview_settings['Workday'] = {
 																		blocks.push("<br><b>Existing Workdays:</b><br>" + existingLines.join("<br>"));   
 																	} 
 																		
-																	if(blocks.length){
-
-																		console.log(blocks.join("<br><br>")); 
+																	const summaryMessage = blocks.filter(Boolean).join("<br><br>").trim();
+																	const finalMessage = summaryMessage.length
+																		? summaryMessage
+																		: __("No workdays were created.");
+																	const showSummary = () => {
 																		frappe.msgprint(
 																			{
-																				title: __('Workdays Summary'), 
-																				message: blocks.join("<br><br>"), 
+																				title: __('Workdays Summary'),
+																				message: finalMessage,
 																			}
-																		)
-																	}
-																	else{
-																		frappe.msgprint(__("No workdays were created.") ); 
-																	}
+																		);
+																	};
+																	frappe.after_server_call().then(showSummary);
 																		
 																	frappe.show_alert({
 																		message: __("Workdays Processed"),
