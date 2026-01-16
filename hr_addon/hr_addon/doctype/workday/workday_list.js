@@ -241,7 +241,7 @@ frappe.listview_settings['Workday'] = {
 																	const summary = r.message.created_summary || {}; 
 																	const skipped_summary = r.message.skipped_summary || {}; 
 																	const existing_summary = r.message.existing_summary || {}; 
-																	console.log(summary, skipped_summary, existing_summary); 
+																	
 
 																	const createdLines = []; 
 																	const skippedLines = []; 
@@ -285,7 +285,6 @@ frappe.listview_settings['Workday'] = {
 																		? summaryMessage
 																		: __("No workdays were created.");
 																	const showSummary = () => {
-																		console.log(finalMessage);
 																		frappe.msgprint(
 																			{
 																				title: __('Workdays Summary'),
