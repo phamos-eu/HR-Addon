@@ -136,7 +136,8 @@ frappe.listview_settings['Workday'] = {
 										filters: {
 											status: 'Active'
 										},
-										fields: ['name']
+										fields: ['name'],
+										limit_page_length: 0 
 									},
 									callback: function(r) {
 										if (r.message && r.message.length > 0) {
@@ -209,7 +210,8 @@ frappe.listview_settings['Workday'] = {
 												filters: {
 													name: ['in', employee_list]
 												},
-												fields: ['name', 'employee_name']
+												fields: ['name', 'employee_name'],
+												limit_page_length: 0 
 											},
 											callback: function(emp_response) {
 												let employee_names = '';
