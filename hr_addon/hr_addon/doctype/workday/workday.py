@@ -113,6 +113,17 @@ class Workday(Document):
 			.format(frappe.get_desk_link("Workday", workday),self.employee, formatdate(self.log_date))
 			)
 	
+	def on_trash(self):
+		logs = frappe.db.get_list("Workday Creation Log", filters={"workday": self.name}, pluck="name")
+		if logs:
+			for log in logs:
+				frappe.delete_doc("Workday Creation Log", log, force=1)
+
+			frappe.msgprint(_("{0} Workday Creation Log(s) deleted successfully.").format(len(logs)),
+				   alert=True,
+				   indicator="green"
+				)
+
 
 def get_month_map():
 	return frappe._dict({
