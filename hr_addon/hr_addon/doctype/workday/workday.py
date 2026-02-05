@@ -439,7 +439,7 @@ def get_actual_employee_log(aemployee, adate, skip_workday_if_no_weekly_hours=No
             new_workday = {
                 "target_hours": employee_default_work_hour.hours,
                 "break_minutes": employee_default_work_hour.break_minutes,
-                "actual_working_hours": -employee_default_work_hour.hours,
+                "actual_working_hours": 0,
                 "manual_workday": 1,
                 "hours_worked": 0,
                 "nbreak": 0,
