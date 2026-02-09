@@ -439,7 +439,7 @@ def get_actual_employee_log(aemployee, adate, skip_workday_if_no_weekly_hours=No
             new_workday = {
                 "target_hours": employee_default_work_hour.hours,
                 "break_minutes": employee_default_work_hour.break_minutes,
-                "actual_working_hours": -employee_default_work_hour.hours,
+                "actual_working_hours": 0,
                 "manual_workday": 1,
                 "hours_worked": 0,
                 "nbreak": 0,
@@ -546,15 +546,19 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     hours_worked = flt(hours_worked)
 
     if is_break_from_checkins_with_swapped_hours:
-        #swapping for gall
+        # When swap is enabled: hours_worked contains total_duration (after swap at line 517)
+        # and total_duration contains sum of work periods, so use total_duration - break_hours
         if hours_worked > 0:
-            actual_working_hours = hours_worked - break_hours
+            actual_working_hours = total_duration - break_hours
         else:
             actual_working_hours = total_duration - default_break_hours
 
     else:
+        # When swap is disabled: hours_worked contains sum of work periods (excluding breaks)
+        # and total_duration contains time span from first check-in to last checkout (including breaks)
+        # Use hours_worked - break_hours to correctly deduct breaks from actual work periods
         if total_duration > 0:
-            actual_working_hours = total_duration - break_hours
+            actual_working_hours = hours_worked - break_hours
         else:    
             actual_working_hours = hours_worked - default_break_hours
     attendance = employee_checkins[0].attendance if len(employee_checkins) > 0 else ""
