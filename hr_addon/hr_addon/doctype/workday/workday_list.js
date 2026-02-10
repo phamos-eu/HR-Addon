@@ -7,6 +7,8 @@ frappe.listview_settings['Workday'] = {
 			return [__(doc.status), "red", "status,=," + doc.status];
 		} else if (doc.status == "Half Day") {
 			return [__(doc.status), "orange", "status,=," + doc.status];
+		}else if (doc.status == "Missing Checkin"){
+			return [__(doc.status), "orange", "status,=," + doc.status];
 		}
 	},
 
