@@ -561,8 +561,8 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
         attendance = employee_checkins[0].attendance if len(employee_checkins) > 0 else ""
 
         if employee_checkins:
-            first_checkin = employee_checkins[0].time
-            last_checkout = employee_checkins[-1].time
+            first_checkin = get_datetime(employee_checkins[0].time)
+            last_checkout = get_datetime(employee_checkins[-1].time)
 
         hours_worked = 0.0
         break_hours = 0.0
