@@ -19,6 +19,18 @@ class Workday(Document):
 		self.validate_duplicate_workday()
 		self.set_status_for_leave_application()
 
+	def after_insert(self):
+		"""Show a concise message after creating a Workday, indicating its status."""
+		if self.status == "Missing Checkin":
+			frappe.msgprint(
+				_("Workday created for Employee {0} on {1} with status: {2}").format(
+					self.employee,
+					formatdate(self.log_date),
+					self.status or _("Not Set"),
+				),
+				alert=True,
+			)
+
 	def set_actual_employee_log(self):
 		new_workday_dict = get_actual_employee_log(self.employee, self.log_date)
 		if new_workday_dict is None:
@@ -62,7 +74,7 @@ class Workday(Document):
 			filters["leave_type"] = ['not in', leave_types]
 
 		leave_application = frappe.db.exists("Leave Application", filters)
-		if leave_application :
+		if leave_application:
 			half_day, half_day_date = frappe.db.get_value("Leave Application", leave_application, ["half_day", "half_day_date"])
 			
 			# Apply half-day logic only if this specific date is the half day
@@ -71,14 +83,14 @@ class Workday(Document):
 			
 			if is_half_day_for_this_date:
 				self.target_hours = self.target_hours / 2
-				self.expected_break_hours= self.expected_break_hours/2
-				if self.hours_worked == 0: 
-					self.actual_working_hours= -self.target_hours  
+				self.expected_break_hours = self.expected_break_hours / 2
+				if self.hours_worked == 0:
+					self.actual_working_hours = -self.target_hours
 				self.status = "Half Day"
-			else: 
+			else:
 				self.target_hours = 0
-				self.expected_break_hours= 0
-				self.actual_working_hours= 0
+				self.expected_break_hours = 0
+				self.actual_working_hours = 0
 				self.status = "On Leave"
 
 	def date_is_in_comp_off(self):
@@ -180,6 +192,32 @@ def get_unmarked_days(employee, month, exclude_holidays=0):
 	return unmarked_days
 
 
+def _cap_date_range_by_employee_dates(joining_date, relieving_date, from_day, to_day):
+	"""
+	Cap the date range by employee's joining and relieving dates.
+	
+	Args:
+		joining_date: Employee's date of joining (or None)
+		relieving_date: Employee's relieving date (or None)
+		from_day: Start date of the range
+		to_day: End date of the range
+		
+	Returns:
+		tuple: (start_day, end_day) - the capped date range
+	"""
+	start_day = from_day
+	end_day = to_day
+	
+	if joining_date and joining_date >= getdate(from_day):
+		start_day = joining_date
+	# If employee has a relieving date earlier than the selected "to" date,
+	# cap the range at the relieving date; otherwise do not extend beyond "to_day".
+	if relieving_date and relieving_date <= getdate(to_day):
+		end_day = relieving_date
+	
+	return start_day, end_day
+
+
 @frappe.whitelist()
 def get_unmarked_range(employee, from_day, to_day):
 	import json
@@ -206,13 +244,7 @@ def get_unmarked_range(employee, from_day, to_day):
 			return []
 		joining_date, relieving_date = frappe.get_cached_value("Employee", single_employee, ["date_of_joining", "relieving_date"])
 		
-		start_day = from_day
-		end_day = to_day
-
-		if joining_date and joining_date >= getdate(from_day):
-			start_day = joining_date
-		if relieving_date and relieving_date >= getdate(to_day):
-			end_day = relieving_date
+		start_day, end_day = _cap_date_range_by_employee_dates(joining_date, relieving_date, from_day, to_day)
 
 		delta = date_diff(end_day, start_day)	
 		days_of_list = ['{}'.format(add_days(start_day,i)) for i in range(delta + 1)]	
@@ -248,13 +280,7 @@ def get_unmarked_range(employee, from_day, to_day):
 		if work_hours is None:
 			continue
 		
-		start_day = from_day
-		end_day = to_day
-
-		if joining_date and joining_date >= getdate(from_day):
-			start_day = joining_date
-		if relieving_date and relieving_date >= getdate(to_day):
-			end_day = relieving_date
+		start_day, end_day = _cap_date_range_by_employee_dates(joining_date, relieving_date, from_day, to_day)
 
 		delta = date_diff(end_day, start_day)	
 		days_of_list = ['{}'.format(add_days(start_day,i)) for i in range(delta + 1)]	
@@ -487,40 +513,30 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     first_checkin = ""
     last_checkout = ""
 
-    # not pair of IN/OUT either missing
-    if len(employee_checkins)% 2 != 0:
-        hours_worked = -36.0
-        employee_checkin_message = ""
-        for d in employee_checkins:
-            employee_checkin_message += "<li>CheckIn Type:{0} for {1}</li>".format(d.log_type, frappe.get_desk_link("Employee Checkin", d.name))
+    default_break_minutes = employee_default_work_hour.break_minutes
+    default_break_hours = flt(default_break_minutes / 60)
+    target_hours = employee_default_work_hour.hours
 
-        frappe.msgprint("CheckIns must be in pair for the given date:<ul>{}</ul>".format(employee_checkin_message))
-        return new_workday
-
-    if (len(employee_checkins) % 2 == 0):
+    if len(employee_checkins) % 2 == 0:
+        # Even number of checkins – normal calculation flow
         # seperate 'IN' from 'OUT'
-        clockin_list = [get_datetime(kin.time) for x,kin in enumerate(employee_checkins) if x % 2 == 0]
-        clockout_list = [get_datetime(kout.time) for x,kout in enumerate(employee_checkins) if x % 2 != 0]
+        clockin_list = [get_datetime(kin.time) for x, kin in enumerate(employee_checkins) if x % 2 == 0]
+        clockout_list = [get_datetime(kout.time) for x, kout in enumerate(employee_checkins) if x % 2 != 0]
 
         # get total worked hours
         for i in range(len(clockin_list)):
-            wh = time_diff_in_hours(clockout_list[i],clockin_list[i])
+            wh = time_diff_in_hours(clockout_list[i], clockin_list[i])
             hours_worked += float(str(wh))
 
         # Calculate difference between first check-in and last checkout
         if clockin_list and clockout_list:
             first_checkin = clockin_list[0]
             last_checkout = clockout_list[-1]  # Last element of clockout_list
-            total_duration = time_diff_in_hours(last_checkout, first_checkin) 
+            total_duration = time_diff_in_hours(last_checkout, first_checkin)
 
         if is_break_from_checkins_with_swapped_hours:
             total_duration, hours_worked = hours_worked, total_duration
 
-    default_break_minutes = employee_default_work_hour.break_minutes
-    default_break_hours = flt(default_break_minutes / 60)
-    target_hours = employee_default_work_hour.hours
-
-    if len(employee_checkins) % 2 == 0:
         break_from_checkins = 0.0
         for i in range(len(clockout_list) - 1):
             wh = time_diff_in_hours(clockin_list[i + 1], clockout_list[i])
@@ -541,7 +557,33 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
             break_hours = 0.0
 
     else:
-        break_hours = flt(-360.0)
+        # Odd number of checkins – create Workday with status "Missing Checkin"
+        attendance = employee_checkins[0].attendance if len(employee_checkins) > 0 else ""
+
+        if employee_checkins:
+            first_checkin = get_datetime(employee_checkins[0].time)
+            last_checkout = get_datetime(employee_checkins[-1].time)
+
+        hours_worked = 0.0
+        break_hours = 0.0
+        actual_working_hours = 0.0
+
+        new_workday.update({
+            "target_hours": target_hours,
+            "break_minutes": default_break_minutes,
+            "hours_worked": hours_worked,
+            "expected_break_hours": default_break_hours,
+            "actual_working_hours": actual_working_hours,
+            "nbreak": 0,
+            "attendance": attendance,
+            "status": "Missing Checkin",
+            "break_hours": break_hours,
+            "first_checkin": first_checkin,
+            "last_checkout": last_checkout,
+            "employee_checkins": employee_checkins,
+        })
+
+        return new_workday
 
     hours_worked = flt(hours_worked)
 
