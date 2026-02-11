@@ -23,12 +23,12 @@ class Workday(Document):
 		"""Show a concise message after creating a Workday, indicating its status."""
 		if self.status == "Missing Checkin":
 			frappe.msgprint(
-			_("Workday created for Employee {0} on {1} with status: {2}").format(
-				self.employee,
-				formatdate(self.log_date),
-				self.status or _("Not Set"),
-			),
-			alert=True,
+				_("Workday created for Employee {0} on {1} with status: {2}").format(
+					self.employee,
+					formatdate(self.log_date),
+					self.status or _("Not Set"),
+				),
+				alert=True,
 			)
 
 	def set_actual_employee_log(self):
@@ -74,7 +74,7 @@ class Workday(Document):
 			filters["leave_type"] = ['not in', leave_types]
 
 		leave_application = frappe.db.exists("Leave Application", filters)
-		if leave_application :
+		if leave_application:
 			half_day, half_day_date = frappe.db.get_value("Leave Application", leave_application, ["half_day", "half_day_date"])
 			
 			# Apply half-day logic only if this specific date is the half day
@@ -83,14 +83,14 @@ class Workday(Document):
 			
 			if is_half_day_for_this_date:
 				self.target_hours = self.target_hours / 2
-				self.expected_break_hours= self.expected_break_hours/2
-				if self.hours_worked == 0: 
-					self.actual_working_hours= -self.target_hours  
+				self.expected_break_hours = self.expected_break_hours / 2
+				if self.hours_worked == 0:
+					self.actual_working_hours = -self.target_hours
 				self.status = "Half Day"
-			else: 
+			else:
 				self.target_hours = 0
-				self.expected_break_hours= 0
-				self.actual_working_hours= 0
+				self.expected_break_hours = 0
+				self.actual_working_hours = 0
 				self.status = "On Leave"
 
 	def date_is_in_comp_off(self):
@@ -192,6 +192,32 @@ def get_unmarked_days(employee, month, exclude_holidays=0):
 	return unmarked_days
 
 
+def _cap_date_range_by_employee_dates(joining_date, relieving_date, from_day, to_day):
+	"""
+	Cap the date range by employee's joining and relieving dates.
+	
+	Args:
+		joining_date: Employee's date of joining (or None)
+		relieving_date: Employee's relieving date (or None)
+		from_day: Start date of the range
+		to_day: End date of the range
+		
+	Returns:
+		tuple: (start_day, end_day) - the capped date range
+	"""
+	start_day = from_day
+	end_day = to_day
+	
+	if joining_date and joining_date >= getdate(from_day):
+		start_day = joining_date
+	# If employee has a relieving date earlier than the selected "to" date,
+	# cap the range at the relieving date; otherwise do not extend beyond "to_day".
+	if relieving_date and relieving_date <= getdate(to_day):
+		end_day = relieving_date
+	
+	return start_day, end_day
+
+
 @frappe.whitelist()
 def get_unmarked_range(employee, from_day, to_day):
 	import json
@@ -218,15 +244,7 @@ def get_unmarked_range(employee, from_day, to_day):
 			return []
 		joining_date, relieving_date = frappe.get_cached_value("Employee", single_employee, ["date_of_joining", "relieving_date"])
 		
-		start_day = from_day
-		end_day = to_day
-
-		if joining_date and joining_date >= getdate(from_day):
-			start_day = joining_date
-		# If employee has a relieving date earlier than the selected "to" date,
-		# cap the range at the relieving date; otherwise do not extend beyond "to_day".
-		if relieving_date and relieving_date <= getdate(to_day):
-			end_day = relieving_date
+		start_day, end_day = _cap_date_range_by_employee_dates(joining_date, relieving_date, from_day, to_day)
 
 		delta = date_diff(end_day, start_day)	
 		days_of_list = ['{}'.format(add_days(start_day,i)) for i in range(delta + 1)]	
@@ -262,15 +280,7 @@ def get_unmarked_range(employee, from_day, to_day):
 		if work_hours is None:
 			continue
 		
-		start_day = from_day
-		end_day = to_day
-
-		if joining_date and joining_date >= getdate(from_day):
-			start_day = joining_date
-		# If employee has a relieving date earlier than the selected "to" date,
-		# cap the range at the relieving date; otherwise do not extend beyond "to_day".
-		if relieving_date and relieving_date <= getdate(to_day):
-			end_day = relieving_date
+		start_day, end_day = _cap_date_range_by_employee_dates(joining_date, relieving_date, from_day, to_day)
 
 		delta = date_diff(end_day, start_day)	
 		days_of_list = ['{}'.format(add_days(start_day,i)) for i in range(delta + 1)]	
