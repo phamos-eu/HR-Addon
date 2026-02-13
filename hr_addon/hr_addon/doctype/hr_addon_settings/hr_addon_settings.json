@@ -20,6 +20,7 @@
   "column_break_jozi",
   "workday_break_calculation_mechanism",
   "swap_hours_worked_and_actual_working_hours",
+  "workday_break_calculation_logic",
   "notification_section",
   "anniversary_notification_email_list",
   "enable_work_anniversaries_notification",
@@ -170,12 +171,17 @@
    "fieldname": "skip_workday_if_no_weekly_hours",
    "fieldtype": "Check",
    "label": "Skip Workdays for Employees without Weekly Hours"
+  },
+  {
+   "fieldname": "workday_break_calculation_logic",
+   "fieldtype": "HTML",
+   "label": "Break Calculation Logic Explanation"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-01-13 16:06:46.566155",
+ "modified": "2026-02-13 10:05:35.436360",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
