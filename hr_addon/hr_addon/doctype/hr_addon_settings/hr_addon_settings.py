@@ -192,8 +192,8 @@ def get_work_anniversary_reminder_text_and_message(anniversary_persons, joining_
     if len(anniversary_persons) == 1:
         anniversary_person = anniversary_persons[0]["name"]
         persons_name = anniversary_person
-        # Number of years completed at the company
-        completed_years = getdate().year - anniversary_persons[0]["date_of_joining"].year
+        # Number of years completed at the company (use anniversary date's year for advance notifications)
+        completed_years = getdate(joining_date).year - anniversary_persons[0]["date_of_joining"].year
         anniversary_person += f" {completed} {get_pluralized_years(completed_years)}"
     else:
         person_names_with_years = []
@@ -201,8 +201,8 @@ def get_work_anniversary_reminder_text_and_message(anniversary_persons, joining_
         for person in anniversary_persons:
             person_text = person["name"]
             names.append(person_text)
-            # Number of years completed at the company
-            completed_years = getdate().year - person["date_of_joining"].year
+            # Number of years completed at the company (use anniversary date's year for advance notifications)
+            completed_years = getdate(joining_date).year - person["date_of_joining"].year
             person_text += f" {completed} {get_pluralized_years(completed_years)}"
             person_names_with_years.append(person_text)
 
