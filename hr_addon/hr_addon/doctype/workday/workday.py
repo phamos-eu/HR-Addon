@@ -503,6 +503,66 @@ def set_attendance_in_employee_checkins(employee_checkins, attendance):
 
 	return checkin_updated
 
+@frappe.whitelist()
+def calculate_actual_working_hours(hours_worked, break_hours, default_break_hours, mechanism=None, total_duration=None, is_swapped=None, no_break_hours=False, hours_worked_threshold=6):
+	"""
+	Calculate actual_working_hours based on HR Addon Settings mechanism.
+	Can be called directly from web forms or other whitelisted contexts.
+	
+	Args:
+		hours_worked: Sum of work periods (excluding breaks)
+		break_hours: Calculated break hours
+		default_break_hours: Default break hours from Weekly Working Hours
+		mechanism: Break calculation mechanism from HR Addon Settings (optional, will fetch if not provided)
+		total_duration: Total time from first checkin to last checkout (optional, for Workday)
+		is_swapped: Whether hours_worked and total_duration are swapped (optional, will fetch if not provided)
+		no_break_hours: Whether no break hours setting is enabled
+		hours_worked_threshold: Threshold for no_break_hours check (default 6)
+	
+	Returns:
+		actual_working_hours: Calculated actual working hours
+	"""
+	hours_worked = flt(hours_worked)
+	break_hours = flt(break_hours)
+	default_break_hours = flt(default_break_hours)
+	
+	# Fetch HR Addon Settings if mechanism or is_swapped not provided
+	if mechanism is None or is_swapped is None:
+		hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
+		if mechanism is None:
+			mechanism = hr_addon_settings.workday_break_calculation_mechanism
+		if is_swapped is None:
+			is_swapped = mechanism == "Break Hours from Employee Checkins" and hr_addon_settings.swap_hours_worked_and_actual_working_hours
+	
+	# Special case: no break hours when hours worked is less than threshold
+	if no_break_hours and hours_worked < hours_worked_threshold and not is_swapped:
+		return hours_worked
+	
+	# Calculate based on mechanism
+	if mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
+		# For this mechanism: use total_duration (total presence on site) minus break_hours
+		if total_duration is not None and total_duration > 0:
+			return flt(total_duration - break_hours)
+		else:
+			# Fallback: use hours_worked - break_hours if total_duration not available
+			return flt(hours_worked - break_hours)
+	
+	elif is_swapped:
+		# When swap is enabled: hours_worked contains total_duration
+		if total_duration is not None and total_duration > 0:
+			return flt(total_duration - break_hours)
+		elif hours_worked > 0:
+			return flt(hours_worked - break_hours)
+		else:
+			return flt(total_duration - default_break_hours) if total_duration is not None else flt(hours_worked - default_break_hours)
+	
+	else:
+		# Default: hours_worked contains sum of work periods (excluding breaks)
+		if total_duration is not None and total_duration > 0:
+			return flt(hours_worked - break_hours)
+		else:
+			return flt(hours_worked - default_break_hours)
+
 def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
     is_break_from_checkins_with_swapped_hours = hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Employee Checkins" and hr_addon_settings.swap_hours_worked_and_actual_working_hours
@@ -587,29 +647,20 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
 
     hours_worked = flt(hours_worked)
 
-    if is_break_from_checkins_with_swapped_hours:
-        # When swap is enabled: hours_worked contains total_duration (after swap at line 517)
-        # and total_duration contains sum of work periods, so use total_duration - break_hours
-        if hours_worked > 0:
-            actual_working_hours = total_duration - break_hours
-        else:
-            actual_working_hours = total_duration - default_break_hours
-
-    else:
-        # When swap is disabled: hours_worked contains sum of work periods (excluding breaks)
-        # and total_duration contains time span from first check-in to last checkout (including breaks)
-        # Use hours_worked - break_hours to correctly deduct breaks from actual work periods
-        if total_duration > 0:
-            actual_working_hours = hours_worked - break_hours
-        else:    
-            actual_working_hours = hours_worked - default_break_hours
+    # Calculate actual_working_hours using shared function
+    actual_working_hours = calculate_actual_working_hours(
+        hours_worked=hours_worked,
+        break_hours=break_hours,
+        default_break_hours=default_break_hours,
+        mechanism=hr_addon_settings.workday_break_calculation_mechanism,
+        total_duration=total_duration,
+        is_swapped=is_break_from_checkins_with_swapped_hours,
+        no_break_hours=no_break_hours,
+        hours_worked_threshold=6
+    )
+    
     attendance = employee_checkins[0].attendance if len(employee_checkins) > 0 else ""
     status = frappe.db.get_value("Attendance", attendance, "status") if attendance else ""
-
-    if no_break_hours and hours_worked < 6 and not is_break_from_checkins_with_swapped_hours: # TODO: set 6 as constant
-        default_break_minutes = 0
-        #expected_break_hours = 0
-        actual_working_hours = hours_worked
 
     new_workday.update({
         "target_hours": target_hours,
