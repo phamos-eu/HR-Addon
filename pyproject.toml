@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hr_addon"
+version = "0.1.0"
+description = "Addon for Erpnext attendance and employee checkins"
+authors = [
+    { name = "Phamos GmbH", email = "support@phamos.eu" }
+]
+readme = "README.md"
+license = { file = "license.txt" }
+requires-python = ">=3.8"
+dependencies = ["icalendar"]
+
+[tool.setuptools]
+packages = ["hr_addon"]
+
+[tool.setuptools.package-data]
+hr_addon = ["*.json", "*.md", "*.txt", "patches/**/*.py", "fixtures/*.json"]
+
+[tool.setuptools.exclude-package-data]
+hr_addon = ["__pycache__/*"]
+
+[project.urls]
+Homepage = "https://github.com/phamos-eu/hr_addon"
