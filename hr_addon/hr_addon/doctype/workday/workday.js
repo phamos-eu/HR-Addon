@@ -28,7 +28,7 @@ frappe.ui.form.on('Workday', {
 				},
 				callback: function(r){
 					if (r.message == true){
-						//frappe.msgprint("Given Date is Holiday")
+						frappe.msgprint("Given Date is Holiday")
 						unset_fields(frm);
 					} else {
 						get_hours(frm);

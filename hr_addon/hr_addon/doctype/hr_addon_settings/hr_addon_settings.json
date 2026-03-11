@@ -22,6 +22,7 @@
   "workday_break_calculation_mechanism",
   "swap_hours_worked_and_actual_working_hours",
   "workday_break_calculation_logic",
+  "workday_break_calculation_logic",
   "notification_section",
   "anniversary_notification_email_list",
   "enable_work_anniversaries_notification",
@@ -174,11 +175,9 @@
    "label": "Skip Workdays for Employees without Weekly Hours"
   },
   {
-   "default": "0",
-   "description": "If enabled, a workday will be created on holidays only when check-in data is available. Disable to prevent workday creation on holidays.",
-   "fieldname": "allow_workdays_on_holidays",
-   "fieldtype": "Check",
-   "label": "Allow Workdays on Holidays"
+   "fieldname": "workday_break_calculation_logic",
+   "fieldtype": "HTML",
+   "label": "Break Calculation Logic Explanation"
   },
   {
    "fieldname": "workday_break_calculation_logic",

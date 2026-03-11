@@ -702,11 +702,6 @@ def get_employee_attendance(employee,atime):
 
 @frappe.whitelist()
 def date_is_in_holiday_list(employee, date):
-    allow_workdays_on_holidays = frappe.db.get_single_value("HR Addon Settings", "allow_workdays_on_holidays")
-    if allow_workdays_on_holidays:
-        checkins = get_employee_checkin(employee, date)
-        if not checkins:
-            return False  # Do not create workday if no check-in data
     holiday_list = frappe.get_cached_value("Employee", employee, "holiday_list")
     if not holiday_list:
         frappe.msgprint(_("Holiday list not set in {0}").format(employee))
