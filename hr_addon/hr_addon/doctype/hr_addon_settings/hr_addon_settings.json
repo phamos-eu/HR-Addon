@@ -17,6 +17,7 @@
   "generate_workdays_for_past_7_days_now",
   "enabled",
   "skip_workday_if_no_weekly_hours",
+  "allow_workdays_on_holidays",
   "column_break_jozi",
   "workday_break_calculation_mechanism",
   "swap_hours_worked_and_actual_working_hours",
@@ -176,12 +177,19 @@
    "fieldname": "workday_break_calculation_logic",
    "fieldtype": "HTML",
    "label": "Break Calculation Logic Explanation"
+  },
+  {
+   "default": "0",
+   "description": "When unchecked, the scheduler and bulk workday generation will not create Workdays for dates that are holidays and have no Employee Checkin records.",
+   "fieldname": "allow_workdays_on_holidays",
+   "fieldtype": "Check",
+   "label": "Allow Workdays on Holidays"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-02-13 10:05:35.436360",
+ "modified": "2026-03-11 11:10:35.973350",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
