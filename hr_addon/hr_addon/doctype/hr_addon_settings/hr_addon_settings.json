@@ -17,12 +17,11 @@
   "generate_workdays_for_past_7_days_now",
   "enabled",
   "skip_workday_if_no_weekly_hours",
-  "allow_workdays_on_holidays",
   "column_break_jozi",
   "workday_break_calculation_mechanism",
   "swap_hours_worked_and_actual_working_hours",
   "workday_break_calculation_logic",
-  "workday_break_calculation_logic",
+  "allow_workdays_on_holidays",
   "notification_section",
   "anniversary_notification_email_list",
   "enable_work_anniversaries_notification",
@@ -178,17 +177,12 @@
    "fieldname": "workday_break_calculation_logic",
    "fieldtype": "HTML",
    "label": "Break Calculation Logic Explanation"
-  },
-  {
-   "fieldname": "workday_break_calculation_logic",
-   "fieldtype": "HTML",
-   "label": "Break Calculation Logic Explanation"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-10 18:01:31.447653",
+ "modified": "2026-03-10 17:40:44.355697",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
