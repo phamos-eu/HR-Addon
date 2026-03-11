@@ -180,7 +180,7 @@
   },
   {
    "default": "0",
-   "description": "When unchecked, the scheduler and bulk workday generation will not create Workdays for dates that are holidays and have no Employee Checkin records.",
+   "description": "When unchecked, the scheduler and bulk workday generation will not create Workdays for dates that are holidays, regardless of Employee Checkin records.",
    "fieldname": "allow_workdays_on_holidays",
    "fieldtype": "Check",
    "label": "Allow Workdays on Holidays"
@@ -189,7 +189,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-11 11:10:35.973350",
+ "modified": "2026-03-11 12:19:23.408629",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
