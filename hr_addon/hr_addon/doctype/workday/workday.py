@@ -34,48 +34,16 @@ class Workday(Document):
 	def set_actual_employee_log(self):
 		new_workday_dict = get_actual_employee_log(self.employee, self.log_date)
 		if new_workday_dict is None:
-			# Distinguish between settings-based holiday rules and missing weekly hours
-			is_holiday = date_is_in_holiday_list(self.employee, self.log_date)
-			allow_workdays_on_holidays = frappe.db.get_single_value(
-				"HR Addon Settings", "allow_workdays_on_holidays"
-			) or 0
-			employee_checkins = get_employee_checkin(self.employee, self.log_date)
+			frappe.throw(
+				_(
+					"Cannot create workday for employee {0} on date {1}. "
+					"Weekly Working Hours not configured. Please configure Weekly Working Hours."
+				).format(
+					self.employee,
+					frappe.format(self.log_date, {"fieldtype": "Date"}),
+				)
+			)
 
-			if is_holiday and not allow_workdays_on_holidays:
-				# Workdays on holidays are globally disabled in settings
-				frappe.throw(
-					_(
-						"Cannot create workday for employee {0} on date {1}. "
-						"Date is a holiday and 'Allow Workdays on Holidays' is disabled in HR Addon Settings."
-					).format(
-						self.employee,
-						frappe.format(self.log_date, {"fieldtype": "Date"}),
-					)
-				)
-			elif is_holiday and allow_workdays_on_holidays and not employee_checkins:
-				# Requirement: even when allowed, holidays require checkins to create workday
-				frappe.throw(
-					_(
-						"Cannot create workday for employee {0} on date {1}. "
-						"Date is a holiday and there are no Employee Checkins; "
-						"workdays on holidays are only created when checkin data exists."
-					).format(
-						self.employee,
-						frappe.format(self.log_date, {"fieldtype": "Date"}),
-					)
-				)
-			else:
-				# Fallback to existing weekly working hours message
-				frappe.throw(
-					_(
-						"Cannot create workday for employee {0} on date {1}. "
-						"Weekly Working Hours not configured. Please configure Weekly Working Hours."
-					).format(
-						self.employee,
-						frappe.format(self.log_date, {"fieldtype": "Date"}),
-					)
-				)
-			
 		self.employee_checkins = []
 
 		self.hours_worked = new_workday_dict.get("hours_worked")
@@ -462,6 +430,59 @@ def get_employee_default_work_hour(employee, adate, skip_workday_if_no_weekly_ho
     return target_work_hours[0]
 
 
+def get_holiday_not_workday_log(aemployee, adate, employee_default_work_hour):
+    """
+    Workday row for a holiday when no checkin data is applied (scheduler or manual).
+    Status is always Not Workday; target hours follow Weekly Working Hours holiday rules.
+    """
+    view_employee_attendance = get_employee_attendance(aemployee, adate)
+    break_minutes = employee_default_work_hour.break_minutes
+    expected_break_hours = flt(break_minutes / 60)
+    is_date_in_holiday_list = date_is_in_holiday_list(aemployee, adate)
+    is_target_hours_zero_on_holiday = (
+        employee_default_work_hour.set_target_hours_to_zero_when_date_is_holiday
+    )
+    is_holiday_with_zero_target_hours = (
+        is_target_hours_zero_on_holiday and is_date_in_holiday_list
+    )
+
+    if is_holiday_with_zero_target_hours:
+        return {
+            "target_hours": 0,
+            "break_minutes": employee_default_work_hour.break_minutes,
+            "actual_working_hours": 0,
+            "hours_worked": 0,
+            "nbreak": 0,
+            "attendance": view_employee_attendance[0].name
+            if len(view_employee_attendance) > 0
+            else "",
+            "status": "Not Workday",
+            "break_hours": 0,
+            "employee_checkins": [],
+            "first_checkin": "",
+            "last_checkout": "",
+            "expected_break_hours": 0,
+        }
+
+    return {
+        "target_hours": employee_default_work_hour.hours,
+        "break_minutes": employee_default_work_hour.break_minutes,
+        "actual_working_hours": 0,
+        "manual_workday": 1,
+        "hours_worked": 0,
+        "nbreak": 0,
+        "attendance": view_employee_attendance[0].name
+        if len(view_employee_attendance) > 0
+        else "",
+        "status": "Not Workday",
+        "break_hours": 0,
+        "employee_checkins": [],
+        "first_checkin": "",
+        "last_checkout": "",
+        "expected_break_hours": expected_break_hours,
+    }
+
+
 @frappe.whitelist()
 def get_actual_employee_log(aemployee, adate, skip_workday_if_no_weekly_hours=None):
     employee_checkins = get_employee_checkin(aemployee, adate)
@@ -481,20 +502,25 @@ def get_actual_employee_log(aemployee, adate, skip_workday_if_no_weekly_hours=No
         is_target_hours_zero_on_holiday and is_date_in_holiday_list
     )
 
-    # Setting: allow or block workdays on holidays
+    # allow_workdays_on_holidays only changes whether checkin data is processed on holidays.
+    # Holidays without processed checkins always yield Not Workday (see get_holiday_not_workday_log).
     allow_workdays_on_holidays = (
         frappe.db.get_single_value("HR Addon Settings", "allow_workdays_on_holidays")
         or 0
     )
 
-    # Requirement:
-    # - If setting is disabled and date is holiday -> never create workday (even with checkins)
-    # - If setting is enabled but there are no checkins on a holiday -> do not create workday
     if is_date_in_holiday_list:
         if not allow_workdays_on_holidays:
-            return None
-        if not employee_checkins:
-            return None
+            return get_holiday_not_workday_log(aemployee, adate, employee_default_work_hour)
+        if employee_checkins:
+            new_workday = get_workday(
+                employee_checkins, employee_default_work_hour, no_break_hours
+            )
+            if is_holiday_with_zero_target_hours:
+                new_workday["target_hours"] = 0
+                new_workday["expected_break_hours"] = 0
+            return new_workday
+        return get_holiday_not_workday_log(aemployee, adate, employee_default_work_hour)
 
     if employee_checkins:
         new_workday = get_workday(
@@ -1147,28 +1173,9 @@ def bulk_process_workdays(data,flag):
 				# Get actual employee log data to capture all calculated values
 				workday_data = get_actual_employee_log(emp, date, data.get('skip_workday_if_no_weekly_hours'))
 
-				if workday_data is None: 
-					# Distinguish between reasons for skipping
-					is_holiday = date_is_in_holiday_list(emp, date)
-					allow_workdays_on_holidays = frappe.db.get_single_value(
-						"HR Addon Settings", "allow_workdays_on_holidays"
-					) or 0
-					employee_checkins = employee_checkins or get_employee_checkin(emp, date)
-
-					if is_holiday and not allow_workdays_on_holidays:
-						reason = "Workdays on Holidays Disabled"
-						error_message = (
-							"Date is a holiday and 'Allow Workdays on Holidays' is disabled in HR Addon Settings."
-						)
-					elif is_holiday and allow_workdays_on_holidays and not employee_checkins:
-						reason = "Holiday without Checkins"
-						error_message = (
-							"Date is a holiday but there are no Employee Checkins; "
-							"workdays on holidays are only created when checkin data exists."
-						)
-					else:
-						reason = "No Weekly Working Hours"
-						error_message = "No Weekly Working Hours found and skipping is enabled."
+				if workday_data is None:
+					reason = "No Weekly Working Hours"
+					error_message = "No Weekly Working Hours found and skipping is enabled."
 
 					if emp not in skipped_by_employee:
 						emp_name = frappe.get_value('Employee', emp, 'employee_name') 
