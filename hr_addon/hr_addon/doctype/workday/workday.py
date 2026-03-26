@@ -496,10 +496,13 @@ def get_actual_employee_log(aemployee, adate, skip_workday_if_no_weekly_hours=No
         if not employee_checkins:
             return None
 
-    if employee_checkins and not is_holiday_with_zero_target_hours:
+    if employee_checkins:
         new_workday = get_workday(
             employee_checkins, employee_default_work_hour, no_break_hours
         )
+        if is_holiday_with_zero_target_hours:
+            new_workday["target_hours"] = 0
+            new_workday["expected_break_hours"] = 0
         return new_workday
     else:
         view_employee_attendance = get_employee_attendance(aemployee, adate)
