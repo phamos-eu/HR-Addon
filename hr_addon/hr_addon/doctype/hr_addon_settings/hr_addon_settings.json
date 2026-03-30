@@ -180,7 +180,7 @@
   },
   {
    "default": "0",
-   "description": "When unchecked, the scheduler and bulk workday generation will not create Workdays for dates that are holidays, regardless of Employee Checkin records.",
+   "description": "Controls how Employee Checkins are processed on holidays only. Unchecked: checkins are ignored and the Workday stays Not Workday. Checked: checkins are evaluated like a normal day (Present / overtime as configured). Without checkins, holidays are Not Workday in both cases.",
    "fieldname": "allow_workdays_on_holidays",
    "fieldtype": "Check",
    "label": "Allow Workdays on Holidays"
