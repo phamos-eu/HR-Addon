@@ -1,0 +1,23 @@
+[project]
+name = "hr_addon"
+authors = [
+    { name = "phamos.eu", email = "support@phamos.eu" },
+]
+description = "Addon for Erpnext attendance and employee checkins"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    "icalendar",
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "hr_addon"
+
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0,<17.0.0"
+erpnext = ">=15.0.0,<17.0.0"
