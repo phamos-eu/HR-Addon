@@ -30,7 +30,9 @@
   "column_break_dvlg",
   "anniversary_notification_email_recipient_role",
   "notification_x_days_before",
-  "enable_work_anniversaries_notification_for_leave_approvers"
+  "enable_work_anniversaries_notification_for_leave_approvers",
+  "break_rules_arbzg_tab",
+  "minimum_break_rule"
  ],
  "fields": [
   {
@@ -186,24 +188,23 @@
    "fieldname": "allow_workdays_on_holidays",
    "fieldtype": "Check",
    "label": "Allow Workdays on Holidays"
-  },  
-  {
-   "fieldname": "half_day_holidays_section_section",
-   "fieldtype": "Section Break",
-   "label": "Half Day Holidays"
   },
   {
-   "description": "Dates that count as half-day holidays. On these days, target working hours are 50% of the employee\u2019s normal daily target (e.g. 24 Dec, 31 Dec). This avoids treating half a day\u2019s work as full overtime or as missing hours.",
-   "fieldname": "half_day_holidays",
+   "fieldname": "break_rules_arbzg_tab",
+   "fieldtype": "Tab Break",
+   "label": "Break Rules (ArbZG)"
+  },
+  {
+   "fieldname": "minimum_break_rule",
    "fieldtype": "Table",
-   "label": "Half Day Holidays",
-   "options": "Half Day Holidays"
+   "label": "Minimum Break Rule",
+   "options": "Minimum Break Rule"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-20 13:13:02.799303",
+ "modified": "2026-04-30 13:04:22.332475",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
