@@ -31,13 +31,8 @@
   "anniversary_notification_email_recipient_role",
   "notification_x_days_before",
   "enable_work_anniversaries_notification_for_leave_approvers",
-  "break_rules_tab",
-  "minimum_break_rule",
-  "overtime_ledger_tab",
-  "enable_overtime_ledger_feature",
-  "overtime_frozen",
-  "select_employees",
-  "repost_all_oles"
+  "break_rules_arbzg_tab",
+  "minimum_break_rule"
  ],
  "fields": [
   {
@@ -193,55 +188,23 @@
    "fieldname": "allow_workdays_on_holidays",
    "fieldtype": "Check",
    "label": "Allow Workdays on Holidays"
-  },  
-  {
-   "fieldname": "half_day_holidays_section_section",
-   "fieldtype": "Section Break",
-   "label": "Half Day Holidays"
   },
   {
-   "description": "Dates that count as half-day holidays. On these days, target working hours are 50% of the employee\u2019s normal daily target (e.g. 24 Dec, 31 Dec). This avoids treating half a day\u2019s work as full overtime or as missing hours.\n",
-   "fieldname": "half_day_holidays",
-   "fieldtype": "Table",
-   "label": "Half Day Holidays",
-   "options": "Half Day Holidays"
-  },
-  {
-   "fieldname": "overtime_ledger_tab",
+   "fieldname": "break_rules_arbzg_tab",
    "fieldtype": "Tab Break",
-   "label": "Overtime Ledger"
+   "label": "Break Rules (ArbZG)"
   },
   {
-   "description": "Entries on or before this date are frozen (cannot be created or modified). Reposting recalculates balances only for entries after this date. Changing this date and saving will prompt to repost all Overtime Ledger entries.",
-   "fieldname": "overtime_frozen",
-   "fieldtype": "Date",
-   "label": "Overtime Hours Frozen Upto"
-  },
-  {
-   "description": "Optional: repost only for selected employees. Leave empty to repost all employees with overtime entries.",
-   "fieldname": "select_employees",
-   "fieldtype": "Table MultiSelect",
-   "label": "Select Employees",
-   "options": "Repost Employees OLE"
-  },
-  {
-   "description": "Recalculate balances for all Overtime Ledger entries after the frozen date.",
-   "fieldname": "repost_all_oles",
-   "fieldtype": "Button",
-   "label": "Repost All Overtime Ledger Entries"
-  },
-  {
-   "default": "0",
-   "description": "Master switch for the overtime ledger. When enabled: Workday creates Attendance and Overtime Ledger entries, Overtime Payout can be submitted, OT-deduct leave validation runs, and repost is available. When disabled: Workday does not create new Attendance (existing Attendance for a day can still be updated on Workday save), no new ledger entries are created, and repost is unavailable. Existing entries can still be reversed on cancel.",
-   "fieldname": "enable_overtime_ledger_feature",
-   "fieldtype": "Check",
-   "label": "Enable Overtime Ledger Feature"
+   "fieldname": "minimum_break_rule",
+   "fieldtype": "Table",
+   "label": "Minimum Break Rule",
+   "options": "Minimum Break Rule"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-26 13:23:28.265930",
+ "modified": "2026-04-30 13:04:22.332475",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
