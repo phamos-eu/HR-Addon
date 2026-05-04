@@ -29,7 +29,7 @@
   "anniversary_notification_email_recipient_role",
   "notification_x_days_before",
   "enable_work_anniversaries_notification_for_leave_approvers",
-  "break_rules_arbzg_tab",
+  "break_rules_tab",
   "minimum_break_rule"
  ],
  "fields": [
@@ -188,21 +188,21 @@
    "label": "Allow Workdays on Holidays"
   },
   {
-   "fieldname": "break_rules_arbzg_tab",
-   "fieldtype": "Tab Break",
-   "label": "Break Rules (ArbZG)"
-  },
-  {
    "fieldname": "minimum_break_rule",
    "fieldtype": "Table",
    "label": "Minimum Break Rule",
    "options": "Minimum Break Rule"
+  },
+  {
+   "fieldname": "break_rules_tab",
+   "fieldtype": "Tab Break",
+   "label": "Break Minutes Rules"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-30 13:04:22.332475",
+ "modified": "2026-04-30 15:26:01.229153",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
