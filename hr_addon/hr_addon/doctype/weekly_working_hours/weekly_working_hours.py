@@ -6,6 +6,7 @@ from frappe.model.document import Document
 from frappe.utils import getdate, flt, cint
 from frappe.model.naming import make_autoname
 from frappe import _
+from math import inf
 
 class WeeklyWorkingHours(Document):
 	def autoname(self):
@@ -34,7 +35,10 @@ class WeeklyWorkingHours(Document):
 		settings = frappe.get_single("HR Addon Settings")
 		rules = sorted(
 			(settings.minimum_break_rule or []),
-			key=lambda row: (flt(row.from_hours or 0), flt(row.to_hours or 0)),
+			key=lambda row: (
+				flt(row.from_hours or 0),
+				flt(row.to_hours) if row.to_hours is not None else inf,
+			),
 		)
 		if not rules:
 			return
@@ -48,13 +52,13 @@ class WeeklyWorkingHours(Document):
 			matched_rule = None
 			for rule in rules:
 				from_hours = flt(rule.from_hours or 0)
-				to_hours = flt(rule.to_hours or 0)
+				to_hours = flt(rule.to_hours) if rule.to_hours is not None else None
 
-				# Boundaries are inclusive for the first range start (0),
-				# and then open on the left / closed on the right:
-				# 0-6 means <= 6, 6-9 means > 6 and <= 9.
-				in_lower_bound = target_hours >= from_hours if from_hours == 0 else target_hours > from_hours
-				if in_lower_bound and target_hours <= to_hours:
+				# Range semantics: from_hours <= target_hours < to_hours.
+				# If to_hours is blank, rule is open-ended (>= from_hours).
+				in_lower_bound = target_hours >= from_hours
+				in_upper_bound = True if to_hours is None else target_hours < to_hours
+				if in_lower_bound and in_upper_bound:
 					matched_rule = rule
 					break
 

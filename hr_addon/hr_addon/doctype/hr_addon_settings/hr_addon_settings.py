@@ -11,6 +11,7 @@ from frappe.core.doctype.role.role import get_info_based_on_role
 from frappe.query_builder import DocType
 from icalendar import Event, Calendar
 from hr_addon.hr_addon.doctype.workday.workday import create_background_job_for_workday_generation
+from math import inf
 
 
 class HRAddonSettings(Document):
@@ -33,7 +34,10 @@ class HRAddonSettings(Document):
 	def validate_minimum_break_rules(self):
 		rules = sorted(
 			(self.minimum_break_rule or []),
-			key=lambda row: (flt(row.from_hours or 0), flt(row.to_hours or 0)),
+			key=lambda row: (
+				flt(row.from_hours or 0),
+				flt(row.to_hours) if row.to_hours is not None else inf,
+			),
 		)
 
 		if not rules:
@@ -42,12 +46,14 @@ class HRAddonSettings(Document):
 		prev_to = None
 		for index, row in enumerate(rules, start=1):
 			from_hours = flt(row.from_hours)
-			to_hours = flt(row.to_hours)
+			to_hours = flt(row.to_hours) if row.to_hours is not None else None
 
-			if from_hours < 0 or to_hours < 0:
+			if from_hours < 0:
+				frappe.throw(_("Row {0}: Hours cannot be negative.").format(index))
+			if to_hours is not None and to_hours < 0:
 				frappe.throw(_("Row {0}: Hours cannot be negative.").format(index))
 
-			if to_hours <= from_hours:
+			if to_hours is not None and to_hours <= from_hours:
 				frappe.throw(
 					_("Row {0}: To Hours must be greater than From Hours.").format(index)
 				)
@@ -61,6 +67,12 @@ class HRAddonSettings(Document):
 						"Row {0}: Rule overlaps with the previous range. "
 						"Example of invalid overlap: 0-6 and 3-5."
 					).format(index)
+				)
+
+			# Open-ended rules (blank To Hours) must be last.
+			if to_hours is None and index != len(rules):
+				frappe.throw(
+					_("Row {0}: Open-ended rule (blank To Hours) must be the last row.").format(index)
 				)
 
 			prev_to = to_hours
