@@ -6,7 +6,7 @@ import frappe, os
 from frappe.model.document import Document
 from frappe import _
 from frappe.utils.data import date_diff
-from frappe.utils import getdate, today, comma_sep, date_diff
+from frappe.utils import getdate, today, comma_sep, date_diff, flt
 from frappe.core.doctype.role.role import get_info_based_on_role
 from frappe.query_builder import DocType
 from icalendar import Event, Calendar
@@ -28,6 +28,42 @@ class HRAddonSettings(Document):
 	
 	def validate(self):
 		self.create_background_job_if_not_exists()
+		self.validate_minimum_break_rules()
+     
+	def validate_minimum_break_rules(self):
+		rules = sorted(
+			(self.minimum_break_rule or []),
+			key=lambda row: (flt(row.from_hours or 0), flt(row.to_hours or 0)),
+		)
+
+		if not rules:
+			return
+
+		prev_to = None
+		for index, row in enumerate(rules, start=1):
+			from_hours = flt(row.from_hours)
+			to_hours = flt(row.to_hours)
+
+			if from_hours < 0 or to_hours < 0:
+				frappe.throw(_("Row {0}: Hours cannot be negative.").format(index))
+
+			if to_hours <= from_hours:
+				frappe.throw(
+					_("Row {0}: To Hours must be greater than From Hours.").format(index)
+				)
+
+			if index == 1 and from_hours != 0:
+				frappe.throw(_("Row 1: The first rule must start from 0 hours."))
+
+			if prev_to is not None and from_hours < prev_to:
+				frappe.throw(
+					_(
+						"Row {0}: Rule overlaps with the previous range. "
+						"Example of invalid overlap: 0-6 and 3-5."
+					).format(index)
+				)
+
+			prev_to = to_hours
 
 	def create_background_job_if_not_exists(self):
 		create_background_job_for_workday_generation(self)
