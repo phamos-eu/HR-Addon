@@ -190,6 +190,7 @@
    "label": "Allow Workdays on Holidays"
   },
   {
+   "description": "Used to auto-fill Weekly Working Hours > Hours > Break Minutes when the value is 0. If users edit Break Minutes manually, it cannot be saved below the matching minimum rule.",
    "fieldname": "minimum_break_rule",
    "fieldtype": "Table",
    "label": "Minimum Break Rule",
@@ -204,7 +205,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-30 15:26:01.229153",
+ "modified": "2026-05-05 10:26:01.229153",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",

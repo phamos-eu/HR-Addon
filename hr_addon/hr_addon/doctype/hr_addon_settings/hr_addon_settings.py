@@ -28,8 +28,22 @@ class HRAddonSettings(Document):
 			os.remove("{}/public/files/Urlaubskalender.ics".format(frappe.utils.get_site_path()))
 	
 	def validate(self):
+		self.set_default_minimum_break_rules()
 		self.create_background_job_if_not_exists()
 		self.validate_minimum_break_rules()
+
+	def set_default_minimum_break_rules(self):
+		"""Seed default break-rule rows when table is empty."""
+		if self.minimum_break_rule:
+			return
+
+		default_rules = [
+			{"from_hours": 0, "to_hours": 6, "minimum_break_minutes": 0},
+			{"from_hours": 6, "to_hours": 9, "minimum_break_minutes": 30},
+			{"from_hours": 9, "to_hours": 100, "minimum_break_minutes": 45},
+		]
+		for rule in default_rules:
+			self.append("minimum_break_rule", rule)
      
 	def validate_minimum_break_rules(self):
 		rules = sorted(
