@@ -28,6 +28,22 @@ class WeeklyWorkingHours(Document):
 		self.validate_overlapping_records_in_specific_interval()
 		self.set_break_hours_if_not_set()
 
+	def _get_rule_break_minutes(self, rules, target_hours):
+		for rule_index, rule in enumerate(rules):
+			from_hours = flt(rule.from_hours or 0)
+			to_hours = flt(rule.to_hours) if rule.to_hours is not None else None
+
+			# Boundary semantics requested:
+			# - first row: from_hours <= target_hours <= to_hours
+			# - next rows: from_hours < target_hours <= to_hours
+			# - open-ended row: target_hours > from_hours (except first row, which is >=)
+			in_lower_bound = target_hours >= from_hours if rule_index == 0 else target_hours > from_hours
+			in_upper_bound = True if to_hours is None else target_hours <= to_hours
+			if in_lower_bound and in_upper_bound:
+				return cint(rule.minimum_break_minutes or 0)
+
+		return None
+
 	def set_break_hours_if_not_set(self):
 		if not self.hours:
 			return
@@ -46,24 +62,30 @@ class WeeklyWorkingHours(Document):
 		for hour_row in self.hours:
 			target_hours = flt(hour_row.hours)
 			current_break_minutes = cint(hour_row.break_minutes or 0)
-			if target_hours <= 0 or current_break_minutes != 0:
+			if target_hours <= 0:
 				continue
 
-			matched_rule = None
-			for rule in rules:
-				from_hours = flt(rule.from_hours or 0)
-				to_hours = flt(rule.to_hours) if rule.to_hours is not None else None
+			required_break_minutes = self._get_rule_break_minutes(rules, target_hours)
+			if required_break_minutes is None:
+				continue
 
-				# Range semantics: from_hours <= target_hours < to_hours.
-				# If to_hours is blank, rule is open-ended (>= from_hours).
-				in_lower_bound = target_hours >= from_hours
-				in_upper_bound = True if to_hours is None else target_hours < to_hours
-				if in_lower_bound and in_upper_bound:
-					matched_rule = rule
-					break
+			if current_break_minutes == 0:
+				hour_row.break_minutes = required_break_minutes
+				continue
 
-			if matched_rule:
-				hour_row.break_minutes = cint(matched_rule.minimum_break_minutes or 0)
+			if current_break_minutes < required_break_minutes:
+				# If user enters lower break than the mandatory rule, reset it
+				# back to the matched minimum instead of blocking save.
+				row_label = hour_row.day or _("Unknown day")
+				frappe.msgprint(
+					_(
+						"Break Minutes for row '{0}' cannot be less than {1} "
+						"for target hours {2}."
+					).format(row_label, required_break_minutes, target_hours),
+					alert=True,
+					indicator="orange",
+				)
+				hour_row.break_minutes = required_break_minutes
 
 	def validate_if_employee_is_active(self):
 		if self.employee and frappe.get_value('Employee', self.employee, 'status') != "Active":

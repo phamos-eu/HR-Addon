@@ -4,7 +4,6 @@
 frappe.ui.form.on('HR Addon Settings', {
 	refresh: function(frm) {
 		seed_default_minimum_break_rules_in_form(frm);
-		frm.doc.__prev_overtime_frozen = frm.doc.overtime_frozen;
         frm.set_query("anniversary_notification_email_list", function () {
             return {
                 filters: {
@@ -106,43 +105,8 @@ frappe.ui.form.on('HR Addon Settings', {
 		}).then(r => {
 			frappe.msgprint("The workdays have been generated.")
 		})
-	},
-
-	repost_all_oles: function(frm) {
-		const selectedEmployees = (frm.doc.select_employees || [])
-			.map((row) => row.employee)
-			.filter(Boolean);
-		const msg = selectedEmployees.length
-			? __("This will repost Overtime Ledger entries for selected employee(s) after the frozen date. Continue?")
-			: __("No employees selected. This will repost for ALL employees after the frozen date. Continue?");
-		frappe.confirm(msg, function () {
-			repost_all_overtime_ledger_entries(frm, selectedEmployees);
-		});
 	}
 });
-
-function repost_all_overtime_ledger_entries(frm, employees = null) {
-	frappe.call({
-		method: "hr_addon.hr_addon.doctype.hr_addon_settings.hr_addon_settings.repost_all_overtime_ledger_entries",
-		args: { employees: employees || [] },
-		freeze: false,
-		callback: function (r) {
-			if (r.exc) {
-				frappe.msgprint({
-					message: r.exc && r.exc[1] ? r.exc[1] : __("Repost failed."),
-					indicator: "red",
-					alert: true
-				});
-			} else {
-				frappe.msgprint({
-					message: r.message || __("Successfully reposted Overtime Ledger entries."),
-					indicator: "green",
-					alert: true
-				});
-			}
-		}
-	});
-}
 
 function get_default_minimum_break_rules() {
 	return [
