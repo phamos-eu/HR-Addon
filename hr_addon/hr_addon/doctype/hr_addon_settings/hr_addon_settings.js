@@ -3,6 +3,7 @@
 
 frappe.ui.form.on('HR Addon Settings', {
 	refresh: function(frm) {
+		seed_default_minimum_break_rules_in_form(frm);
         frm.set_query("anniversary_notification_email_list", function () {
             return {
                 filters: {
@@ -81,6 +82,24 @@ frappe.ui.form.on('HR Addon Settings', {
 		})
 	}
 });
+
+function get_default_minimum_break_rules() {
+	return [
+		{ from_hours: 0, to_hours: 6, minimum_break_minutes: 0 },
+		{ from_hours: 6, to_hours: 9, minimum_break_minutes: 30 },
+		{ from_hours: 9, to_hours: 100, minimum_break_minutes: 45 },
+	];
+}
+
+function seed_default_minimum_break_rules_in_form(frm) {
+	if (!frm.doc || !Array.isArray(frm.doc.minimum_break_rule)) return;
+	if (frm.doc.minimum_break_rule.length > 0) return;
+
+	get_default_minimum_break_rules().forEach((row) => {
+		frm.add_child("minimum_break_rule", row);
+	});
+	frm.refresh_field("minimum_break_rule");
+}
 
 function generateRandomString(length) {
 	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
