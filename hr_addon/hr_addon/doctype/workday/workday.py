@@ -711,6 +711,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
 
     default_break_minutes = employee_default_work_hour.break_minutes
     default_break_hours = flt(default_break_minutes / 60)
+    expected_break_hours = default_break_hours
     target_hours = employee_default_work_hour.hours
 
     if len(employee_checkins) % 2 == 0:
@@ -749,6 +750,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
                 on_site_duration_hours=total_duration,
                 fallback_break_hours=default_break_hours,
             )
+            expected_break_hours = mandatory_break_hours
             if break_from_checkins <= mandatory_break_hours:
                 break_hours = mandatory_break_hours
             else:
@@ -772,7 +774,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
             "target_hours": target_hours,
             "break_minutes": default_break_minutes,
             "hours_worked": hours_worked,
-            "expected_break_hours": default_break_hours,
+            "expected_break_hours": expected_break_hours,
             "actual_working_hours": actual_working_hours,
             "nbreak": 0,
             "attendance": attendance,
@@ -806,7 +808,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
         "target_hours": target_hours,
         "break_minutes": default_break_minutes,
         "hours_worked": hours_worked,
-        "expected_break_hours": default_break_hours,
+        "expected_break_hours": expected_break_hours,
         "actual_working_hours": actual_working_hours,
         "nbreak": 0,
         "attendance": attendance,
