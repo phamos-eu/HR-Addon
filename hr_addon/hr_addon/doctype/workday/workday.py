@@ -661,6 +661,38 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 		else:
 			return flt(hours_worked - default_break_hours)
 
+
+def get_mandatory_break_hours_from_settings(on_site_duration_hours, fallback_break_hours=0):
+	"""Resolve mandatory break from HR Addon Settings > Minimum Break Rule using on-site duration."""
+	on_site_duration_hours = flt(on_site_duration_hours)
+	fallback_break_hours = flt(fallback_break_hours)
+	if on_site_duration_hours <= 0:
+		return fallback_break_hours
+
+	hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
+	rules = sorted(
+		(hr_addon_settings.minimum_break_rule or []),
+		key=lambda row: (
+			flt(row.from_hours or 0),
+			flt(row.to_hours) if row.to_hours is not None else float("inf"),
+		),
+	)
+	if not rules:
+		return fallback_break_hours
+
+	for idx, rule in enumerate(rules):
+		from_hours = flt(rule.from_hours or 0)
+		to_hours = flt(rule.to_hours) if rule.to_hours is not None else None
+
+		# Keep same boundary semantics already used in Weekly Working Hours:
+		# first row inclusive lower bound, later rows strict lower bound.
+		in_lower_bound = on_site_duration_hours >= from_hours if idx == 0 else on_site_duration_hours > from_hours
+		in_upper_bound = True if to_hours is None else on_site_duration_hours <= to_hours
+		if in_lower_bound and in_upper_bound:
+			return flt(cint(rule.minimum_break_minutes or 0) / 60.0)
+
+	return fallback_break_hours
+
 def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
     is_break_from_checkins_with_swapped_hours = hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Employee Checkins" and hr_addon_settings.swap_hours_worked_and_actual_working_hours
@@ -673,6 +705,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
 
     default_break_minutes = employee_default_work_hour.break_minutes
     default_break_hours = flt(default_break_minutes / 60)
+    expected_break_hours = default_break_hours
     target_hours = employee_default_work_hour.hours
 
     if len(employee_checkins) % 2 == 0:
@@ -707,8 +740,13 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
             break_hours = default_break_hours
 
         elif hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
-            if break_from_checkins <= default_break_hours:
-                break_hours = default_break_hours
+            mandatory_break_hours = get_mandatory_break_hours_from_settings(
+                on_site_duration_hours=total_duration,
+                fallback_break_hours=default_break_hours,
+            )
+            expected_break_hours = mandatory_break_hours
+            if break_from_checkins <= mandatory_break_hours:
+                break_hours = mandatory_break_hours
             else:
                 break_hours = break_from_checkins
         else:
@@ -730,7 +768,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
             "target_hours": target_hours,
             "break_minutes": default_break_minutes,
             "hours_worked": hours_worked,
-            "expected_break_hours": default_break_hours,
+            "expected_break_hours": expected_break_hours,
             "actual_working_hours": actual_working_hours,
             "nbreak": 0,
             "attendance": attendance,
@@ -764,7 +802,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
         "target_hours": target_hours,
         "break_minutes": default_break_minutes,
         "hours_worked": hours_worked,
-        "expected_break_hours": default_break_hours,
+        "expected_break_hours": expected_break_hours,
         "actual_working_hours": actual_working_hours,
         "nbreak": 0,
         "attendance": attendance,
