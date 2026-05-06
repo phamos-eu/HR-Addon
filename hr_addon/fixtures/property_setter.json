@@ -1,0 +1,18 @@
+[
+ {
+  "default_value": null,
+  "doc_type": "Employee",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocType",
+  "field_name": null,
+  "is_system_generated": 0,
+  "modified": "2026-05-06 22:40:12.806948",
+  "module": null,
+  "name": "Employee-main-links_order",
+  "property": "links_order",
+  "property_type": "Small Text",
+  "row_name": null,
+  "value": "[\"d6571fajbn\"]"
+ }
+]
