@@ -133,6 +133,63 @@ class WeeklyWorkingHours(Document):
 			frappe.throw("Following Weekly Working Hours record already exists for {0} for the specified date range:<br> {1}".format(
 				frappe.get_desk_link("Employee", self.employee), overlapping_links))
 
+	def on_submit(self):
+		sync_employee_working_hours(self.employee)
+
+	def on_cancel(self):
+		clear_employee_working_hours(self.employee)
+
+
+def _get_latest_submitted_weekly_working_hours(employee):
+	entries = frappe.get_all(
+		"Weekly Working Hours",
+		filters={"employee": employee, "docstatus": 1},
+		fields=["name", "total_work_hours"],
+		order_by="modified desc",
+		limit=1,
+	)
+	return entries[0] if entries else {}
+
+
+def sync_employee_working_hours(employee):
+	if not employee:
+		return
+
+	latest_entry = _get_latest_submitted_weekly_working_hours(employee)
+	values = {
+		"custom_weekly_working_hours": latest_entry.get("name"),
+		"custom_total_work_hours": flt(latest_entry.get("total_work_hours")),
+	}
+	frappe.db.set_value("Employee", employee, values, update_modified=False)
+
+
+def clear_employee_working_hours(employee):
+	if not employee:
+		return
+
+	frappe.db.set_value(
+		"Employee",
+		employee,
+		{
+			"custom_weekly_working_hours": None,
+			"custom_total_work_hours": 0,
+		},
+		update_modified=False,
+	)
+
+
+@frappe.whitelist()
+def get_latest_submitted_weekly_working_hours_for_employee(employee):
+	if not employee:
+		return {"weekly_working_hours_entry": None, "total_work_hours": 0}
+
+	latest_entry = _get_latest_submitted_weekly_working_hours(employee)
+
+	return {
+		"weekly_working_hours_entry": latest_entry.get("name"),
+		"total_work_hours": flt(latest_entry.get("total_work_hours")),
+	}
+
 
 @frappe.whitelist()
 def set_from_to_dates():
