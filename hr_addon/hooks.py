@@ -16,13 +16,13 @@ fixtures = [
 	{"dt": "Custom Field", "filters": [
 		["module", "=", "HR Addon"]
 	]},
-    {"dt": "Property Setter", "filters": [
-        [
-            "name", "in", [
-                "Employee-main-links_order"
-              ]
+    {
+        "dt": "DocType Link",
+        "filters": [
+            ["parenttype", "=", "DocType"],
+            ["parent", "=", "Employee"],
         ]
-    ]},
+    },
 ]
 doctype_js = {
 	"HR Settings" : "public/js/hr_settings.js",
