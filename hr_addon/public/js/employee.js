@@ -10,7 +10,7 @@ frappe.ui.form.on("Employee", {
 		frappe.call({
 			method: "hr_addon.hr_addon.doctype.weekly_working_hours.weekly_working_hours.get_latest_submitted_weekly_working_hours_for_employee",
 			args: { employee: frm.doc.name },
-			callback: (response) => {
+			callback: async (response) => {
 				const data = response.message || {};
 				const latestEntry = data.weekly_working_hours_entry || "";
 				const latestHours = flt(data.total_work_hours || 0);
@@ -22,10 +22,11 @@ frappe.ui.form.on("Employee", {
 					return;
 				}
 
-				frappe.db.set_value("Employee", frm.doc.name, {
+				await frm.set_value({
 					custom_weekly_working_hours: latestEntry || null,
 					custom_total_work_hours: latestHours,
 				});
+				await frm.save();
 			},
 		});
 	},
