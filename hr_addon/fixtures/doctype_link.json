@@ -1,0 +1,19 @@
+[
+ {
+  "custom": 0,
+  "docstatus": 0,
+  "doctype": "DocType Link",
+  "group": null,
+  "hidden": 0,
+  "is_child_table": 0,
+  "link_doctype": "Weekly Working Hours",
+  "link_fieldname": "employee",
+  "modified": "2026-05-07 10:36:05.478245",
+  "name": "employee_weekly_working_hours_link",
+  "parent": "Employee",
+  "parent_doctype": null,
+  "parentfield": "links",
+  "parenttype": "DocType",
+  "table_fieldname": null
+ }
+]

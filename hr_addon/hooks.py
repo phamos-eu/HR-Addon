@@ -15,10 +15,18 @@ after_migrate = "hr_addon.hr_addon.doctype.workday.workday.create_background_job
 fixtures = [
 	{"dt": "Custom Field", "filters": [
 		["module", "=", "HR Addon"]
-	]}
+	]},
+    {
+        "dt": "DocType Link",
+        "filters": [
+            ["parenttype", "=", "DocType"],
+            ["parent", "=", "Employee"],
+        ]
+    },
 ]
 doctype_js = {
-	"HR Settings" : "public/js/hr_settings.js"
+	"HR Settings" : "public/js/hr_settings.js",
+	"Employee": "public/js/employee.js",
 }
 
 required_apps = ["hrms"]
