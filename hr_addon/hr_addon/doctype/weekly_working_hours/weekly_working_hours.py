@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate
+from frappe.utils import getdate, flt
 from frappe.model.naming import make_autoname
 from frappe import _
 
