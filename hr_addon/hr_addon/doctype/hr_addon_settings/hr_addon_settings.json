@@ -22,6 +22,8 @@
   "workday_break_calculation_mechanism",
   "swap_hours_worked_and_actual_working_hours",
   "workday_break_calculation_logic",
+  "half_day_holidays_section_section",
+  "half_day_holidays",
   "notification_section",
   "anniversary_notification_email_list",
   "enable_work_anniversaries_notification",
@@ -198,12 +200,24 @@
    "fieldname": "break_rules_tab",
    "fieldtype": "Tab Break",
    "label": "Break Minutes Rules"
+  },
+  {
+   "fieldname": "half_day_holidays_section_section",
+   "fieldtype": "Section Break",
+   "label": "Half Day Holidays"
+  },
+  {
+   "description": "Dates that count as half-day holidays. On these days, target working hours are 50% of the employee\u2019s normal daily target (e.g. 24 Dec, 31 Dec). This avoids treating half a day\u2019s work as full overtime or as missing hours.",
+   "fieldname": "half_day_holidays",
+   "fieldtype": "Table",
+   "label": "Half Day Holidays",
+   "options": "Half Day Holidays"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-05 10:26:01.229153",
+ "modified": "2026-05-20 13:13:02.799303",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
