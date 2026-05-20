@@ -19,6 +19,9 @@ class Workday(Document):
 		self.validate_duplicate_workday()
 		self.set_status_for_leave_application()
 
+	def before_save(self):
+		self.set_half_day_holiday()
+
 	def after_insert(self):
 		"""Show a concise message after creating a Workday, indicating its status."""
 		if self.status == "Missing Checkin":
@@ -117,6 +120,9 @@ class Workday(Document):
 			self.hours_worked = 0.0
 			self.actual_working_hours = -self.target_hours
 			self.break_hours = 0.0
+
+	def set_half_day_holiday(self):
+		apply_half_day_holiday_targets(self)
 
 	def validate_duplicate_workday(self):
 		workday = frappe.db.exists("Workday", {
@@ -796,6 +802,43 @@ def get_employee_attendance(employee,atime):
     ).run(as_dict=True)
 
     return attendance_list
+
+
+def is_half_day_holiday(adate):
+	"""True if adate is listed in HR Addon Settings > Half Day Holidays."""
+	adate = getdate(adate)
+	return frappe.db.exists(
+		"Half Day Holidays",
+		{
+			"parent": "HR Addon Settings",
+			"parenttype": "HR Addon Settings",
+			"parentfield": "half_day_holidays",
+			"holiday_date": adate,
+		},
+	)
+
+
+def apply_half_day_holiday_targets(doc, employee_default_work_hour=None):
+	"""Halve target_hours and expected_break_hours on configured half-day holidays."""
+	if not is_half_day_holiday(doc.log_date):
+		return
+
+	# Leave application already adjusts target hours for that day.
+	if doc.status in ("On Leave", "Half Day"):
+		return
+
+	if flt(doc.target_hours) > 0:
+		doc.target_hours = flt(doc.target_hours) / 2
+		doc.expected_break_hours = flt(doc.expected_break_hours) / 2
+		return
+
+	if employee_default_work_hour is None and doc.employee:
+		employee_default_work_hour = get_employee_default_work_hour(doc.employee, doc.log_date)
+	if not employee_default_work_hour:
+		return
+
+	doc.target_hours = flt(employee_default_work_hour.hours) / 2
+	doc.expected_break_hours = flt(employee_default_work_hour.break_minutes) / 60 / 2
 
 
 @frappe.whitelist()
