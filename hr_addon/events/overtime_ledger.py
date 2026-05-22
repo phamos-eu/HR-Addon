@@ -8,6 +8,20 @@ from frappe.query_builder.functions import Count
 REVERSAL_REMARK_MARKER = "Reversal of"
 
 
+def is_overtime_ledger_enabled():
+	"""Master switch from HR Addon Settings (Overtime Ledger tab)."""
+	return cint(frappe.db.get_single_value("HR Addon Settings", "enable_overtime_legder_feature"))
+
+
+def require_overtime_ledger_enabled(message=None):
+	"""Raise when overtime ledger is disabled (submit / manual create paths)."""
+	if not is_overtime_ledger_enabled():
+		frappe.throw(
+			message
+			or _("Enable Overtime Ledger Feature in HR Addon Settings before using overtime ledger.")
+		)
+
+
 def is_reversal_ledger_row(remarks):
 	"""True if remarks match explicit reversal rows (English marker from reverse_* helpers)."""
 	return bool(remarks and REVERSAL_REMARK_MARKER in str(remarks))
@@ -53,6 +67,9 @@ def after_insert_overtime_ledger_entry(doc, method=None):
 	
 	This is called on after_insert hook
 	"""
+	if not is_overtime_ledger_enabled() and not is_reversal_ledger_row(doc.remarks):
+		return
+
 	# Check if there are entries AFTER this one that need reposting
 	OLE = frappe.qb.DocType("Overtime Ledger Entry")
 	
