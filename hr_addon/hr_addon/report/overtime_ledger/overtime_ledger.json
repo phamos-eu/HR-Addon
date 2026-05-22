@@ -7,10 +7,10 @@
  "docstatus": 0,
  "doctype": "Report",
  "filters": [],
- "idx": 0,
+ "idx": 2,
  "is_standard": "Yes",
  "letter_head": null,
- "modified": "2026-04-27 13:26:34.232956",
+ "modified": "2026-05-22 14:39:44.382138",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Overtime Ledger",
@@ -25,9 +25,6 @@
   },
   {
    "role": "HR Manager"
-  },
-  {
-   "role": "SC HR"
   }
  ],
  "timeout": 0

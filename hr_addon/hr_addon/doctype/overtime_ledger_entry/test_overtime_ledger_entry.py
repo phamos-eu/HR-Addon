@@ -48,7 +48,7 @@ class TestOvertimeLedgerEntry(FrappeTestCase):
 		"""Persist HR Addon Settings closed-period cutoff (shared test helper)."""
 		doc = frappe.get_single("HR Addon Settings")
 		doc.overtime_frozen = overtime_frozen
-		doc.enable_overtime_legder_feature = 1
+		doc.enable_overtime_ledger_feature = 1
 		doc.save()
 
 	def get_leave_type_deducting_overtime(self):
@@ -712,7 +712,7 @@ class TestLeaveApplicationOvertimeLedger(FrappeTestCase):
 	def _ensure_open_period_for_ole(self):
 		doc = frappe.get_single("HR Addon Settings")
 		doc.overtime_frozen = add_days(getdate(), -180)
-		doc.enable_overtime_legder_feature = 1
+		doc.enable_overtime_ledger_feature = 1
 		doc.save()
 
 	def _require_attendance_ole_fields(self):
