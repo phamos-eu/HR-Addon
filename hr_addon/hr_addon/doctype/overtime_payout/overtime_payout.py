@@ -3,7 +3,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import cint, flt, get_time, getdate, nowtime
-from hr_addon.events.overtime_ledger import get_employee_overtime_balance
+from hr_addon.events.overtime_ledger import get_employee_overtime_balance, require_overtime_ledger_enabled
 
 
 class OvertimePayout(Document):
@@ -39,6 +39,9 @@ class OvertimePayout(Document):
 		On submit: Create Overtime Ledger Entry
 		Following Stock Entry pattern
 		"""
+		require_overtime_ledger_enabled(
+			_("Enable Overtime Ledger Feature in HR Addon Settings before submitting Overtime Payout.")
+		)
 		self.update_overtime_ledger()
 		self._update_overtime_balance_after_submit()
 
@@ -192,7 +195,9 @@ class OvertimePayout(Document):
 					ole["balance_before"] = original_oles[i].balance_after
 					ole["balance_after"] = original_oles[i].balance_before
 				
-				ole_doc = make_ole_entry(ole)
+				ole_doc = make_ole_entry(ole, allow_when_disabled=True)
+				if not ole_doc:
+					continue
 				frappe.msgprint(
 					_("Reversal Overtime Ledger Entry {0} created to cancel {1}").format(
 						ole_doc.name, self.name
@@ -228,7 +233,9 @@ class OvertimePayout(Document):
 			# Create new OLE entries
 			for ole in ole_entries:
 				ole_doc = make_ole_entry(ole)
-				
+				if not ole_doc:
+					continue
+
 				# Show message
 				action = "reduced" if self.purpose in ("Pay-out", "Negative Adjustment") else "increased"
 				frappe.msgprint(

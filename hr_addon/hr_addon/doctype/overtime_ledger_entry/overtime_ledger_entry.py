@@ -87,6 +87,20 @@ class OvertimeLedgerEntry(Document):
 
 		# Require Overtime Hours Frozen Upto in HR Addon Settings
 		if self.posting_date:
+			from hr_addon.events.overtime_ledger import (
+				is_overtime_ledger_enabled,
+				is_reversal_ledger_row,
+			)
+
+			if self.is_new() and not is_reversal_ledger_row(self.remarks):
+				if not is_overtime_ledger_enabled():
+					frappe.throw(
+						_(
+							"Enable Overtime Ledger Feature in HR Addon Settings before creating Overtime Ledger entries."
+						),
+						title=_("Overtime Ledger Disabled"),
+					)
+
 			settings = frappe.get_single("HR Addon Settings")
 			overtime_frozen = getattr(settings, "overtime_frozen", None)
 			if not overtime_frozen:
@@ -190,7 +204,7 @@ class OvertimeLedgerEntry(Document):
 # MODULE-LEVEL HELPER FUNCTIONS FOR overtime pay-out
 # ============================================================================
 
-def make_ole_entry(args):
+def make_ole_entry(args, allow_when_disabled=False):
 	"""
 	Create Overtime Ledger Entry
 	Following make_entry() pattern from erpnext.stock.stock_ledger
@@ -200,10 +214,15 @@ def make_ole_entry(args):
 	
 	Args:
 		args: Dictionary with OLE fields
+		allow_when_disabled: True for reversals when cleaning up existing ledger rows
 		
 	Returns:
-		OLE document
+		OLE document, or None when feature is disabled
 	"""
+	from hr_addon.events.overtime_ledger import is_overtime_ledger_enabled
+
+	if not allow_when_disabled and not is_overtime_ledger_enabled():
+		return None
 	
 	args["doctype"] = "Overtime Ledger Entry"
 	ole = frappe.get_doc(args)
@@ -279,4 +298,4 @@ def make_ole_entries(ole_entries):
 	# Create OLE entries
 	for ole in ole_entries:
 		if ole.get("hour_variance") or cancel:
-			ole_doc = make_ole_entry(ole)			
+			make_ole_entry(ole, allow_when_disabled=bool(cancel))

@@ -318,7 +318,10 @@ def repost_all_overtime_ledger_entries(employees=None):
 	"""Recalculate overtime balances after the frozen date for all or selected employees."""
 	import json
 
-	from hr_addon.events.overtime_ledger import update_entries_after
+	from hr_addon.events.overtime_ledger import is_overtime_ledger_enabled, update_entries_after
+
+	if not is_overtime_ledger_enabled():
+		return _("Overtime Ledger feature is disabled in HR Addon Settings.")
 
 	settings = frappe.get_single("HR Addon Settings")
 	overtime_frozen = getattr(settings, "overtime_frozen", None)
