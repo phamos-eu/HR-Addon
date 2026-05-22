@@ -22,6 +22,7 @@ class Workday(Document):
 		self.date_is_in_comp_off()
 		self.validate_duplicate_workday()
 		self.set_status_for_leave_application()
+		self.update_status()
 		if not self.is_new():
 			create_attendace_record(self)
 
@@ -108,6 +109,36 @@ class Workday(Document):
 				self.expected_break_hours = 0
 				self.actual_working_hours = 0
 				self.status = "On Leave"
+
+	def update_status(self):
+		"""Set Workday status from checkins, holidays, and draft leave applications."""
+		allow_workdays_on_holidays = (
+			frappe.db.get_single_value("HR Addon Settings", "allow_workdays_on_holidays") or 0
+		)
+		if (
+			self.status == "Not Workday"
+			and self.employee_checkins
+			and allow_workdays_on_holidays
+			and date_is_in_holiday_list(self.employee, self.log_date)
+		):
+			self.status = "Present"
+
+		if not self.status:
+			if self.employee_checkins:
+				self.status = "Present"
+			elif date_is_in_holiday_list(self.employee, self.log_date):
+				self.status = "Not Workday"
+			else:
+				leave_application = frappe.db.exists(
+					"Leave Application",
+					{
+						"employee": self.employee,
+						"from_date": ("<=", self.log_date),
+						"to_date": (">=", self.log_date),
+						"docstatus": 0,
+					},
+				)
+				self.status = "Pending Leave" if leave_application else "Absent"
 
 	def date_is_in_comp_off(self):
 		leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
@@ -813,6 +844,8 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     
     attendance = employee_checkins[0].attendance if len(employee_checkins) > 0 else ""
     status = frappe.db.get_value("Attendance", attendance, "status") if attendance else ""
+    if not status:
+        status = "Present"
 
     new_workday.update({
         "target_hours": target_hours,
