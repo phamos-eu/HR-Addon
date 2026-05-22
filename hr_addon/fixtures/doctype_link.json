@@ -15,5 +15,22 @@
   "parentfield": "links",
   "parenttype": "DocType",
   "table_fieldname": null
+ },
+ {
+  "custom": 0,
+  "docstatus": 0,
+  "doctype": "DocType Link",
+  "group": null,
+  "hidden": 0,
+  "is_child_table": 0,
+  "link_doctype": "Overtime Ledger Entry",
+  "link_fieldname": "voucher_no",
+  "modified": "2026-01-27 11:36:05.478245",
+  "name": "kmmh7aljsr",
+  "parent": "Leave Application",
+  "parent_doctype": null,
+  "parentfield": "links",
+  "parenttype": "DocType",
+  "table_fieldname": null
  }
 ]

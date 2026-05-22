@@ -4,6 +4,7 @@
 frappe.ui.form.on('HR Addon Settings', {
 	refresh: function(frm) {
 		seed_default_minimum_break_rules_in_form(frm);
+		frm.doc.__prev_overtime_frozen = frm.doc.overtime_frozen;
         frm.set_query("anniversary_notification_email_list", function () {
             return {
                 filters: {
@@ -53,9 +54,34 @@ frappe.ui.form.on('HR Addon Settings', {
 			const randomString = generateRandomString(24);
 			frm.set_value("name_of_calendar_export_ics_file", randomString)
 		}
+
+		const frozen_changed =
+			String(frm.doc.overtime_frozen || "") !==
+			String(frm.doc.__prev_overtime_frozen || "");
+		if (frozen_changed) {
+			frm.doc.__repost_oles_after_save = 1;
+		}
+		if (frm.doc.__repost_oles_after_save) {
+			return new Promise(function (resolve) {
+				frappe.confirm(
+					__("The overtime frozen date has changed. Do you want to repost all Overtime Ledger entries after saving?"),
+					function () {
+						repost_all_overtime_ledger_entries(frm);
+						resolve();
+					},
+					function () {
+						frm.doc.overtime_frozen = frm.doc.__prev_overtime_frozen;
+						frm.doc.__repost_oles_after_save = 0;
+						resolve();
+					}
+				);
+			});
+		}
 	},
 
 	after_save: function(frm){
+		frm.doc.__repost_oles_after_save = 0;
+		frm.doc.__prev_overtime_frozen = frm.doc.overtime_frozen;
 		if (frm.doc.name_of_calendar_export_ics_file && frm.doc.name_of_calendar_export_ics_file.length < 24){
 			frappe.msgprint("The filename is less than 24 characters. Please, consider to have a longer filename or leave it empty to get a random filename.")
 		}
@@ -80,8 +106,43 @@ frappe.ui.form.on('HR Addon Settings', {
 		}).then(r => {
 			frappe.msgprint("The workdays have been generated.")
 		})
+	},
+
+	repost_all_oles: function(frm) {
+		const selectedEmployees = (frm.doc.select_employees || [])
+			.map((row) => row.employee)
+			.filter(Boolean);
+		const msg = selectedEmployees.length
+			? __("This will repost Overtime Ledger entries for selected employee(s) after the frozen date. Continue?")
+			: __("No employees selected. This will repost for ALL employees after the frozen date. Continue?");
+		frappe.confirm(msg, function () {
+			repost_all_overtime_ledger_entries(frm, selectedEmployees);
+		});
 	}
 });
+
+function repost_all_overtime_ledger_entries(frm, employees = null) {
+	frappe.call({
+		method: "hr_addon.hr_addon.doctype.hr_addon_settings.hr_addon_settings.repost_all_overtime_ledger_entries",
+		args: { employees: employees || [] },
+		freeze: false,
+		callback: function (r) {
+			if (r.exc) {
+				frappe.msgprint({
+					message: r.exc && r.exc[1] ? r.exc[1] : __("Repost failed."),
+					indicator: "red",
+					alert: true
+				});
+			} else {
+				frappe.msgprint({
+					message: r.message || __("Successfully reposted Overtime Ledger entries."),
+					indicator: "green",
+					alert: true
+				});
+			}
+		}
+	});
+}
 
 function get_default_minimum_break_rules() {
 	return [
