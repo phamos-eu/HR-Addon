@@ -94,6 +94,11 @@ def create_overtime_ledger_entry_on_attendance_submit(doc, method=None):
 
 	Balance calculation happens automatically in OvertimeLedgerEntry.validate()
 	"""
+	from hr_addon.events.overtime_ledger import is_overtime_ledger_enabled
+
+	if not is_overtime_ledger_enabled():
+		return
+
 	# Check if overtime ledger entry already exists
 	if hasattr(doc, 'custom_overtime_ledger_entry') and doc.custom_overtime_ledger_entry:
 		frappe.msgprint(
@@ -230,7 +235,12 @@ def reverse_attendance_overtime_ledger_entry(attendance_name, silent=False):
 		"remarks": f"Reversal of {ole_name} on cancellation of {doc.name}",
 		"balance_before": original_ole.balance_after,
 		"balance_after": original_ole.balance_before,
-	})
+	}, allow_when_disabled=True)
+
+	if not reversal_ole:
+		frappe.db.set_value("Overtime Ledger Entry", original_ole.name, "is_cancelled", 1, update_modified=True)
+		frappe.db.commit()
+		return True
 
 	frappe.db.set_value("Overtime Ledger Entry", original_ole.name, "is_cancelled", 1, update_modified=True)
 	frappe.db.commit()

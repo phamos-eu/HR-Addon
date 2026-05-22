@@ -2,3 +2,4 @@
 
 [post_model_sync]
 hr_addon.patches.v1_0.migrate_overtime_doctypes_to_hr_addon_module
+hr_addon.patches.v1_0.remove_legacy_suncycle_ole_custom_fields
