@@ -6,7 +6,7 @@ import frappe, os
 from frappe.model.document import Document
 from frappe import _
 from frappe.utils.data import date_diff
-from frappe.utils import getdate, today, comma_sep, date_diff
+from frappe.utils import getdate, today, comma_sep, date_diff, flt, add_days, formatdate
 from frappe.core.doctype.role.role import get_info_based_on_role
 from frappe.query_builder import DocType
 from icalendar import Event, Calendar
@@ -311,3 +311,71 @@ def create_file(file_name, file_content, doc_name):
     file_path = os.path.join(folder_path, file_name)
     with open(file_path, 'wb') as ical_file:
         ical_file.write(file_content)
+
+
+@frappe.whitelist()
+def repost_all_overtime_ledger_entries(employees=None):
+	"""Recalculate overtime balances after the frozen date for all or selected employees."""
+	import json
+
+	from hr_addon.events.overtime_ledger import update_entries_after
+
+	settings = frappe.get_single("HR Addon Settings")
+	overtime_frozen = getattr(settings, "overtime_frozen", None)
+
+	if overtime_frozen:
+		from_date = add_days(getdate(overtime_frozen), 1)
+	else:
+		from_date = getdate("2000-01-01")
+
+	selected = []
+	if employees:
+		if isinstance(employees, str):
+			try:
+				employees = json.loads(employees)
+			except Exception:
+				employees = [e.strip() for e in employees.split(",") if e.strip()]
+		if isinstance(employees, (list, tuple)):
+			selected = [e for e in employees if e]
+
+	filters = {"is_cancelled": 0}
+	if selected:
+		filters["employee"] = ["in", selected]
+
+	employees_with_oles = frappe.db.get_all(
+		"Overtime Ledger Entry",
+		fields=["employee"],
+		distinct=True,
+		filters=filters,
+	)
+
+	if not employees_with_oles:
+		return _("No employees found with Overtime Ledger entries.")
+
+	employee_count = len(employees_with_oles)
+
+	for i, emp_data in enumerate(employees_with_oles):
+		employee = emp_data.get("employee")
+		if employee:
+			update_entries_after(employee, from_date, "00:00:00")
+			frappe.publish_realtime(
+				"progress",
+				dict(
+					progress=[i + 1, employee_count],
+					title=_("Reposting Overtime Ledger Entries"),
+					description=employee,
+				),
+				user=frappe.session.user,
+			)
+
+	frappe.db.commit()
+	from_date_formatted = formatdate(from_date)
+
+	if selected:
+		return _(
+			"Successfully reposted Overtime Ledger entries for {0} selected employee(s) starting from {1}."
+		).format(employee_count, from_date_formatted)
+
+	return _(
+		"Successfully reposted Overtime Ledger entries for {0} employee(s) starting from {1}."
+	).format(employee_count, from_date_formatted)
