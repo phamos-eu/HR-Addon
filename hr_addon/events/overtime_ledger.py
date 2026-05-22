@@ -10,7 +10,7 @@ REVERSAL_REMARK_MARKER = "Reversal of"
 
 def is_overtime_ledger_enabled():
 	"""Master switch from HR Addon Settings (Overtime Ledger tab)."""
-	return cint(frappe.db.get_single_value("HR Addon Settings", "enable_overtime_legder_feature"))
+	return cint(frappe.db.get_single_value("HR Addon Settings", "enable_overtime_ledger_feature"))
 
 
 def require_overtime_ledger_enabled(message=None):

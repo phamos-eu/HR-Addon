@@ -256,6 +256,13 @@ frappe.query_reports["Overtime Ledger"] = {
 			} else {
 				value = "";
 			}
+		} else if (
+			column.fieldname === "voucher_no" &&
+			data &&
+			data.voucher_type &&
+			data.voucher_no
+		) {
+			value = frappe.utils.get_form_link(data.voucher_type, data.voucher_no, true);
 		}
 
 		// Apply cancelled/reversal styling at the end so formatted value is preserved
