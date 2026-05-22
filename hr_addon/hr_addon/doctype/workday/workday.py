@@ -1621,6 +1621,11 @@ def _handle_overtime_ledger(
     doc, attendance, hour_variance, target_for_att, actual_for_att, leave_info=None
 ):
     """Create or update Overtime Ledger Entry"""
+    from hr_addon.events.overtime_ledger import is_overtime_ledger_enabled
+
+    if not is_overtime_ledger_enabled():
+        return
+
     leave_type = getattr(leave_info, "leave_type", None) or getattr(attendance, "leave_type", None)
     ole_variance = get_ole_hour_variance_for_attendance(
         status=getattr(doc, "status", None),

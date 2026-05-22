@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from frappe.utils import add_days, flt, get_time, getdate
 
-from hr_addon.events.overtime_ledger import get_employee_overtime_balance
+from hr_addon.events.overtime_ledger import get_employee_overtime_balance, is_overtime_ledger_enabled
 from hr_addon.hr_addon.doctype.overtime_ledger_entry.overtime_ledger_entry import make_ole_entry
 from hr_addon.hr_addon.doctype.workday.workday import get_employee_default_work_hour
 
@@ -15,6 +15,9 @@ def validate_leave_application(doc, method=None):
 	Check if employee has sufficient overtime balance for leave types that deduct from overtime.
 	"""
 	if frappe.flags.get("skip_overtime_leave_validation"):
+		return
+
+	if not is_overtime_ledger_enabled():
 		return
 
 	if not doc.leave_type:
@@ -172,7 +175,7 @@ def reverse_workday_leave_ole(workday_name, silent=True):
 		"remarks": f"Reversal of {ole_name} for Workday {workday_name}",
 		"balance_before": original_ole.balance_after,
 		"balance_after": original_ole.balance_before,
-	})
+	}, allow_when_disabled=True)
 
 	frappe.db.set_value("Overtime Ledger Entry", original_ole.name, "is_cancelled", 1, update_modified=True)
 
@@ -242,7 +245,7 @@ def restore_overtime_on_leave_cancel(doc, method=None):
 			"remarks": f"Reversal of {ole_name} on cancellation of {doc.name}",
 			"balance_before": original_ole.balance_after,
 			"balance_after": original_ole.balance_before,
-		})
+		}, allow_when_disabled=True)
 
 		frappe.db.set_value("Overtime Ledger Entry", original_ole.name, "is_cancelled", 1, update_modified=True)
 		frappe.db.commit()
