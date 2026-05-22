@@ -40,7 +40,7 @@ class TestOvertimePayout(FrappeTestCase):
 	def _set_frozen_past(self):
 		doc = frappe.get_single("HR Addon Settings")
 		doc.overtime_frozen = add_days(getdate(), -180)
-		doc.enable_overtime_legder_feature = 1
+		doc.enable_overtime_ledger_feature = 1
 		doc.save()
 
 	def _submit_payout(self, employee, posting_date, purpose, hours_seconds):
