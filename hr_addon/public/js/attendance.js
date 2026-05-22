@@ -4,11 +4,11 @@
 
 frappe.ui.form.on("Attendance", {
 	refresh(frm) {
-		if (frm.doc.custom_workday && frm.fields_dict.custom_workday) {
-			add_custom_link("custom_workday", "Workday", frm.doc.custom_workday);
+		if (frm.doc.custom_workday) {
+			add_custom_links("custom_workday", "Workday", frm.doc.custom_workday);
 		}
-		if (frm.doc.custom_overtime_ledger_entry && frm.fields_dict.custom_overtime_ledger_entry) {
-			add_custom_link(
+		if (frm.doc.custom_overtime_ledger_entry) {
+			add_custom_links(
 				"custom_overtime_ledger_entry",
 				"Overtime Ledger Entry",
 				frm.doc.custom_overtime_ledger_entry
@@ -118,7 +118,7 @@ frappe.ui.form.on("Attendance", {
 	},
 });
 
-function add_custom_link(fieldname, doctype, docname) {
+add_custom_links = (fieldname, doctype, docname) => {
 	if (!docname || !cur_frm.fields_dict[fieldname]) {
 		return;
 	}
@@ -133,4 +133,4 @@ function add_custom_link(fieldname, doctype, docname) {
 			</div>
 		</div>`
 	);
-}
+};
