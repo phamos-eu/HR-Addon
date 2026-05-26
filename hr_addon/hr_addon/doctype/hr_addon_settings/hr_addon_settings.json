@@ -232,7 +232,7 @@
   },
   {
    "default": "0",
-   "description": "Master switch for the overtime ledger. When enabled: Attendance and Workday create Overtime Ledger entries, Overtime Payout can be submitted, OT-deduct leave validation runs, and repost is available. When disabled: no new ledger entries are created (use for hr_addon-only sites without overtime). Existing entries can still be reversed on cancel.",
+   "description": "Master switch for the overtime ledger. When enabled: Workday creates Attendance and Overtime Ledger entries, Overtime Payout can be submitted, OT-deduct leave validation runs, and repost is available. When disabled: Workday does not create new Attendance (existing Attendance for a day can still be updated on Workday save), no new ledger entries are created, and repost is unavailable. Existing entries can still be reversed on cancel.",
    "fieldname": "enable_overtime_ledger_feature",
    "fieldtype": "Check",
    "label": "Enable Overtime Ledger Feature"
@@ -241,7 +241,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-22 13:23:28.265930",
+ "modified": "2026-05-26 13:23:28.265930",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
