@@ -1,12 +1,5 @@
 frappe.ui.form.on("Leave Application", {
 	employee(frm) {
-		frm.set_query("leave_type", function () {
-			return {
-				filters: {
-					enabled: 1,
-				},
-			};
-		});
 		frm.trigger("update_overtime_leave_balance_indicator");
 	},
 
