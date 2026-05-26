@@ -1455,6 +1455,18 @@ def get_submitted_leave_application(employee, log_date, require_ot_deduct=False)
 	return frappe._dict(name=la, leave_type=leave_type)
 
 
+def _get_submitted_attendance_for_workday(doc):
+	"""Submitted Attendance for this Workday day (by link or employee/date lookup)."""
+	linked = getattr(doc, "attendance", None)
+	if linked and frappe.db.get_value("Attendance", linked, "docstatus") == 1:
+		return linked
+
+	return frappe.db.exists(
+		"Attendance",
+		{"employee": doc.employee, "attendance_date": doc.log_date, "docstatus": 1},
+	)
+
+
 def create_attendace_record(doc, method=None):
     """
     Create or update Attendance for OLE via the same path as Attendance.on_submit.
@@ -1463,11 +1475,20 @@ def create_attendace_record(doc, method=None):
 
     On Leave (full day, OT-deduct leave type): target = default day hours, actual = 0.
 
+    When Enable Overtime Ledger Feature is off: skip creating new Attendance from Workday,
+    but still update an existing submitted Attendance if one is already linked.
+
     Deleting a Workday cancels linked Attendance (OLE reversed). On recreate, a new
     Attendance is submitted; OLE is created on submit when hour variance is non-zero.
     If weekly hours cannot resolve target for On Leave, reuse custom_target_hours from
     the last cancelled Attendance for that date when available.
     """
+    from hr_addon.events.overtime_ledger import is_overtime_ledger_enabled
+
+    existing_attendance = _get_submitted_attendance_for_workday(doc)
+    if not is_overtime_ledger_enabled() and not existing_attendance:
+        return
+
     att_status = None
     target_for_att = None
     actual_for_att = None
@@ -1534,7 +1555,7 @@ def create_attendace_record(doc, method=None):
 
     hour_variance = flt(actual_for_att) - flt(target_for_att)
 
-    attendance_exists = attendance_exists_early or frappe.db.exists(
+    attendance_exists = existing_attendance or frappe.db.exists(
         "Attendance",
         {"employee": doc.employee, "attendance_date": doc.log_date, "docstatus": 1},
     )
@@ -1561,6 +1582,7 @@ def _create_new_attendance(doc, hour_variance, att_status, target_for_att, actua
         "doctype": "Attendance",
         "employee": doc.employee,
         "attendance_date": doc.log_date,
+        "company": doc.company or frappe.db.get_value("Employee", doc.employee, "company"),
         "status": att_status,
         "custom_workday": doc.name,
         "custom_target_hours": target_for_att,
