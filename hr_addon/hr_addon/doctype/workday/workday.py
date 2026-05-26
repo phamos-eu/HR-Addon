@@ -1544,6 +1544,7 @@ def _create_new_attendance(doc, hour_variance, att_status, target_for_att, actua
         "doctype": "Attendance",
         "employee": doc.employee,
         "attendance_date": doc.log_date,
+        "company": doc.company or frappe.db.get_value("Employee", doc.employee, "company"),
         "status": att_status,
         "custom_workday": doc.name,
         "custom_target_hours": target_for_att,
