@@ -20,7 +20,7 @@ fixtures = [
         "dt": "DocType Link",
         "filters": [
             ["parenttype", "=", "DocType"],
-            ["parent", "in", ["Employee", "Leave Application"]],
+            ["parent", "in", ["Employee","Attendance"]],
         ]
     },
 ]
