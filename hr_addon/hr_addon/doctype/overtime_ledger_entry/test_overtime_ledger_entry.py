@@ -51,6 +51,11 @@ class TestOvertimeLedgerEntry(FrappeTestCase):
 		doc.enable_overtime_ledger_feature = 1
 		doc.save()
 
+	def set_hr_addon_overtime_enabled(self, enabled=1):
+		doc = frappe.get_single("HR Addon Settings")
+		doc.enable_overtime_ledger_feature = 1 if enabled else 0
+		doc.save()
+
 	def get_leave_type_deducting_overtime(self):
 		"""First Leave Type flagged to deduct from overtime ledger, if any."""
 		row = frappe.get_all(
@@ -715,6 +720,11 @@ class TestLeaveApplicationOvertimeLedger(FrappeTestCase):
 		doc.enable_overtime_ledger_feature = 1
 		doc.save()
 
+	def set_hr_addon_overtime_enabled(self, enabled=1):
+		doc = frappe.get_single("HR Addon Settings")
+		doc.enable_overtime_ledger_feature = 1 if enabled else 0
+		doc.save()
+
 	def _require_attendance_ole_fields(self):
 		meta = frappe.get_meta("Attendance")
 		if not (
@@ -1236,6 +1246,124 @@ class TestLeaveApplicationOvertimeLedger(FrappeTestCase):
 		self.assertAlmostEqual(
 			flt(frappe.db.get_value("Overtime Ledger Entry", ole_name, "hour_variance")),
 			2.0,
+			places=4,
+		)
+
+	def test_workday_skips_new_attendance_when_ole_feature_disabled(self):
+		"""Workday must not create Attendance when OLE feature is off and none exists yet."""
+		self._require_attendance_ole_fields()
+		self._ensure_open_period_for_ole()
+		self.set_hr_addon_overtime_enabled(0)
+		log_date = add_days(getdate(), 3)
+		employee = make_employee(
+			f"ole_wd_no_att_{uuid.uuid4().hex[:10]}@test.local",
+			company="_Test Company",
+		)
+		wd = frappe.get_doc(
+			{
+				"doctype": "Workday",
+				"employee": employee,
+				"log_date": log_date,
+				"company": "_Test Company",
+				"status": "Present",
+				"target_hours": 8,
+				"actual_working_hours": 7.5,
+			}
+		)
+		create_attendace_record(wd)
+		self.assertFalse(
+			frappe.db.exists(
+				"Attendance",
+				{"employee": employee, "attendance_date": log_date, "docstatus": 1},
+			)
+		)
+
+	def test_workday_updates_existing_attendance_when_ole_feature_disabled(self):
+		"""When OLE is off, Workday may still sync hours onto an existing submitted Attendance."""
+		self._require_attendance_ole_fields()
+		self._ensure_open_period_for_ole()
+		log_date = add_days(getdate(), 4)
+		employee = make_employee(
+			f"ole_wd_upd_off_{uuid.uuid4().hex[:10]}@test.local",
+			company="_Test Company",
+		)
+		attendance = frappe.get_doc(
+			{
+				"doctype": "Attendance",
+				"employee": employee,
+				"attendance_date": log_date,
+				"status": "Present",
+				"company": "_Test Company",
+				"custom_target_hours": 8,
+				"custom_actual_working_hours": 7,
+			}
+		)
+		attendance.flags.ignore_permissions = True
+		attendance.insert()
+		try:
+			attendance.submit()
+		except Exception as exc:
+			self.skipTest(f"Attendance submit not supported in this environment: {exc}")
+
+		self.set_hr_addon_overtime_enabled(0)
+		wd = frappe.get_doc(
+			{
+				"doctype": "Workday",
+				"employee": employee,
+				"log_date": log_date,
+				"company": "_Test Company",
+				"status": "Present",
+				"target_hours": 8,
+				"actual_working_hours": 9,
+				"attendance": attendance.name,
+			}
+		)
+		create_attendace_record(wd)
+		self.assertAlmostEqual(
+			flt(
+				frappe.db.get_value(
+					"Attendance", attendance.name, "custom_actual_working_hours"
+				)
+			),
+			9.0,
+			places=4,
+		)
+
+	def test_workday_creates_attendance_when_ole_feature_enabled(self):
+		"""When OLE is on, Workday creates submitted Attendance for a Present day."""
+		self._require_attendance_ole_fields()
+		self._ensure_open_period_for_ole()
+		self.set_hr_addon_overtime_enabled(1)
+		log_date = add_days(getdate(), 5)
+		employee = make_employee(
+			f"ole_wd_create_{uuid.uuid4().hex[:10]}@test.local",
+			company="_Test Company",
+		)
+		wd = frappe.get_doc(
+			{
+				"doctype": "Workday",
+				"employee": employee,
+				"log_date": log_date,
+				"company": "_Test Company",
+				"status": "Present",
+				"target_hours": 8,
+				"actual_working_hours": 7.5,
+			}
+		)
+		create_attendace_record(wd)
+		attendance_name = frappe.db.get_value(
+			"Attendance",
+			{"employee": employee, "attendance_date": log_date, "docstatus": 1},
+			"name",
+		)
+		self.assertTrue(attendance_name)
+		self.assertAlmostEqual(
+			flt(
+				frappe.db.get_value(
+					"Attendance", attendance_name, "custom_actual_working_hours"
+				)
+			),
+			7.5,
 			places=4,
 		)
 
