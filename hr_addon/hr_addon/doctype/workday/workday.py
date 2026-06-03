@@ -755,7 +755,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
 
     default_break_minutes = employee_default_work_hour.break_minutes
     default_break_hours = flt(default_break_minutes / 60)
-    expected_break_hours = 0.0
+    expected_break_hours = default_break_hours
     target_hours = employee_default_work_hour.hours
 
     if len(employee_checkins) % 2 == 0:
@@ -778,7 +778,8 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
         if is_break_from_checkins_with_swapped_hours:
             total_duration, hours_worked = hours_worked, total_duration
 
-        if total_duration > 0:
+        mechanism = hr_addon_settings.workday_break_calculation_mechanism
+        if mechanism == "Break Hours from Weekly Working Hours if Shorter breaks" and total_duration > 0:
             expected_break_hours = get_mandatory_break_hours_from_settings(total_duration)
 
         break_from_checkins = 0.0
@@ -786,13 +787,13 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
             wh = time_diff_in_hours(clockin_list[i + 1], clockout_list[i])
             break_from_checkins += float(wh)
 
-        if hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Employee Checkins":
+        if mechanism == "Break Hours from Employee Checkins":
             break_hours = break_from_checkins
 
-        elif hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Weekly Working Hours":
+        elif mechanism == "Break Hours from Weekly Working Hours":
             break_hours = default_break_hours
 
-        elif hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
+        elif mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
             mandatory_break_hours = expected_break_hours
             if break_from_checkins <= mandatory_break_hours:
                 break_hours = mandatory_break_hours
