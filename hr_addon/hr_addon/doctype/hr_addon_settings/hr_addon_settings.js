@@ -185,27 +185,33 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 			bg1: '#e7f3ff',
 			bg2: '#fff3cd',
 			bg3: '#d1ecf1',
+			bg4: '#e8f5e9',
 			border1: '#007bff',
 			border2: '#ffc107',
 			border3: '#17a2b8',
+			border4: '#28a745',
 			text: '#333',
 			textSecondary: '#666',
 			heading1: '#007bff',
 			heading2: '#856404',
-			heading3: '#0c5460'
+			heading3: '#0c5460',
+			heading4: '#155724'
 		},
 		dark: {
 			bg1: 'rgba(0, 123, 255, 0.15)',
 			bg2: 'rgba(255, 193, 7, 0.15)',
 			bg3: 'rgba(23, 162, 184, 0.15)',
+			bg4: 'rgba(40, 167, 69, 0.15)',
 			border1: '#4dabf7',
 			border2: '#ffd43b',
 			border3: '#66d9ef',
+			border4: '#51cf66',
 			text: 'var(--text-color)',
 			textSecondary: 'var(--text-muted)',
 			heading1: '#4dabf7',
 			heading2: '#ffd43b',
-			heading3: '#66d9ef'
+			heading3: '#66d9ef',
+			heading4: '#51cf66'
 		}
 	};
 	
@@ -262,13 +268,18 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 			<div style="padding: 15px; background-color: ${theme.bg2}; border-left: 4px solid ${theme.border2}; margin: 10px 0; border-radius: 4px;">
 				<h4 style="margin-top: 0; color: ${theme.heading2}; font-size: 14px; font-weight: 600;">Break Hours from Weekly Working Hours</h4>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
-					<strong>Logic:</strong> Uses the predefined break time configured in Weekly Working Hours.
+					<strong>Logic:</strong> Fixed break from Weekly Working Hours for that weekday. Minimum Break Rule and check-in gaps are not used.
 				</p>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
-					<strong>Calculation:</strong> The break hours are taken directly from the Weekly Working Hours configuration (break_minutes converted to hours). This is a fixed value regardless of actual checkin patterns.
+					<strong>Calculation:</strong>
+					<ul style="margin: 8px 0; padding-left: 20px; color: ${theme.text}; line-height: 1.6;">
+						<li><strong>Expected break hours:</strong> Weekly Working Hours break_minutes ÷ 60</li>
+						<li><strong>Break hours:</strong> Same fixed weekly value</li>
+						<li><strong>Actual working hours:</strong> Hours worked (work segments) − break hours</li>
+					</ul>
 				</p>
 				<p style="margin-bottom: 0; color: ${theme.textSecondary}; font-size: 12px; line-height: 1.5;">
-					<strong>Note:</strong> The actual break time from checkins is ignored. The system always uses the configured break time from Weekly Working Hours.
+					<strong>Example:</strong> Monday break_minutes = 30 → break hours always 0.5, even if the employee took no lunch in check-ins.
 				</p>
 			</div>
 		`,
@@ -276,18 +287,37 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 			<div style="padding: 15px; background-color: ${theme.bg3}; border-left: 4px solid ${theme.border3}; margin: 10px 0; border-radius: 4px;">
 				<h4 style="margin-top: 0; color: ${theme.heading3}; font-size: 14px; font-weight: 600;">Break Hours from Weekly Working Hours if Shorter breaks</h4>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
-					<strong>Logic:</strong> Compares the actual break time from checkins with the mandatory break from Minimum Break Rule (by on-site hours).
+					<strong>Logic:</strong> Compares check-in lunch gaps with the break from Weekly Working Hours. Minimum Break Rule is not used.
 				</p>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
 					<strong>Calculation:</strong>
 					<ul style="margin: 8px 0; padding-left: 20px; color: ${theme.text}; line-height: 1.6;">
-						<li><strong>Expected break hours:</strong> From Minimum Break Rule using first check-in to last checkout</li>
-						<li>If actual break from checkins ≤ expected break hours: Uses expected (mandatory) break</li>
-						<li>If actual break from checkins > expected break hours: Uses the actual break time from checkins</li>
+						<li><strong>Expected break hours:</strong> Weekly Working Hours break_minutes ÷ 60</li>
+						<li><strong>Break hours:</strong> Weekly default if check-in gap ≤ expected; otherwise the actual gap from check-ins</li>
+						<li><strong>Actual working hours:</strong> On-site time − break hours</li>
 					</ul>
 				</p>
 				<p style="margin-bottom: 0; color: ${theme.textSecondary}; font-size: 12px; line-height: 1.5;">
-					<strong>Example:</strong> If mandatory break is 0.5 hours (30 min) but employee took 1 hour break, the system uses 1 hour. If employee took only 0.25 hours break, the system uses 0.5 hours (mandatory).
+					<strong>Example:</strong> Weekly break 0.5 h, gap 0.25 h → break 0.5 h. Weekly break 0.5 h, gap 1 h → break 1 h.
+				</p>
+			</div>
+		`,
+		"Break Hours from Minimum Break Rule": `
+			<div style="padding: 15px; background-color: ${theme.bg4}; border-left: 4px solid ${theme.border4}; margin: 10px 0; border-radius: 4px;">
+				<h4 style="margin-top: 0; color: ${theme.heading4}; font-size: 14px; font-weight: 600;">Break Hours from Minimum Break Rule</h4>
+				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
+					<strong>Logic:</strong> Always applies the mandatory break from HR Addon Settings → Minimum Break Rule. Check-in gaps are ignored for break hours.
+				</p>
+				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
+					<strong>Calculation:</strong>
+					<ul style="margin: 8px 0; padding-left: 20px; color: ${theme.text}; line-height: 1.6;">
+						<li><strong>Expected break hours:</strong> Minimum Break Rule (on-site: first check-in → last checkout)</li>
+						<li><strong>Break hours:</strong> Always equal to expected break hours</li>
+						<li><strong>Actual working hours:</strong> On-site time − break hours</li>
+					</ul>
+				</p>
+				<p style="margin-bottom: 0; color: ${theme.textSecondary}; font-size: 12px; line-height: 1.5;">
+					<strong>Example:</strong> On-site 8.5 h → mandatory 0.5 h break even if check-ins show a 1 h lunch or no lunch split. Use “if Shorter breaks” when longer real breaks must be credited.
 				</p>
 			</div>
 		`
