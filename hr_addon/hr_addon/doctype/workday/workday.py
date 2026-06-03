@@ -16,6 +16,13 @@ from hr_addon.events.attendance import (
 )
 import traceback
 
+MECHANISM_MINIMUM_BREAK_RULE = "Break Hours from Minimum Break Rule"
+MECHANISMS_ACTUAL_WORKING_HOURS_FROM_ON_SITE = (
+	"Break Hours from Weekly Working Hours if Shorter breaks",
+	MECHANISM_MINIMUM_BREAK_RULE,
+)
+
+
 class Workday(Document):
 	def validate(self):
 		self.set_actual_employee_log()
@@ -684,13 +691,10 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 		return hours_worked
 	
 	# Calculate based on mechanism
-	if mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
-		# For this mechanism: use total_duration (total presence on site) minus break_hours
+	if mechanism in MECHANISMS_ACTUAL_WORKING_HOURS_FROM_ON_SITE:
 		if total_duration is not None and total_duration > 0:
 			return flt(total_duration - break_hours)
-		else:
-			# Fallback: use hours_worked - break_hours if total_duration not available
-			return flt(hours_worked - break_hours)
+		return flt(hours_worked - break_hours)
 	
 	elif is_swapped:
 		# When swap is enabled: hours_worked contains total_duration
@@ -698,8 +702,6 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 			return flt(total_duration - break_hours)
 		elif hours_worked > 0:
 			return flt(hours_worked - break_hours)
-		elif mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
-			return flt(hours_worked - break_hours) if hours_worked > 0 else flt((total_duration or 0) - break_hours)
 		else:
 			return flt(total_duration - default_break_hours) if total_duration is not None else flt(hours_worked - default_break_hours)
 	
@@ -707,7 +709,7 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 		# Default: hours_worked contains sum of work periods (excluding breaks)
 		if total_duration is not None and total_duration > 0:
 			return flt(hours_worked - break_hours)
-		elif mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
+		elif mechanism in MECHANISMS_ACTUAL_WORKING_HOURS_FROM_ON_SITE:
 			return flt(hours_worked - break_hours)
 		else:
 			return flt(hours_worked - default_break_hours)
@@ -779,8 +781,6 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
             total_duration, hours_worked = hours_worked, total_duration
 
         mechanism = hr_addon_settings.workday_break_calculation_mechanism
-        if mechanism == "Break Hours from Weekly Working Hours if Shorter breaks" and total_duration > 0:
-            expected_break_hours = get_mandatory_break_hours_from_settings(total_duration)
 
         break_from_checkins = 0.0
         for i in range(len(clockout_list) - 1):
@@ -794,11 +794,14 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
             break_hours = default_break_hours
 
         elif mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
-            mandatory_break_hours = expected_break_hours
-            if break_from_checkins <= mandatory_break_hours:
-                break_hours = mandatory_break_hours
+            if break_from_checkins <= default_break_hours:
+                break_hours = default_break_hours
             else:
                 break_hours = break_from_checkins
+        elif mechanism == MECHANISM_MINIMUM_BREAK_RULE:
+            if total_duration > 0:
+                expected_break_hours = get_mandatory_break_hours_from_settings(total_duration)
+            break_hours = expected_break_hours
         else:
             break_hours = 0.0
 
