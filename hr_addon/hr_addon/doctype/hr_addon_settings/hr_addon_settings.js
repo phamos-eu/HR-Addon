@@ -276,17 +276,18 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 			<div style="padding: 15px; background-color: ${theme.bg3}; border-left: 4px solid ${theme.border3}; margin: 10px 0; border-radius: 4px;">
 				<h4 style="margin-top: 0; color: ${theme.heading3}; font-size: 14px; font-weight: 600;">Break Hours from Weekly Working Hours if Shorter breaks</h4>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
-					<strong>Logic:</strong> Compares the actual break time from checkins with the default break hours from Weekly Working Hours.
+					<strong>Logic:</strong> Compares the actual break time from checkins with the mandatory break from Minimum Break Rule (by on-site hours).
 				</p>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
 					<strong>Calculation:</strong>
 					<ul style="margin: 8px 0; padding-left: 20px; color: ${theme.text}; line-height: 1.6;">
-						<li>If actual break from checkins ≤ default break hours: Uses default break hours from Weekly Working Hours</li>
-						<li>If actual break from checkins > default break hours: Uses the actual break time from checkins</li>
+						<li><strong>Expected break hours:</strong> From Minimum Break Rule using first check-in to last checkout</li>
+						<li>If actual break from checkins ≤ expected break hours: Uses expected (mandatory) break</li>
+						<li>If actual break from checkins > expected break hours: Uses the actual break time from checkins</li>
 					</ul>
 				</p>
 				<p style="margin-bottom: 0; color: ${theme.textSecondary}; font-size: 12px; line-height: 1.5;">
-					<strong>Example:</strong> If default break is 0.5 hours (30 min) but employee took 1 hour break, the system uses 1 hour. If employee took only 0.25 hours break, the system uses 0.5 hours (default).
+					<strong>Example:</strong> If mandatory break is 0.5 hours (30 min) but employee took 1 hour break, the system uses 1 hour. If employee took only 0.25 hours break, the system uses 0.5 hours (mandatory).
 				</p>
 			</div>
 		`

@@ -657,7 +657,7 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 	Args:
 		hours_worked: Sum of work periods (excluding breaks)
 		break_hours: Calculated break hours
-		default_break_hours: Default break hours from Weekly Working Hours
+		default_break_hours: Default break hours from Weekly Working Hours (legacy mechanisms only)
 		mechanism: Break calculation mechanism from HR Addon Settings (optional, will fetch if not provided)
 		total_duration: Total time from first checkin to last checkout (optional, for Workday)
 		is_swapped: Whether hours_worked and total_duration are swapped (optional, will fetch if not provided)
@@ -698,6 +698,8 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 			return flt(total_duration - break_hours)
 		elif hours_worked > 0:
 			return flt(hours_worked - break_hours)
+		elif mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
+			return flt(hours_worked - break_hours) if hours_worked > 0 else flt((total_duration or 0) - break_hours)
 		else:
 			return flt(total_duration - default_break_hours) if total_duration is not None else flt(hours_worked - default_break_hours)
 	
@@ -705,16 +707,17 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 		# Default: hours_worked contains sum of work periods (excluding breaks)
 		if total_duration is not None and total_duration > 0:
 			return flt(hours_worked - break_hours)
+		elif mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
+			return flt(hours_worked - break_hours)
 		else:
 			return flt(hours_worked - default_break_hours)
 
 
-def get_mandatory_break_hours_from_settings(on_site_duration_hours, fallback_break_hours=0):
+def get_mandatory_break_hours_from_settings(on_site_duration_hours):
 	"""Resolve mandatory break from HR Addon Settings > Minimum Break Rule using on-site duration."""
 	on_site_duration_hours = flt(on_site_duration_hours)
-	fallback_break_hours = flt(fallback_break_hours)
 	if on_site_duration_hours <= 0:
-		return fallback_break_hours
+		return 0.0
 
 	hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
 	rules = sorted(
@@ -725,7 +728,7 @@ def get_mandatory_break_hours_from_settings(on_site_duration_hours, fallback_bre
 		),
 	)
 	if not rules:
-		return fallback_break_hours
+		return 0.0
 
 	for idx, rule in enumerate(rules):
 		from_hours = flt(rule.from_hours or 0)
@@ -738,7 +741,7 @@ def get_mandatory_break_hours_from_settings(on_site_duration_hours, fallback_bre
 		if in_lower_bound and in_upper_bound:
 			return flt(cint(rule.minimum_break_minutes or 0) / 60.0)
 
-	return fallback_break_hours
+	return 0.0
 
 def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
@@ -752,7 +755,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
 
     default_break_minutes = employee_default_work_hour.break_minutes
     default_break_hours = flt(default_break_minutes / 60)
-    expected_break_hours = default_break_hours
+    expected_break_hours = 0.0
     target_hours = employee_default_work_hour.hours
 
     if len(employee_checkins) % 2 == 0:
@@ -775,6 +778,9 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
         if is_break_from_checkins_with_swapped_hours:
             total_duration, hours_worked = hours_worked, total_duration
 
+        if total_duration > 0:
+            expected_break_hours = get_mandatory_break_hours_from_settings(total_duration)
+
         break_from_checkins = 0.0
         for i in range(len(clockout_list) - 1):
             wh = time_diff_in_hours(clockin_list[i + 1], clockout_list[i])
@@ -787,11 +793,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
             break_hours = default_break_hours
 
         elif hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
-            mandatory_break_hours = get_mandatory_break_hours_from_settings(
-                on_site_duration_hours=total_duration,
-                fallback_break_hours=default_break_hours,
-            )
-            expected_break_hours = mandatory_break_hours
+            mandatory_break_hours = expected_break_hours
             if break_from_checkins <= mandatory_break_hours:
                 break_hours = mandatory_break_hours
             else:
