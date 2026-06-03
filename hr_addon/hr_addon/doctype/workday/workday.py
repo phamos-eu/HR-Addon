@@ -801,7 +801,11 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
         elif mechanism == MECHANISM_MINIMUM_BREAK_RULE:
             if total_duration > 0:
                 expected_break_hours = get_mandatory_break_hours_from_settings(total_duration)
-            break_hours = expected_break_hours
+            mandatory_break_hours = expected_break_hours
+            if break_from_checkins <= mandatory_break_hours:
+                break_hours = mandatory_break_hours
+            else:
+                break_hours = break_from_checkins
         else:
             break_hours = 0.0
 
