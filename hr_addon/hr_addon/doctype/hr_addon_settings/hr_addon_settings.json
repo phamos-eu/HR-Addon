@@ -154,10 +154,11 @@
   },
   {
    "default": "Break Hours from Employee Checkins",
+   "description": "How Workday break and expected break hours are calculated from Employee Checkins. See explanation below when you change this field.",
    "fieldname": "workday_break_calculation_mechanism",
    "fieldtype": "Select",
    "label": "Workday break Calculation Mechanism",
-   "options": "Break Hours from Employee Checkins\nBreak Hours from Weekly Working Hours\nBreak Hours from Weekly Working Hours if Shorter breaks"
+   "options": "Break Hours from Employee Checkins\nBreak Hours from Weekly Working Hours\nBreak Hours from Weekly Working Hours if Shorter breaks\nBreak Hours from Minimum Break Rule"
   },
   {
    "default": "0",
@@ -183,6 +184,7 @@
    "label": "Skip Workdays for Employees without Weekly Hours"
   },
   {
+   "description": "Updated automatically when Workday break Calculation Mechanism changes. Describes expected break hours, break hours, and actual working hours for the selected option.",
    "fieldname": "workday_break_calculation_logic",
    "fieldtype": "HTML",
    "label": "Break Calculation Logic Explanation"
@@ -195,7 +197,7 @@
    "label": "Allow Workdays on Holidays"
   },
   {
-   "description": "Used to auto-fill Weekly Working Hours > Hours > Break Minutes when the value is 0. If users edit Break Minutes manually, it cannot be saved below the matching minimum rule.",
+   "description": "Used for Workday break hours when mechanism is Break Hours from Minimum Break Rule. Also auto-fills Weekly Working Hours Break Minutes when 0 and enforces minimum on manual edits.",
    "fieldname": "minimum_break_rule",
    "fieldtype": "Table",
    "label": "Minimum Break Rule",
@@ -253,7 +255,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-26 13:23:28.265930",
+ "modified": "2026-06-03 15:55:49.467711",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",
