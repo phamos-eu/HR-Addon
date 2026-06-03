@@ -8,6 +8,9 @@ from frappe.model.naming import make_autoname
 from frappe import _
 from math import inf
 
+MECHANISM_MINIMUM_BREAK_RULE = "Break Hours from Minimum Break Rule"
+
+
 class WeeklyWorkingHours(Document):
 	def autoname(self):
 		Company = frappe.qb.DocType('Company')
@@ -49,6 +52,9 @@ class WeeklyWorkingHours(Document):
 			return
 
 		settings = frappe.get_single("HR Addon Settings")
+		if settings.workday_break_calculation_mechanism != MECHANISM_MINIMUM_BREAK_RULE:
+			return
+
 		rules = sorted(
 			(settings.minimum_break_rule or []),
 			key=lambda row: (
