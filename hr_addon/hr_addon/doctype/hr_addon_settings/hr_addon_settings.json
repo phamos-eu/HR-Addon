@@ -195,7 +195,7 @@
    "label": "Allow Workdays on Holidays"
   },
   {
-   "description": "Used to auto-fill Weekly Working Hours > Hours > Break Minutes when the value is 0. If users edit Break Minutes manually, it cannot be saved below the matching minimum rule.",
+   "description": "Mandatory break by on-site hours for Workdays (Expected Break Hours) and to auto-fill Weekly Working Hours Break Minutes when 0. Workday break hours are not taken from Weekly Working Hours when mechanism is \"if Shorter breaks\".",
    "fieldname": "minimum_break_rule",
    "fieldtype": "Table",
    "label": "Minimum Break Rule",
