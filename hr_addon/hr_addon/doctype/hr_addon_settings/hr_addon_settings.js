@@ -287,18 +287,18 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 			<div style="padding: 15px; background-color: ${theme.bg3}; border-left: 4px solid ${theme.border3}; margin: 10px 0; border-radius: 4px;">
 				<h4 style="margin-top: 0; color: ${theme.heading3}; font-size: 14px; font-weight: 600;">Break Hours from Weekly Working Hours if Shorter breaks</h4>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
-					<strong>Logic:</strong> Compares check-in lunch gaps with the break from Weekly Working Hours. Minimum Break Rule is not used.
+					<strong>Logic:</strong> Same “if shorter breaks” pattern as Minimum Break Rule, but the reference break comes from <strong>Weekly Working Hours</strong> only. Minimum Break Rule and weekly break_minutes from the rule table are <strong>not</strong> used.
 				</p>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
 					<strong>Calculation:</strong>
 					<ul style="margin: 8px 0; padding-left: 20px; color: ${theme.text}; line-height: 1.6;">
-						<li><strong>Expected break hours:</strong> Weekly Working Hours break_minutes ÷ 60</li>
-						<li><strong>Break hours:</strong> Weekly default if check-in gap ≤ expected; otherwise the actual gap from check-ins</li>
+						<li><strong>Expected break hours:</strong> Weekly Working Hours break_minutes ÷ 60 (that weekday)</li>
+						<li><strong>Break hours:</strong> Expected if check-in gap ≤ expected; if the break is longer, the actual gap from check-ins is used</li>
 						<li><strong>Actual working hours:</strong> On-site time − break hours</li>
 					</ul>
 				</p>
 				<p style="margin-bottom: 0; color: ${theme.textSecondary}; font-size: 12px; line-height: 1.5;">
-					<strong>Example:</strong> Weekly break 0.5 h, gap 0.25 h → break 0.5 h. Weekly break 0.5 h, gap 1 h → break 1 h.
+					<strong>Example:</strong> Weekly 0.5 h, gap 0.25 h → break 0.5 h. Weekly 0.5 h, gap 1 h → break 1 h. On-site 10 h still uses weekly 0.5 h (not the 45 min from Minimum Break Rule).
 				</p>
 			</div>
 		`,
@@ -306,18 +306,18 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 			<div style="padding: 15px; background-color: ${theme.bg4}; border-left: 4px solid ${theme.border4}; margin: 10px 0; border-radius: 4px;">
 				<h4 style="margin-top: 0; color: ${theme.heading4}; font-size: 14px; font-weight: 600;">Break Hours from Minimum Break Rule</h4>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
-					<strong>Logic:</strong> Always applies the mandatory break from HR Addon Settings → Minimum Break Rule. Check-in gaps are ignored for break hours.
+					<strong>Logic:</strong> Same “if shorter breaks” pattern, but the reference break comes from <strong>Minimum Break Rule</strong> (on-site hours). Weekly Working Hours break_minutes are <strong>not</strong> used.
 				</p>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
 					<strong>Calculation:</strong>
 					<ul style="margin: 8px 0; padding-left: 20px; color: ${theme.text}; line-height: 1.6;">
-						<li><strong>Expected break hours:</strong> Minimum Break Rule (on-site: first check-in → last checkout)</li>
-						<li><strong>Break hours:</strong> Always equal to expected break hours</li>
+						<li><strong>Expected break hours:</strong> Minimum Break Rule (first check-in → last checkout)</li>
+						<li><strong>Break hours:</strong> Expected (mandatory) if check-in gap ≤ expected; if the break is longer, the actual gap from check-ins is used</li>
 						<li><strong>Actual working hours:</strong> On-site time − break hours</li>
 					</ul>
 				</p>
 				<p style="margin-bottom: 0; color: ${theme.textSecondary}; font-size: 12px; line-height: 1.5;">
-					<strong>Example:</strong> On-site 8.5 h → mandatory 0.5 h break even if check-ins show a 1 h lunch or no lunch split. Use “if Shorter breaks” when longer real breaks must be credited.
+					<strong>Example:</strong> On-site 8.5 h → expected 0.5 h; gap 0.25 h → break 0.5 h; gap 1 h → break 1 h. On-site 10 h → expected 0.75 h (45 min); gap 2 h → break 2 h.
 				</p>
 			</div>
 		`
