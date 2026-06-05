@@ -42,6 +42,9 @@ jobs:
       - name: Checkout HR Addon
         uses: actions/checkout@v4
 
+      - name: Add to hosts
+        run: echo "127.0.0.1 test.localhost" | sudo tee -a /etc/hosts
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -62,7 +65,6 @@ jobs:
             python3-dev \
             libmariadb-dev \
             libmariadb-dev-compat \
-            wkhtmltopdf \
             xvfb \
             libfontconfig \
             libxrender1
@@ -74,25 +76,25 @@ jobs:
 
       - name: Initialize bench
         run: |
-          bench init --skip-redis-config-generation --frappe-branch version-15 frappe-bench
+          bench init \
+            --skip-redis-config-generation \
+            --skip-assets \
+            --frappe-branch version-15 \
+            --python "$(which python)" \
+            frappe-bench
+          mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
+          mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
         env:
           CI: true
 
-      - name: Get ERPNext and HRMS
+      - name: Get apps
         working-directory: frappe-bench
         run: |
-          bench get-app --branch version-15 erpnext
+          bench get-app payments --branch version-15
+          bench get-app --branch version-15 --resolve-deps erpnext
           bench get-app --branch version-15 hrms
-
-      - name: Install HR Addon
-        working-directory: frappe-bench
-        run: |
-          cp -r "${GITHUB_WORKSPACE}" ./apps/hr_addon
-          if [ -s sites/apps.txt ] && [ -n "$(tail -c1 sites/apps.txt)" ]; then
-            echo >> sites/apps.txt
-          fi
-          grep -qxF "hr_addon" sites/apps.txt || echo "hr_addon" >> sites/apps.txt
-          bench pip install -e ./apps/hr_addon
+          bench get-app hr_addon "${GITHUB_WORKSPACE}"
+          bench setup requirements --dev
 
       - name: Create site and install apps
         working-directory: frappe-bench
@@ -113,6 +115,7 @@ jobs:
           bench --site test.localhost install-app erpnext
           bench --site test.localhost install-app hrms
           bench --site test.localhost install-app hr_addon
+          bench --site test.localhost set-config allow_tests true
 
       - name: Run Workday unit tests
         working-directory: frappe-bench
