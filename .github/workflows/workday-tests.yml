@@ -3,8 +3,14 @@ name: Workday Unit Tests
 on:
   push:
     branches: [main, develop, version-15, automated-testing, suncycle-version-15]
+    paths:
+      - "hr_addon/hr_addon/doctype/workday/**"
+      - ".github/workflows/workday-tests.yml"
   pull_request:
     branches: [main, develop, version-15, suncycle-version-15]
+    paths:
+      - "hr_addon/hr_addon/doctype/workday/**"
+      - ".github/workflows/workday-tests.yml"
 
 permissions:
   contents: read
