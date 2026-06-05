@@ -2,9 +2,9 @@ name: Workday Unit Tests
 
 on:
   push:
-    branches: [main, develop, version-15, automated-testing]
+    branches: [main, develop, version-15, automated-testing, suncycle-version-15]
   pull_request:
-    branches: [main, develop, version-15]
+    branches: [main, develop, version-15, suncycle-version-15]
 
 permissions:
   contents: read
