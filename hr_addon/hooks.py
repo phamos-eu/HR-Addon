@@ -67,5 +67,5 @@ scheduler_events = {
 }
 
 override_doctype_class = {
-	"Leave Application": "hr_addon.hr_addon.overrides.custom_leave_application.HrAddonLeaveApplication",
+	"Leave Application": "hr_addon.overrides.custom_leave_application.HrAddonLeaveApplication",
 }
