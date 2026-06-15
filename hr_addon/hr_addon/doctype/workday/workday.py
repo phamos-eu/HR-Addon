@@ -10,7 +10,18 @@ from frappe.query_builder import DocType
 from pypika import Order
 from pypika.functions import Date
 from hrms.hr.utils import get_holiday_dates_for_employee
+from hr_addon.events.attendance import (
+	get_effective_ole_target_hours,
+	get_ole_hour_variance_for_attendance,
+)
 import traceback
+
+MECHANISM_MINIMUM_BREAK_RULE = "Break Hours from Minimum Break Rule"
+MECHANISMS_ACTUAL_WORKING_HOURS_FROM_ON_SITE = (
+	"Break Hours from Weekly Working Hours if Shorter breaks",
+	MECHANISM_MINIMUM_BREAK_RULE,
+)
+
 
 class Workday(Document):
 	def validate(self):
@@ -18,6 +29,9 @@ class Workday(Document):
 		self.date_is_in_comp_off()
 		self.validate_duplicate_workday()
 		self.set_status_for_leave_application()
+		self.update_status()
+		if not self.is_new():
+			create_attendace_record(self)
 
 	def before_save(self):
 		self.set_half_day_holiday()
@@ -33,6 +47,8 @@ class Workday(Document):
 				),
 				alert=True,
 			)
+
+		create_attendace_record(self)
 
 	def set_actual_employee_log(self):
 		new_workday_dict = get_actual_employee_log(self.employee, self.log_date)
@@ -101,6 +117,36 @@ class Workday(Document):
 				self.actual_working_hours = 0
 				self.status = "On Leave"
 
+	def update_status(self):
+		"""Set Workday status from checkins, holidays, and draft leave applications."""
+		allow_workdays_on_holidays = (
+			frappe.db.get_single_value("HR Addon Settings", "allow_workdays_on_holidays") or 0
+		)
+		if (
+			self.status == "Not Workday"
+			and self.employee_checkins
+			and allow_workdays_on_holidays
+			and date_is_in_holiday_list(self.employee, self.log_date)
+		):
+			self.status = "Present"
+
+		if not self.status:
+			if self.employee_checkins:
+				self.status = "Present"
+			elif date_is_in_holiday_list(self.employee, self.log_date):
+				self.status = "Not Workday"
+			else:
+				leave_application = frappe.db.exists(
+					"Leave Application",
+					{
+						"employee": self.employee,
+						"from_date": ("<=", self.log_date),
+						"to_date": (">=", self.log_date),
+						"docstatus": 0,
+					},
+				)
+				self.status = "Pending Leave" if leave_application else "Absent"
+
 	def date_is_in_comp_off(self):
 		leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
 		if not leave_types:
@@ -137,6 +183,8 @@ class Workday(Document):
 			)
 	
 	def on_trash(self):
+		cancel_attendance(self)
+
 		logs = frappe.db.get_list("Workday Creation Log", filters={"workday": self.name}, pluck="name")
 		if logs:
 			log_list = "<br>".join(logs)
@@ -616,7 +664,7 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 	Args:
 		hours_worked: Sum of work periods (excluding breaks)
 		break_hours: Calculated break hours
-		default_break_hours: Default break hours from Weekly Working Hours
+		default_break_hours: Default break hours from Weekly Working Hours (legacy mechanisms only)
 		mechanism: Break calculation mechanism from HR Addon Settings (optional, will fetch if not provided)
 		total_duration: Total time from first checkin to last checkout (optional, for Workday)
 		is_swapped: Whether hours_worked and total_duration are swapped (optional, will fetch if not provided)
@@ -643,13 +691,10 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 		return hours_worked
 	
 	# Calculate based on mechanism
-	if mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
-		# For this mechanism: use total_duration (total presence on site) minus break_hours
+	if mechanism in MECHANISMS_ACTUAL_WORKING_HOURS_FROM_ON_SITE:
 		if total_duration is not None and total_duration > 0:
 			return flt(total_duration - break_hours)
-		else:
-			# Fallback: use hours_worked - break_hours if total_duration not available
-			return flt(hours_worked - break_hours)
+		return flt(hours_worked - break_hours)
 	
 	elif is_swapped:
 		# When swap is enabled: hours_worked contains total_duration
@@ -664,8 +709,41 @@ def calculate_actual_working_hours(hours_worked, break_hours, default_break_hour
 		# Default: hours_worked contains sum of work periods (excluding breaks)
 		if total_duration is not None and total_duration > 0:
 			return flt(hours_worked - break_hours)
+		elif mechanism in MECHANISMS_ACTUAL_WORKING_HOURS_FROM_ON_SITE:
+			return flt(hours_worked - break_hours)
 		else:
 			return flt(hours_worked - default_break_hours)
+
+
+def get_mandatory_break_hours_from_settings(on_site_duration_hours):
+	"""Resolve mandatory break from HR Addon Settings > Minimum Break Rule using on-site duration."""
+	on_site_duration_hours = flt(on_site_duration_hours)
+	if on_site_duration_hours <= 0:
+		return 0.0
+
+	hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
+	rules = sorted(
+		(hr_addon_settings.minimum_break_rule or []),
+		key=lambda row: (
+			flt(row.from_hours or 0),
+			flt(row.to_hours) if row.to_hours is not None else float("inf"),
+		),
+	)
+	if not rules:
+		return 0.0
+
+	for idx, rule in enumerate(rules):
+		from_hours = flt(rule.from_hours or 0)
+		to_hours = flt(rule.to_hours) if rule.to_hours is not None else None
+
+		# Keep same boundary semantics already used in Weekly Working Hours:
+		# first row inclusive lower bound, later rows strict lower bound.
+		in_lower_bound = on_site_duration_hours >= from_hours if idx == 0 else on_site_duration_hours > from_hours
+		in_upper_bound = True if to_hours is None else on_site_duration_hours <= to_hours
+		if in_lower_bound and in_upper_bound:
+			return flt(cint(rule.minimum_break_minutes or 0) / 60.0)
+
+	return 0.0
 
 def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     hr_addon_settings = frappe.get_cached_doc("HR Addon Settings")
@@ -679,6 +757,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
 
     default_break_minutes = employee_default_work_hour.break_minutes
     default_break_hours = flt(default_break_minutes / 60)
+    expected_break_hours = default_break_hours
     target_hours = employee_default_work_hour.hours
 
     if len(employee_checkins) % 2 == 0:
@@ -701,20 +780,30 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
         if is_break_from_checkins_with_swapped_hours:
             total_duration, hours_worked = hours_worked, total_duration
 
+        mechanism = hr_addon_settings.workday_break_calculation_mechanism
+
         break_from_checkins = 0.0
         for i in range(len(clockout_list) - 1):
             wh = time_diff_in_hours(clockin_list[i + 1], clockout_list[i])
             break_from_checkins += float(wh)
 
-        if hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Employee Checkins":
+        if mechanism == "Break Hours from Employee Checkins":
             break_hours = break_from_checkins
 
-        elif hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Weekly Working Hours":
+        elif mechanism == "Break Hours from Weekly Working Hours":
             break_hours = default_break_hours
 
-        elif hr_addon_settings.workday_break_calculation_mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
+        elif mechanism == "Break Hours from Weekly Working Hours if Shorter breaks":
             if break_from_checkins <= default_break_hours:
                 break_hours = default_break_hours
+            else:
+                break_hours = break_from_checkins
+        elif mechanism == MECHANISM_MINIMUM_BREAK_RULE:
+            if total_duration > 0:
+                expected_break_hours = get_mandatory_break_hours_from_settings(total_duration)
+            mandatory_break_hours = expected_break_hours
+            if break_from_checkins <= mandatory_break_hours:
+                break_hours = mandatory_break_hours
             else:
                 break_hours = break_from_checkins
         else:
@@ -736,7 +825,7 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
             "target_hours": target_hours,
             "break_minutes": default_break_minutes,
             "hours_worked": hours_worked,
-            "expected_break_hours": default_break_hours,
+            "expected_break_hours": expected_break_hours,
             "actual_working_hours": actual_working_hours,
             "nbreak": 0,
             "attendance": attendance,
@@ -765,12 +854,14 @@ def get_workday(employee_checkins, employee_default_work_hour, no_break_hours):
     
     attendance = employee_checkins[0].attendance if len(employee_checkins) > 0 else ""
     status = frappe.db.get_value("Attendance", attendance, "status") if attendance else ""
+    if not status:
+        status = "Present"
 
     new_workday.update({
         "target_hours": target_hours,
         "break_minutes": default_break_minutes,
         "hours_worked": hours_worked,
-        "expected_break_hours": default_break_hours,
+        "expected_break_hours": expected_break_hours,
         "actual_working_hours": actual_working_hours,
         "nbreak": 0,
         "attendance": attendance,
@@ -1334,3 +1425,404 @@ def bulk_process_workdays(data,flag):
 		"skipped_summary": skipped_by_employee,
 		"existing_summary": existing_workdays 
 	}
+
+
+def is_leave_type_ot_deduct(leave_type):
+	if not leave_type:
+		return False
+	if not frappe.get_meta("Leave Type").has_field("custom_is_deducted_from_overtime_ledger"):
+		return False
+	return bool(
+		frappe.db.get_value("Leave Type", leave_type, "custom_is_deducted_from_overtime_ledger")
+	)
+
+
+def get_submitted_leave_application(employee, log_date, require_ot_deduct=False):
+	"""Submitted approved Leave Application covering log_date."""
+	log_date = getdate(log_date)
+	la = frappe.db.exists(
+		"Leave Application",
+		{
+			"employee": employee,
+			"from_date": ("<=", log_date),
+			"to_date": (">=", log_date),
+			"docstatus": 1,
+		},
+	)
+	if not la:
+		return None
+
+	status = frappe.db.get_value("Leave Application", la, "status")
+	if status != "Approved":
+		return None
+
+	leave_type = frappe.db.get_value("Leave Application", la, "leave_type")
+	if not leave_type:
+		return None
+	if require_ot_deduct and not is_leave_type_ot_deduct(leave_type):
+		return None
+
+	return frappe._dict(name=la, leave_type=leave_type)
+
+
+def _get_submitted_attendance_for_workday(doc):
+	"""Submitted Attendance for this Workday day (by link or employee/date lookup)."""
+	linked = getattr(doc, "attendance", None)
+	if linked and frappe.db.get_value("Attendance", linked, "docstatus") == 1:
+		return linked
+
+	return frappe.db.exists(
+		"Attendance",
+		{"employee": doc.employee, "attendance_date": doc.log_date, "docstatus": 1},
+	)
+
+
+def create_attendace_record(doc, method=None):
+    """
+    Create or update Attendance for OLE via the same path as Attendance.on_submit.
+
+    Present / Half Day: variance from Workday actual vs target (HR Addon).
+
+    On Leave (full day, OT-deduct leave type): target = default day hours, actual = 0.
+
+    When Enable Overtime Ledger Feature is off: skip creating new Attendance from Workday,
+    but still update an existing submitted Attendance if one is already linked.
+
+    Deleting a Workday cancels linked Attendance (OLE reversed). On recreate, a new
+    Attendance is submitted; OLE is created on submit when hour variance is non-zero.
+    If weekly hours cannot resolve target for On Leave, reuse custom_target_hours from
+    the last cancelled Attendance for that date when available.
+    """
+    from hr_addon.events.overtime_ledger import is_overtime_ledger_enabled
+
+    existing_attendance = _get_submitted_attendance_for_workday(doc)
+    if not is_overtime_ledger_enabled() and not existing_attendance:
+        return
+
+    att_status = None
+    target_for_att = None
+    actual_for_att = None
+    leave_info = None
+
+    attendance_exists_early = frappe.db.exists(
+        "Attendance",
+        {"employee": doc.employee, "attendance_date": doc.log_date, "docstatus": 1},
+    )
+
+    if doc.status in ("Present", "Half Day"):
+        att_status = doc.status
+        target_for_att = get_effective_ole_target_hours(
+            flt(doc.target_hours or 0), doc.employee, doc.log_date
+        )
+        actual_for_att = flt(doc.actual_working_hours or 0)
+        if doc.status == "Half Day":
+            leave_info = get_submitted_leave_application(doc.employee, doc.log_date)
+    elif doc.status == "On Leave":
+        leave_info = get_submitted_leave_application(doc.employee, doc.log_date)
+        if not leave_info:
+            return
+        att_status = "On Leave"
+        if is_leave_type_ot_deduct(leave_info.leave_type):
+            edwh = get_employee_default_work_hour(
+                doc.employee, doc.log_date, skip_workday_if_no_weekly_hours=True
+            )
+            if edwh is not None:
+                target_for_att = flt(edwh.hours)
+                actual_for_att = 0.0
+            else:
+                prev_target = None
+                if attendance_exists_early:
+                    prev_target = frappe.db.get_value(
+                        "Attendance", attendance_exists_early, "custom_target_hours"
+                    )
+                if not flt(prev_target):
+                    cancelled_rows = frappe.get_all(
+                        "Attendance",
+                        filters={
+                            "employee": doc.employee,
+                            "attendance_date": doc.log_date,
+                            "docstatus": 2,
+                        },
+                        pluck="name",
+                        order_by="modified desc",
+                        limit=1,
+                    )
+                    if cancelled_rows:
+                        prev_target = frappe.db.get_value(
+                            "Attendance", cancelled_rows[0], "custom_target_hours"
+                        )
+                if not flt(prev_target):
+                    return
+                target_for_att = flt(prev_target)
+                actual_for_att = 0.0
+        else:
+            target_for_att = get_effective_ole_target_hours(
+                flt(doc.target_hours or 0), doc.employee, doc.log_date
+            )
+            actual_for_att = flt(doc.actual_working_hours or 0)
+    else:
+        return
+
+    hour_variance = flt(actual_for_att) - flt(target_for_att)
+
+    attendance_exists = existing_attendance or frappe.db.exists(
+        "Attendance",
+        {"employee": doc.employee, "attendance_date": doc.log_date, "docstatus": 1},
+    )
+
+    if attendance_exists:
+        _update_existing_attendance(
+            doc,
+            attendance_exists,
+            hour_variance,
+            att_status,
+            target_for_att,
+            actual_for_att,
+            leave_info=leave_info,
+        )
+    else:
+        _create_new_attendance(
+            doc, hour_variance, att_status, target_for_att, actual_for_att, leave_info=leave_info
+        )
+
+
+def _create_new_attendance(doc, hour_variance, att_status, target_for_att, actual_for_att, leave_info=None):
+    """Create new attendance record"""
+    row = {
+        "doctype": "Attendance",
+        "employee": doc.employee,
+        "attendance_date": doc.log_date,
+        "company": doc.company or frappe.db.get_value("Employee", doc.employee, "company"),
+        "status": att_status,
+        "custom_workday": doc.name,
+        "custom_target_hours": target_for_att,
+        "custom_actual_working_hours": actual_for_att,
+        "custom_hour_variance": hour_variance,
+        "custom_create_overtime_ledger_entry": 0,
+        "in_time": getattr(doc, "first_checkin", None),
+        "out_time": getattr(doc, "last_checkout", None),
+        "docstatus": 0,
+    }
+    if leave_info:
+        row["leave_application"] = leave_info.name
+        row["leave_type"] = leave_info.leave_type
+    attendance = frappe.get_doc(row)
+    prev_mute_messages = getattr(frappe.flags, "mute_messages", False)
+    frappe.flags.mute_messages = True
+    try:
+        attendance.insert()
+    finally:
+        frappe.flags.mute_messages = prev_mute_messages
+    # Always submit to trigger on_submit hook which creates OLE
+    attendance.submit()
+
+    doc.attendance = attendance.name
+    frappe.db.set_value(
+        "Workday",
+        doc.name,
+        "attendance",
+        attendance.name,
+        update_modified=True,
+    )
+    frappe.db.commit()
+
+    frappe.msgprint(
+        _("{0} Attendance {1} created successfully").format(att_status, attendance.name),
+        alert=True,
+    )
+
+
+def _update_existing_attendance(
+    doc, attendance_name, hour_variance, att_status, target_for_att, actual_for_att, leave_info=None
+):
+    """Update existing attendance and handle OLE"""
+    attendance = frappe.get_doc("Attendance", attendance_name)
+    doc.attendance = attendance.name
+    frappe.db.set_value(
+        "Workday",
+        doc.name,
+        "attendance",
+        attendance.name,
+        update_modified=True,
+    )
+
+    update_fields = {
+        "status": att_status,
+        "custom_target_hours": target_for_att,
+        "custom_actual_working_hours": actual_for_att,
+        "custom_hour_variance": hour_variance,
+        "custom_workday": doc.name,
+        "custom_create_overtime_ledger_entry": 0,
+        "in_time": getattr(doc, "first_checkin", None) or attendance.in_time,
+        "out_time": getattr(doc, "last_checkout", None) or attendance.out_time,
+    }
+    if leave_info:
+        update_fields["leave_application"] = leave_info.name
+        update_fields["leave_type"] = leave_info.leave_type
+
+    frappe.db.set_value(
+        "Attendance",
+        attendance_name,
+        update_fields,
+        update_modified=True,
+    )
+
+    _handle_overtime_ledger(
+        doc,
+        attendance,
+        hour_variance,
+        target_for_att,
+        actual_for_att,
+        leave_info=leave_info,
+    )
+
+    frappe.msgprint(
+        _("Attendance {0} updated with {1} status").format(attendance.name, att_status),
+        alert=True,
+    )
+
+
+def _handle_overtime_ledger(
+    doc, attendance, hour_variance, target_for_att, actual_for_att, leave_info=None
+):
+    """Create or update Overtime Ledger Entry"""
+    from hr_addon.events.overtime_ledger import is_overtime_ledger_enabled
+
+    if not is_overtime_ledger_enabled():
+        return
+
+    leave_type = getattr(leave_info, "leave_type", None) or getattr(attendance, "leave_type", None)
+    ole_variance = get_ole_hour_variance_for_attendance(
+        status=getattr(doc, "status", None),
+        leave_type=leave_type,
+        employee=getattr(doc, "employee", None),
+        log_date=getattr(doc, "log_date", None),
+        target_hours=target_for_att,
+        actual_hours=actual_for_att,
+        custom_hour_variance=hour_variance,
+    )
+    if not attendance.custom_overtime_ledger_entry:
+        if ole_variance != 0:
+            _create_overtime_ledger_entry(doc, attendance, ole_variance, target_for_att, actual_for_att)
+        return
+
+    ole = frappe.get_doc("Overtime Ledger Entry", attendance.custom_overtime_ledger_entry)
+
+    if ole.hour_variance != ole_variance:
+        frappe.db.set_value(
+            "Overtime Ledger Entry",
+            ole.name,
+            {
+                "hour_variance": ole_variance,
+                "target_hours": target_for_att,
+                "actual_hours": actual_for_att,
+            },
+            update_modified=True,
+        )
+
+        from hr_addon.events.overtime_ledger import update_entries_after
+
+        update_entries_after(doc.employee, doc.log_date)
+
+
+def _create_overtime_ledger_entry(doc, attendance, hour_variance, target_for_att, actual_for_att):
+    """Create new Overtime Ledger Entry"""
+    from frappe.utils import get_time
+    from hr_addon.hr_addon.doctype.overtime_ledger_entry.overtime_ledger_entry import make_ole_entry
+
+    posting_time = "23:59:59"
+    if doc.last_checkout:
+        posting_time = str(get_time(doc.last_checkout))
+    elif attendance.out_time:
+        posting_time = str(get_time(attendance.out_time))
+
+    ole = make_ole_entry({
+        "employee": doc.employee,
+        "voucher_type": "Attendance",
+        "voucher_no": attendance.name,
+        "hour_variance": hour_variance,
+        "target_hours": target_for_att,
+        "actual_hours": actual_for_att,
+        "posting_date": doc.log_date,
+        "posting_time": posting_time,
+    })
+
+    # Set checkbox AFTER successful OLE creation
+    frappe.db.set_value(
+        "Attendance",
+        attendance.name,
+        "custom_create_overtime_ledger_entry",
+        1,
+        update_modified=False,
+    )
+    
+    # Link OLE to attendance
+    frappe.db.set_value(
+        "Attendance",
+        attendance.name,
+        "custom_overtime_ledger_entry",
+        ole.name,
+        update_modified=False,
+    )
+    frappe.db.commit()
+
+
+def _resolve_attendance_for_workday_trash(doc):
+    """Workday.attendance may be unset in DB if never saved after create_attendace_record; resolve from links."""
+    if doc.attendance:
+        return doc.attendance
+    att = frappe.db.get_value(
+        "Attendance",
+        {"custom_workday": doc.name, "docstatus": 1},
+        "name",
+    )
+    if att:
+        return att
+    return frappe.db.get_value(
+        "Attendance",
+        {
+            "employee": doc.employee,
+            "attendance_date": doc.log_date,
+            "docstatus": 1,
+        },
+        "name",
+    )
+
+
+def cancel_attendance(doc, method=None):
+    attendance_name = _resolve_attendance_for_workday_trash(doc)
+    if attendance_name:
+        try:
+            attendance = frappe.get_doc("Attendance", attendance_name)
+            frappe.msgprint(
+                _("Deleting Workday {0} will also cancel linked Attendance {1}").format(
+                    doc.name, attendance_name
+                ),
+                alert=True,
+                indicator="orange",
+            )
+
+            attendance.reload()
+
+            if attendance.docstatus == 1:
+                attendance.cancel()
+                frappe.db.set_value("Attendance", attendance.name, "custom_workday", None)
+                frappe.msgprint(
+                    _("Attendance {0} has been cancelled and unlinked from this Workday").format(
+                        attendance_name
+                    ),
+                    alert=True,
+                    indicator="blue",
+                )
+
+        except Exception as e:
+            frappe.log_error(f"Error cancelling Attendance: {str(e)}", "Workday Trash Error")
+
+            if isinstance(e, frappe.exceptions.ValidationError):
+                raise
+
+            frappe.msgprint(
+                _("Could not cancel linked Attendance: {0}").format(str(e)),
+                alert=True,
+                indicator="red",
+            )

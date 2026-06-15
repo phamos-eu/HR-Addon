@@ -7,6 +7,7 @@ from frappe.utils import getdate, flt
 from frappe.model.naming import make_autoname
 from frappe import _
 
+
 class WeeklyWorkingHours(Document):
 	def autoname(self):
 		Company = frappe.qb.DocType('Company')

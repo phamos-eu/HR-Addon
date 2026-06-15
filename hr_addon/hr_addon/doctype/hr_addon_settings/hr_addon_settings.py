@@ -6,11 +6,12 @@ import frappe, os
 from frappe.model.document import Document
 from frappe import _
 from frappe.utils.data import date_diff
-from frappe.utils import getdate, today, comma_sep, date_diff
+from frappe.utils import getdate, today, comma_sep, date_diff, flt, add_days, formatdate
 from frappe.core.doctype.role.role import get_info_based_on_role
 from frappe.query_builder import DocType
 from icalendar import Event, Calendar
 from hr_addon.hr_addon.doctype.workday.workday import create_background_job_for_workday_generation
+from math import inf
 
 
 class HRAddonSettings(Document):
@@ -27,7 +28,68 @@ class HRAddonSettings(Document):
 			os.remove("{}/public/files/Urlaubskalender.ics".format(frappe.utils.get_site_path()))
 	
 	def validate(self):
+		self.set_default_minimum_break_rules()
 		self.create_background_job_if_not_exists()
+		self.validate_minimum_break_rules()
+
+	def set_default_minimum_break_rules(self):
+		"""Seed default break-rule rows when table is empty."""
+		if self.minimum_break_rule:
+			return
+
+		default_rules = [
+			{"from_hours": 0, "to_hours": 6, "minimum_break_minutes": 0},
+			{"from_hours": 6, "to_hours": 9, "minimum_break_minutes": 30},
+			{"from_hours": 9, "to_hours": 100, "minimum_break_minutes": 45},
+		]
+		for rule in default_rules:
+			self.append("minimum_break_rule", rule)
+     
+	def validate_minimum_break_rules(self):
+		rules = sorted(
+			(self.minimum_break_rule or []),
+			key=lambda row: (
+				flt(row.from_hours or 0),
+				flt(row.to_hours) if row.to_hours is not None else inf,
+			),
+		)
+
+		if not rules:
+			return
+
+		prev_to = None
+		for index, row in enumerate(rules, start=1):
+			from_hours = flt(row.from_hours)
+			to_hours = flt(row.to_hours) if row.to_hours is not None else None
+
+			if from_hours < 0:
+				frappe.throw(_("Row {0}: Hours cannot be negative.").format(index))
+			if to_hours is not None and to_hours < 0:
+				frappe.throw(_("Row {0}: Hours cannot be negative.").format(index))
+
+			if to_hours is not None and to_hours <= from_hours:
+				frappe.throw(
+					_("Row {0}: To Hours must be greater than From Hours.").format(index)
+				)
+
+			if index == 1 and from_hours != 0:
+				frappe.throw(_("Row 1: The first rule must start from 0 hours."))
+
+			if prev_to is not None and from_hours < prev_to:
+				frappe.throw(
+					_(
+						"Row {0}: Rule overlaps with the previous range. "
+						"Example of invalid overlap: 0-6 and 3-5."
+					).format(index)
+				)
+
+			# Open-ended rules (blank To Hours) must be last.
+			if to_hours is None and index != len(rules):
+				frappe.throw(
+					_("Row {0}: Open-ended rule (blank To Hours) must be the last row.").format(index)
+				)
+
+			prev_to = to_hours
 
 	def create_background_job_if_not_exists(self):
 		create_background_job_for_workday_generation(self)
@@ -311,3 +373,74 @@ def create_file(file_name, file_content, doc_name):
     file_path = os.path.join(folder_path, file_name)
     with open(file_path, 'wb') as ical_file:
         ical_file.write(file_content)
+
+
+@frappe.whitelist()
+def repost_all_overtime_ledger_entries(employees=None):
+	"""Recalculate overtime balances after the frozen date for all or selected employees."""
+	import json
+
+	from hr_addon.events.overtime_ledger import is_overtime_ledger_enabled, update_entries_after
+
+	if not is_overtime_ledger_enabled():
+		return _("Overtime Ledger feature is disabled in HR Addon Settings.")
+
+	settings = frappe.get_single("HR Addon Settings")
+	overtime_frozen = getattr(settings, "overtime_frozen", None)
+
+	if overtime_frozen:
+		from_date = add_days(getdate(overtime_frozen), 1)
+	else:
+		from_date = getdate("2000-01-01")
+
+	selected = []
+	if employees:
+		if isinstance(employees, str):
+			try:
+				employees = json.loads(employees)
+			except Exception:
+				employees = [e.strip() for e in employees.split(",") if e.strip()]
+		if isinstance(employees, (list, tuple)):
+			selected = [e for e in employees if e]
+
+	filters = {"is_cancelled": 0}
+	if selected:
+		filters["employee"] = ["in", selected]
+
+	employees_with_oles = frappe.db.get_all(
+		"Overtime Ledger Entry",
+		fields=["employee"],
+		distinct=True,
+		filters=filters,
+	)
+
+	if not employees_with_oles:
+		return _("No employees found with Overtime Ledger entries.")
+
+	employee_count = len(employees_with_oles)
+
+	for i, emp_data in enumerate(employees_with_oles):
+		employee = emp_data.get("employee")
+		if employee:
+			update_entries_after(employee, from_date, "00:00:00")
+			frappe.publish_realtime(
+				"progress",
+				dict(
+					progress=[i + 1, employee_count],
+					title=_("Reposting Overtime Ledger Entries"),
+					description=employee,
+				),
+				user=frappe.session.user,
+			)
+
+	frappe.db.commit()
+	from_date_formatted = formatdate(from_date)
+
+	if selected:
+		return _(
+			"Successfully reposted Overtime Ledger entries for {0} selected employee(s) starting from {1}."
+		).format(employee_count, from_date_formatted)
+
+	return _(
+		"Successfully reposted Overtime Ledger entries for {0} employee(s) starting from {1}."
+	).format(employee_count, from_date_formatted)

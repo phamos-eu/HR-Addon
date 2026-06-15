@@ -3,6 +3,8 @@
 
 frappe.ui.form.on('HR Addon Settings', {
 	refresh: function(frm) {
+		seed_default_minimum_break_rules_in_form(frm);
+		frm.doc.__prev_overtime_frozen = frm.doc.overtime_frozen;
         frm.set_query("anniversary_notification_email_list", function () {
             return {
                 filters: {
@@ -52,9 +54,34 @@ frappe.ui.form.on('HR Addon Settings', {
 			const randomString = generateRandomString(24);
 			frm.set_value("name_of_calendar_export_ics_file", randomString)
 		}
+
+		const frozen_changed =
+			String(frm.doc.overtime_frozen || "") !==
+			String(frm.doc.__prev_overtime_frozen || "");
+		if (frozen_changed) {
+			frm.doc.__repost_oles_after_save = 1;
+		}
+		if (frm.doc.__repost_oles_after_save) {
+			return new Promise(function (resolve) {
+				frappe.confirm(
+					__("The overtime frozen date has changed. Do you want to repost all Overtime Ledger entries after saving?"),
+					function () {
+						repost_all_overtime_ledger_entries(frm);
+						resolve();
+					},
+					function () {
+						frm.doc.overtime_frozen = frm.doc.__prev_overtime_frozen;
+						frm.doc.__repost_oles_after_save = 0;
+						resolve();
+					}
+				);
+			});
+		}
 	},
 
 	after_save: function(frm){
+		frm.doc.__repost_oles_after_save = 0;
+		frm.doc.__prev_overtime_frozen = frm.doc.overtime_frozen;
 		if (frm.doc.name_of_calendar_export_ics_file && frm.doc.name_of_calendar_export_ics_file.length < 24){
 			frappe.msgprint("The filename is less than 24 characters. Please, consider to have a longer filename or leave it empty to get a random filename.")
 		}
@@ -79,8 +106,61 @@ frappe.ui.form.on('HR Addon Settings', {
 		}).then(r => {
 			frappe.msgprint("The workdays have been generated.")
 		})
+	},
+
+	repost_all_oles: function(frm) {
+		const selectedEmployees = (frm.doc.select_employees || [])
+			.map((row) => row.employee)
+			.filter(Boolean);
+		const msg = selectedEmployees.length
+			? __("This will repost Overtime Ledger entries for selected employee(s) after the frozen date. Continue?")
+			: __("No employees selected. This will repost for ALL employees after the frozen date. Continue?");
+		frappe.confirm(msg, function () {
+			repost_all_overtime_ledger_entries(frm, selectedEmployees);
+		});
 	}
 });
+
+function repost_all_overtime_ledger_entries(frm, employees = null) {
+	frappe.call({
+		method: "hr_addon.hr_addon.doctype.hr_addon_settings.hr_addon_settings.repost_all_overtime_ledger_entries",
+		args: { employees: employees || [] },
+		freeze: false,
+		callback: function (r) {
+			if (r.exc) {
+				frappe.msgprint({
+					message: r.exc && r.exc[1] ? r.exc[1] : __("Repost failed."),
+					indicator: "red",
+					alert: true
+				});
+			} else {
+				frappe.msgprint({
+					message: r.message || __("Successfully reposted Overtime Ledger entries."),
+					indicator: "green",
+					alert: true
+				});
+			}
+		}
+	});
+}
+
+function get_default_minimum_break_rules() {
+	return [
+		{ from_hours: 0, to_hours: 6, minimum_break_minutes: 0 },
+		{ from_hours: 6, to_hours: 9, minimum_break_minutes: 30 },
+		{ from_hours: 9, to_hours: 100, minimum_break_minutes: 45 },
+	];
+}
+
+function seed_default_minimum_break_rules_in_form(frm) {
+	if (!frm.doc || !Array.isArray(frm.doc.minimum_break_rule)) return;
+	if (frm.doc.minimum_break_rule.length > 0) return;
+
+	get_default_minimum_break_rules().forEach((row) => {
+		frm.add_child("minimum_break_rule", row);
+	});
+	frm.refresh_field("minimum_break_rule");
+}
 
 function generateRandomString(length) {
 	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -105,27 +185,33 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 			bg1: '#e7f3ff',
 			bg2: '#fff3cd',
 			bg3: '#d1ecf1',
+			bg4: '#e8f5e9',
 			border1: '#007bff',
 			border2: '#ffc107',
 			border3: '#17a2b8',
+			border4: '#28a745',
 			text: '#333',
 			textSecondary: '#666',
 			heading1: '#007bff',
 			heading2: '#856404',
-			heading3: '#0c5460'
+			heading3: '#0c5460',
+			heading4: '#155724'
 		},
 		dark: {
 			bg1: 'rgba(0, 123, 255, 0.15)',
 			bg2: 'rgba(255, 193, 7, 0.15)',
 			bg3: 'rgba(23, 162, 184, 0.15)',
+			bg4: 'rgba(40, 167, 69, 0.15)',
 			border1: '#4dabf7',
 			border2: '#ffd43b',
 			border3: '#66d9ef',
+			border4: '#51cf66',
 			text: 'var(--text-color)',
 			textSecondary: 'var(--text-muted)',
 			heading1: '#4dabf7',
 			heading2: '#ffd43b',
-			heading3: '#66d9ef'
+			heading3: '#66d9ef',
+			heading4: '#51cf66'
 		}
 	};
 	
@@ -182,13 +268,18 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 			<div style="padding: 15px; background-color: ${theme.bg2}; border-left: 4px solid ${theme.border2}; margin: 10px 0; border-radius: 4px;">
 				<h4 style="margin-top: 0; color: ${theme.heading2}; font-size: 14px; font-weight: 600;">Break Hours from Weekly Working Hours</h4>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
-					<strong>Logic:</strong> Uses the predefined break time configured in Weekly Working Hours.
+					<strong>Logic:</strong> Fixed break from Weekly Working Hours for that weekday. Minimum Break Rule and check-in gaps are not used.
 				</p>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
-					<strong>Calculation:</strong> The break hours are taken directly from the Weekly Working Hours configuration (break_minutes converted to hours). This is a fixed value regardless of actual checkin patterns.
+					<strong>Calculation:</strong>
+					<ul style="margin: 8px 0; padding-left: 20px; color: ${theme.text}; line-height: 1.6;">
+						<li><strong>Expected break hours:</strong> Weekly Working Hours break_minutes ÷ 60</li>
+						<li><strong>Break hours:</strong> Same fixed weekly value</li>
+						<li><strong>Actual working hours:</strong> Hours worked (work segments) − break hours</li>
+					</ul>
 				</p>
 				<p style="margin-bottom: 0; color: ${theme.textSecondary}; font-size: 12px; line-height: 1.5;">
-					<strong>Note:</strong> The actual break time from checkins is ignored. The system always uses the configured break time from Weekly Working Hours.
+					<strong>Example:</strong> Monday break_minutes = 30 → break hours always 0.5, even if the employee took no lunch in check-ins.
 				</p>
 			</div>
 		`,
@@ -196,17 +287,37 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 			<div style="padding: 15px; background-color: ${theme.bg3}; border-left: 4px solid ${theme.border3}; margin: 10px 0; border-radius: 4px;">
 				<h4 style="margin-top: 0; color: ${theme.heading3}; font-size: 14px; font-weight: 600;">Break Hours from Weekly Working Hours if Shorter breaks</h4>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
-					<strong>Logic:</strong> Compares the actual break time from checkins with the default break hours from Weekly Working Hours.
+					<strong>Logic:</strong> Same “if shorter breaks” pattern as Minimum Break Rule, but the reference break comes from <strong>Weekly Working Hours</strong> only. Minimum Break Rule and weekly break_minutes from the rule table are <strong>not</strong> used.
 				</p>
 				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
 					<strong>Calculation:</strong>
 					<ul style="margin: 8px 0; padding-left: 20px; color: ${theme.text}; line-height: 1.6;">
-						<li>If actual break from checkins ≤ default break hours: Uses default break hours from Weekly Working Hours</li>
-						<li>If actual break from checkins > default break hours: Uses the actual break time from checkins</li>
+						<li><strong>Expected break hours:</strong> Weekly Working Hours break_minutes ÷ 60 (that weekday)</li>
+						<li><strong>Break hours:</strong> Expected if check-in gap ≤ expected; if the break is longer, the actual gap from check-ins is used</li>
+						<li><strong>Actual working hours:</strong> On-site time − break hours</li>
 					</ul>
 				</p>
 				<p style="margin-bottom: 0; color: ${theme.textSecondary}; font-size: 12px; line-height: 1.5;">
-					<strong>Example:</strong> If default break is 0.5 hours (30 min) but employee took 1 hour break, the system uses 1 hour. If employee took only 0.25 hours break, the system uses 0.5 hours (default).
+					<strong>Example:</strong> Weekly 0.5 h, gap 0.25 h → break 0.5 h. Weekly 0.5 h, gap 1 h → break 1 h. On-site 10 h still uses weekly 0.5 h (not the 45 min from Minimum Break Rule).
+				</p>
+			</div>
+		`,
+		"Break Hours from Minimum Break Rule": `
+			<div style="padding: 15px; background-color: ${theme.bg4}; border-left: 4px solid ${theme.border4}; margin: 10px 0; border-radius: 4px;">
+				<h4 style="margin-top: 0; color: ${theme.heading4}; font-size: 14px; font-weight: 600;">Break Hours from Minimum Break Rule</h4>
+				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
+					<strong>Logic:</strong> Same “if shorter breaks” pattern, but the reference break comes from <strong>Minimum Break Rule</strong> (on-site hours). Weekly Working Hours break_minutes are <strong>not</strong> used.
+				</p>
+				<p style="margin-bottom: 8px; color: ${theme.text}; line-height: 1.6;">
+					<strong>Calculation:</strong>
+					<ul style="margin: 8px 0; padding-left: 20px; color: ${theme.text}; line-height: 1.6;">
+						<li><strong>Expected break hours:</strong> Minimum Break Rule (first check-in → last checkout)</li>
+						<li><strong>Break hours:</strong> Expected (mandatory) if check-in gap ≤ expected; if the break is longer, the actual gap from check-ins is used</li>
+						<li><strong>Actual working hours:</strong> On-site time − break hours</li>
+					</ul>
+				</p>
+				<p style="margin-bottom: 0; color: ${theme.textSecondary}; font-size: 12px; line-height: 1.5;">
+					<strong>Example:</strong> On-site 8.5 h → expected 0.5 h; gap 0.25 h → break 0.5 h; gap 1 h → break 1 h. On-site 10 h → expected 0.75 h (45 min); gap 2 h → break 2 h.
 				</p>
 			</div>
 		`
