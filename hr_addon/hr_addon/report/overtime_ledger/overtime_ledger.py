@@ -21,7 +21,22 @@ def get_employee_link_filters():
 	return [["Employee", "status", "=", "Active"]]
 
 
+def validate_filters(filters):
+	if not filters.get("company"):
+		frappe.throw(_("{0} is mandatory").format(_("Company")))
+
+	if not filters.get("from_date") or not filters.get("to_date"):
+		frappe.throw(
+			_("{0} and {1} are mandatory").format(
+				frappe.bold(_("From Date")), frappe.bold(_("To Date"))
+			)
+		)
+
+
 def execute(filters=None):
+	filters = frappe._dict(filters or {})
+	validate_filters(filters)
+
 	columns = get_columns(filters)
 	employees = get_employees(filters)
 	employee_details = get_employee_details(employees)
