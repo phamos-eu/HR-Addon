@@ -16,6 +16,11 @@ const get_current_month_range = () => {
 	return { first_day, last_day };
 };
 
+const has_required_filters = () => {
+	const report = frappe.query_report;
+	return report.get_filter_value("from_date") && report.get_filter_value("to_date");
+};
+
 const sync_date_range = () => {
 	const from_date = frappe.query_report.get_filter_value("from_date");
 	const to_date = frappe.query_report.get_filter_value("to_date");
@@ -28,7 +33,6 @@ const sync_date_range = () => {
 
 	const from_date_obj = frappe.datetime.str_to_obj(from_date);
 	if (!from_date_obj) {
-		frappe.query_report.refresh();
 		return;
 	}
 
@@ -38,11 +42,15 @@ const sync_date_range = () => {
 		return;
 	}
 
-	frappe.query_report.refresh();
+	if (has_required_filters()) {
+		frappe.query_report.refresh();
+	}
 };
 
 const refresh_report = () => {
-	frappe.query_report.refresh();
+	if (has_required_filters()) {
+		frappe.query_report.refresh();
+	}
 };
 
 const { first_day, last_day } = get_current_month_range();
@@ -122,6 +130,13 @@ frappe.query_reports["Overtime Ledger"] = {
 		}
 	],
 	onload: function(report) {
+		if (!report.get_filter_value("from_date") || !report.get_filter_value("to_date")) {
+			report.set_filter_value({
+				from_date: first_day,
+				to_date: last_day,
+			});
+		}
+
 		// Page class for dual datatable styles
 		setTimeout(function () {
 			if (report && report.page && report.page.main) {
