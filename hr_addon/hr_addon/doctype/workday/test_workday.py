@@ -46,6 +46,7 @@ from hr_addon.hr_addon.doctype.workday.workday import (
 	is_half_day_holiday,
 	is_leave_type_ot_deduct,
 	set_attendance_in_employee_checkins,
+	Workday,
 )
 
 
@@ -730,6 +731,45 @@ class TestDateIsInHolidayList(FrappeTestCase):
 	def test_date_is_in_holiday_list_when_date_is_holiday(self, _mock_cached, mock_from):
 		mock_from.return_value = _mock_qb_query_chain([{"holiday_date": "2026-06-02"}])
 		self.assertTrue(date_is_in_holiday_list("HR-EMP-00001", "2026-06-02"))
+
+
+class TestWorkdayHolidayLeaveOverride(FrappeTestCase):
+	@patch.object(Workday, "_cancel_leave_attendance_on_non_working_day")
+	@patch.object(Workday, "_apply_holiday_not_workday_fields")
+	@patch.object(Workday, "_should_revert_leave_to_not_workday", return_value=True)
+	@patch.object(Workday, "_active_leave_includes_holiday", return_value=False)
+	def test_update_status_reverts_on_leave_on_non_working_day(
+		self, _mock_include, _mock_should, mock_apply, mock_cancel
+	):
+		wd = Workday(
+			{
+				"doctype": "Workday",
+				"employee": "HR-EMP-00001",
+				"log_date": "2026-06-02",
+				"company": "_Test Company",
+				"status": "On Leave",
+			}
+		)
+		wd.update_status()
+		self.assertEqual(wd.status, "Not Workday")
+		mock_apply.assert_called_once()
+		mock_cancel.assert_called_once()
+
+	@patch("hr_addon.hr_addon.doctype.workday.workday._create_new_attendance")
+	@patch("hr_addon.hr_addon.doctype.workday.workday._get_submitted_attendance_for_workday", return_value=None)
+	@patch("hr_addon.events.overtime_ledger.is_overtime_ledger_enabled", return_value=True)
+	def test_create_attendace_record_skips_not_workday(
+		self, _mock_ole_enabled, _mock_att, mock_create
+	):
+		doc = SimpleNamespace(
+			employee="HR-EMP-00001",
+			log_date=getdate("2026-06-02"),
+			status="Not Workday",
+			company="_Test Company",
+			name="WD-TEST-1",
+		)
+		create_attendace_record(doc)
+		mock_create.assert_not_called()
 
 
 class TestCreateBackgroundJobForWorkdayGeneration(FrappeTestCase):

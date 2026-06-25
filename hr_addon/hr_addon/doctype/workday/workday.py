@@ -86,18 +86,29 @@ class Workday(Document):
 				"skip_auto_attendance": employee_checkin.get("skip_auto_attendance"),
 			})
 
-	def set_status_for_leave_application(self):
+	def _get_submitted_leave_application_name(self):
 		filters = {
 			"employee": self.employee,
 			"from_date": ("<=", self.log_date),
 			"to_date": (">=", self.log_date),
-			"docstatus": 1
+			"docstatus": 1,
 		}
 		leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
 		if leave_types:
-			filters["leave_type"] = ['not in', leave_types]
+			filters["leave_type"] = ["not in", leave_types]
+		return frappe.db.exists("Leave Application", filters)
 
-		leave_application = frappe.db.exists("Leave Application", filters)
+	def _active_leave_includes_holiday(self):
+		leave_application = self._get_submitted_leave_application_name()
+		if not leave_application:
+			return False
+		leave_type = frappe.db.get_value("Leave Application", leave_application, "leave_type")
+		if not leave_type:
+			return False
+		return bool(frappe.db.get_value("Leave Type", leave_type, "include_holiday"))
+
+	def set_status_for_leave_application(self):
+		leave_application = self._get_submitted_leave_application_name()
 		if leave_application:
 			half_day, half_day_date = frappe.db.get_value("Leave Application", leave_application, ["half_day", "half_day_date"])
 			
@@ -146,6 +157,80 @@ class Workday(Document):
 					},
 				)
 				self.status = "Pending Leave" if leave_application else "Absent"
+
+		# Leave submit skips holidays; restore Not Workday here so Workday does not create OT-deduct OLE.
+		if (
+			self.status in ("On Leave", "Half Day")
+			and not self._active_leave_includes_holiday()
+			and self._should_revert_leave_to_not_workday(allow_workdays_on_holidays)
+		):
+			self.status = "Not Workday"
+			self._apply_holiday_not_workday_fields()
+			self._cancel_leave_attendance_on_non_working_day()
+
+	def _should_revert_leave_to_not_workday(self, allow_workdays_on_holidays):
+		if (
+			self.employee_checkins
+			and allow_workdays_on_holidays
+			and date_is_in_holiday_list(self.employee, self.log_date)
+		):
+			return False
+		leave_application = self._get_submitted_leave_application_name()
+		leave_type = (
+			frappe.db.get_value("Leave Application", leave_application, "leave_type")
+			if leave_application
+			else None
+		)
+		return is_non_working_day_for_employee(self.employee, self.log_date, leave_type=leave_type)
+
+	def _apply_holiday_not_workday_fields(self):
+		edwh = get_employee_default_work_hour(
+			self.employee, self.log_date, skip_workday_if_no_weekly_hours=True
+		)
+		if not edwh:
+			self.target_hours = 0
+			self.expected_break_hours = 0
+			self.actual_working_hours = 0
+			self.hours_worked = 0
+			self.break_hours = 0
+			return
+
+		holiday_log = get_holiday_not_workday_log(self.employee, self.log_date, edwh)
+		self.target_hours = holiday_log.get("target_hours", 0)
+		self.expected_break_hours = holiday_log.get("expected_break_hours", 0)
+		self.actual_working_hours = holiday_log.get("actual_working_hours", 0)
+		self.hours_worked = holiday_log.get("hours_worked", 0)
+		self.break_hours = holiday_log.get("break_hours", 0)
+
+	def _cancel_leave_attendance_on_non_working_day(self):
+		attendance_name = frappe.db.exists(
+			"Attendance",
+			{
+				"employee": self.employee,
+				"attendance_date": self.log_date,
+				"docstatus": 1,
+				"status": ["in", ["On Leave", "Half Day"]],
+			},
+		)
+		if not attendance_name:
+			return
+
+		try:
+			attendance = frappe.get_doc("Attendance", attendance_name)
+			attendance.flags.ignore_permissions = True
+			if attendance.docstatus == 1:
+				attendance.cancel()
+			if self.attendance == attendance_name:
+				self.attendance = None
+			if self.name and not self.is_new():
+				frappe.db.set_value(
+					"Workday", self.name, "attendance", None, update_modified=False
+				)
+		except Exception as e:
+			frappe.log_error(
+				title="Workday: cancel leave attendance on non-working day",
+				message=f"Workday {self.name}, Attendance {attendance_name}: {e}",
+			)
 
 	def date_is_in_comp_off(self):
 		leave_types = frappe.get_all("Leave Type", filters={"is_compensatory": 1}, pluck="name")
@@ -930,6 +1015,21 @@ def apply_half_day_holiday_targets(doc, employee_default_work_hour=None):
 
 	doc.target_hours = flt(employee_default_work_hour.hours) / 2
 	doc.expected_break_hours = flt(employee_default_work_hour.break_minutes) / 60 / 2
+
+
+def is_non_working_day_for_employee(employee, date, leave_type=None):
+	"""Holiday-list day or zero-hour weekly day (weekend). Respects Leave Type include_holiday."""
+	date = getdate(date)
+	if leave_type and frappe.db.get_value("Leave Type", leave_type, "include_holiday"):
+		return False
+	if date_is_in_holiday_list(employee, date):
+		return True
+	edwh = get_employee_default_work_hour(
+		employee, date, skip_workday_if_no_weekly_hours=True
+	)
+	if edwh is None:
+		return False
+	return flt(edwh.hours) <= 0
 
 
 @frappe.whitelist()
