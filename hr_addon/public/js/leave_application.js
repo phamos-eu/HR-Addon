@@ -1,5 +1,31 @@
+function set_unfiltered_leave_type_query(frm) {
+	frm.set_query("leave_type", () => {
+		const filters = {};
+		if (frappe.meta.has_field("Leave Type", "enabled")) {
+			filters.enabled = 1;
+		}
+		return { filters };
+	});
+}
+
 frappe.ui.form.on("Leave Application", {
+	refresh(frm) {
+		set_unfiltered_leave_type_query(frm);
+		frm.trigger("update_overtime_leave_balance_indicator");
+	},
+
 	employee(frm) {
+		set_unfiltered_leave_type_query(frm);
+		frm.trigger("update_overtime_leave_balance_indicator");
+	},
+
+	from_date(frm) {
+		set_unfiltered_leave_type_query(frm);
+		frm.trigger("update_overtime_leave_balance_indicator");
+	},
+
+	to_date(frm) {
+		set_unfiltered_leave_type_query(frm);
 		frm.trigger("update_overtime_leave_balance_indicator");
 	},
 
@@ -25,23 +51,11 @@ frappe.ui.form.on("Leave Application", {
 		}
 	},
 
-	from_date(frm) {
-		frm.trigger("update_overtime_leave_balance_indicator");
-	},
-
-	to_date(frm) {
-		frm.trigger("update_overtime_leave_balance_indicator");
-	},
-
 	half_day(frm) {
 		frm.trigger("update_overtime_leave_balance_indicator");
 	},
 
 	half_day_date(frm) {
-		frm.trigger("update_overtime_leave_balance_indicator");
-	},
-
-	refresh(frm) {
 		frm.trigger("update_overtime_leave_balance_indicator");
 	},
 
