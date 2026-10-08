@@ -9,7 +9,7 @@ on:
       - "hr_addon/overrides/custom_leave_application.py"
       - ".github/workflows/workday-tests.yml"
   pull_request:
-    branches: [main, develop, version-15, suncycle-version-15]
+    branches: [main, develop, version-15, suncycle-version-15, suncycle_version_15_1]
     paths:
       - "hr_addon/hr_addon/doctype/workday/**"
       - "hr_addon/tests/**"
