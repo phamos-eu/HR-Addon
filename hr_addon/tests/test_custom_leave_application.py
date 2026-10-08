@@ -6,45 +6,65 @@ from unittest.mock import patch
 
 from frappe.tests.utils import FrappeTestCase
 
-from hr_addon.overrides.custom_leave_application import get_half_day_holiday_in_leave
+from hr_addon.overrides.custom_leave_application import (
+	get_first_half_day_holiday,
+	reduce_leave_days_for_half_day_holidays,
+)
 
 
-class TestHalfDayHolidayInLeave(FrappeTestCase):
-	# One Half Day Holiday in the leave range is returned so Leave Application can mark it half day.
+class TestHalfDayHolidayLeaveDays(FrappeTestCase):
+	# 24.12 and 31.12 are both half-day holidays: 5 working days become 4.
 	@patch(
-		"hr_addon.overrides.custom_leave_application.frappe.get_all",
-		return_value=[date(2026, 12, 24)],
+		"hr_addon.overrides.custom_leave_application.get_half_day_holiday_dates",
+		return_value=[date(2026, 12, 24), date(2026, 12, 31)],
 	)
-	def test_returns_the_single_half_day_holiday(self, _mock_get_all):
+	def test_two_half_day_holidays_reduce_five_days_to_four(self, _mock_dates):
 		self.assertEqual(
-			get_half_day_holiday_in_leave("2026-12-23", "2026-12-25"),
+			reduce_leave_days_for_half_day_holidays(
+				5, "HR-EMP-00001", "Casual Leave", "2026-12-24", "2026-12-31"
+			),
+			4,
+		)
+
+	# A date the user already marked as half day is not reduced a second time.
+	@patch(
+		"hr_addon.overrides.custom_leave_application.get_half_day_holiday_dates",
+		return_value=[date(2026, 12, 24), date(2026, 12, 31)],
+	)
+	def test_skips_date_already_marked_half_day(self, _mock_dates):
+		self.assertEqual(
+			reduce_leave_days_for_half_day_holidays(
+				4.5,
+				"HR-EMP-00001",
+				"Casual Leave",
+				"2026-12-24",
+				"2026-12-31",
+				half_day=1,
+				half_day_date="2026-12-24",
+			),
+			4,
+		)
+
+	# Half Day Date is the earliest half-day holiday. Later ones stay in the day count only.
+	@patch(
+		"hr_addon.overrides.custom_leave_application.get_half_day_holiday_dates",
+		return_value=[date(2026, 12, 24), date(2026, 12, 31)],
+	)
+	def test_first_half_day_holiday_is_the_earliest_date(self, _mock_dates):
+		self.assertEqual(
+			get_first_half_day_holiday("2026-12-24", "2026-12-31"),
 			date(2026, 12, 24),
 		)
 
-	# Leave Application has only one half-day date, so two holidays are left for the user.
+	# No half-day holiday leaves the HRMS day count unchanged.
 	@patch(
-		"hr_addon.overrides.custom_leave_application.frappe.get_all",
-		return_value=[date(2026, 12, 24), date(2026, 12, 31)],
+		"hr_addon.overrides.custom_leave_application.get_half_day_holiday_dates",
+		return_value=[],
 	)
-	def test_returns_none_when_more_than_one(self, _mock_get_all):
-		self.assertIsNone(get_half_day_holiday_in_leave("2026-12-24", "2026-12-31"))
-
-	# A date that is already a full holiday is not also marked as a half day.
-	@patch(
-		"hr_addon.overrides.custom_leave_application.get_holiday_dates_for_employee",
-		return_value=["2026-12-24"],
-	)
-	@patch(
-		"hr_addon.overrides.custom_leave_application.frappe.db.get_value",
-		return_value=0,
-	)
-	@patch(
-		"hr_addon.overrides.custom_leave_application.frappe.get_all",
-		return_value=[date(2026, 12, 24)],
-	)
-	def test_skips_date_that_is_already_a_full_holiday(self, _mock_get_all, _mock_value, _mock_holidays):
-		self.assertIsNone(
-			get_half_day_holiday_in_leave(
-				"2026-12-24", "2026-12-24", employee="HR-EMP-00001", leave_type="Casual Leave"
-			)
+	def test_no_half_day_holiday_keeps_original_days(self, _mock_dates):
+		self.assertEqual(
+			reduce_leave_days_for_half_day_holidays(
+				5, "HR-EMP-00001", "Casual Leave", "2026-12-24", "2026-12-31"
+			),
+			5,
 		)

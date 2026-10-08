@@ -1,18 +1,14 @@
 import frappe
-from frappe.utils import getdate
+from frappe.utils import cint, flt, getdate
 from erpnext.buying.doctype.supplier_scorecard.supplier_scorecard import daterange
 from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 from hrms.hr.utils import get_holiday_dates_for_employee
 
 
-@frappe.whitelist()
-def get_half_day_holiday_in_leave(from_date, to_date, employee=None, leave_type=None):
-	"""Return the Half Day Holiday in this leave when there is exactly one.
-
-	Leave Application stores a single half-day date. HRMS then counts that day as 0.5.
-	"""
+def get_half_day_holiday_dates(from_date, to_date, employee=None, leave_type=None):
+	"""Half Day Holidays in the leave range that are not already full holidays."""
 	if not from_date or not to_date:
-		return None
+		return []
 
 	rows = frappe.get_all(
 		"Half Day Holidays",
@@ -28,32 +24,75 @@ def get_half_day_holiday_in_leave(from_date, to_date, employee=None, leave_type=
 	if employee and leave_type and not frappe.db.get_value("Leave Type", leave_type, "include_holiday"):
 		full_holidays = {getdate(d) for d in get_holiday_dates_for_employee(employee, from_date, to_date)}
 		dates = [d for d in dates if d not in full_holidays]
-	if len(dates) != 1:
-		return None
-	return dates[0]
+	return sorted(dates)
+
+
+@frappe.whitelist()
+def get_total_leave_days(employee, leave_type, from_date, to_date, half_day=None, half_day_date=None):
+	"""HRMS leave days, then 0.5 for each other Half Day Holiday."""
+	from hrms.hr.doctype.leave_application.leave_application import get_number_of_leave_days
+
+	days = get_number_of_leave_days(employee, leave_type, from_date, to_date, half_day, half_day_date)
+	return reduce_leave_days_for_half_day_holidays(
+		days, employee, leave_type, from_date, to_date, half_day, half_day_date
+	)
+
+
+@frappe.whitelist()
+def get_first_half_day_holiday(from_date, to_date, employee=None, leave_type=None):
+	"""Earliest Half Day Holiday in the leave range, for the Half Day Date field."""
+	dates = get_half_day_holiday_dates(from_date, to_date, employee, leave_type)
+	return dates[0] if dates else None
+
+
+def reduce_leave_days_for_half_day_holidays(
+	number_of_days, employee, leave_type, from_date, to_date, half_day=None, half_day_date=None
+):
+	"""Count each Half Day Holiday as 0.5. Skip a date HRMS already counted as a half day."""
+	dates = get_half_day_holiday_dates(from_date, to_date, employee, leave_type)
+	if cint(half_day) and from_date and to_date:
+		if getdate(from_date) == getdate(to_date):
+			already_half = getdate(from_date)
+		elif half_day_date:
+			already_half = getdate(half_day_date)
+		else:
+			already_half = None
+		if already_half:
+			dates = [d for d in dates if d != already_half]
+	if not dates:
+		return number_of_days
+
+	adjusted = flt(number_of_days) - (0.5 * len(dates))
+	if adjusted < 0:
+		adjusted = 0
+	if adjusted == int(adjusted):
+		return int(adjusted)
+	return adjusted
 
 
 class HrAddonLeaveApplication(LeaveApplication):
 	def validate(self):
-		self.set_half_day_holiday()
+		self.set_first_half_day_holiday()
 		super().validate()
+		self.total_leave_days = reduce_leave_days_for_half_day_holidays(
+			self.total_leave_days,
+			self.employee,
+			self.leave_type,
+			self.from_date,
+			self.to_date,
+			self.half_day,
+			self.half_day_date,
+		)
 
-	def set_half_day_holiday(self):
-		"""Mark the one Half Day Holiday in this leave as the half-day date."""
-		holiday_date = get_half_day_holiday_in_leave(
+	def set_first_half_day_holiday(self):
+		"""Store the first Half Day Holiday in Half Day Date. Other half days stay in the day count."""
+		first = get_first_half_day_holiday(
 			self.from_date, self.to_date, self.employee, self.leave_type
 		)
-		if not holiday_date:
-			return
-		if (
-			self.half_day
-			and self.half_day_date
-			and getdate(self.half_day_date) != holiday_date
-			and getdate(self.from_date) <= getdate(self.half_day_date) <= getdate(self.to_date)
-		):
+		if not first:
 			return
 		self.half_day = 1
-		self.half_day_date = holiday_date
+		self.half_day_date = first
 
 	def _leave_type_deducts_from_ot_ledger(self):
 		lt = getattr(self, "leave_type", None)
