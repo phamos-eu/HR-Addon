@@ -1,11 +1,60 @@
 import frappe
-from erpnext.buying.doctype.supplier_scorecard.supplier_scorecard import daterange
 from frappe.utils import getdate
+from erpnext.buying.doctype.supplier_scorecard.supplier_scorecard import daterange
 from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 from hrms.hr.utils import get_holiday_dates_for_employee
 
 
+@frappe.whitelist()
+def get_half_day_holiday_in_leave(from_date, to_date, employee=None, leave_type=None):
+	"""Return the Half Day Holiday in this leave when there is exactly one.
+
+	Leave Application stores a single half-day date. HRMS then counts that day as 0.5.
+	"""
+	if not from_date or not to_date:
+		return None
+
+	rows = frappe.get_all(
+		"Half Day Holidays",
+		filters={
+			"parent": "HR Addon Settings",
+			"parenttype": "HR Addon Settings",
+			"parentfield": "half_day_holidays",
+			"holiday_date": ["between", [getdate(from_date), getdate(to_date)]],
+		},
+		pluck="holiday_date",
+	)
+	dates = [getdate(d) for d in rows if d]
+	if employee and leave_type and not frappe.db.get_value("Leave Type", leave_type, "include_holiday"):
+		full_holidays = {getdate(d) for d in get_holiday_dates_for_employee(employee, from_date, to_date)}
+		dates = [d for d in dates if d not in full_holidays]
+	if len(dates) != 1:
+		return None
+	return dates[0]
+
+
 class HrAddonLeaveApplication(LeaveApplication):
+	def validate(self):
+		self.set_half_day_holiday()
+		super().validate()
+
+	def set_half_day_holiday(self):
+		"""Mark the one Half Day Holiday in this leave as the half-day date."""
+		holiday_date = get_half_day_holiday_in_leave(
+			self.from_date, self.to_date, self.employee, self.leave_type
+		)
+		if not holiday_date:
+			return
+		if (
+			self.half_day
+			and self.half_day_date
+			and getdate(self.half_day_date) != holiday_date
+			and getdate(self.from_date) <= getdate(self.half_day_date) <= getdate(self.to_date)
+		):
+			return
+		self.half_day = 1
+		self.half_day_date = holiday_date
+
 	def _leave_type_deducts_from_ot_ledger(self):
 		lt = getattr(self, "leave_type", None)
 		if not lt:

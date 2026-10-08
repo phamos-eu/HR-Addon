@@ -11,6 +11,7 @@ function set_unfiltered_leave_type_query(frm) {
 frappe.ui.form.on("Leave Application", {
 	refresh(frm) {
 		set_unfiltered_leave_type_query(frm);
+		frm.trigger("apply_half_day_holiday");
 		frm.trigger("update_overtime_leave_balance_indicator");
 	},
 
@@ -21,11 +22,13 @@ frappe.ui.form.on("Leave Application", {
 
 	from_date(frm) {
 		set_unfiltered_leave_type_query(frm);
+		frm.trigger("apply_half_day_holiday");
 		frm.trigger("update_overtime_leave_balance_indicator");
 	},
 
 	to_date(frm) {
 		set_unfiltered_leave_type_query(frm);
+		frm.trigger("apply_half_day_holiday");
 		frm.trigger("update_overtime_leave_balance_indicator");
 	},
 
@@ -57,6 +60,43 @@ frappe.ui.form.on("Leave Application", {
 
 	half_day_date(frm) {
 		frm.trigger("update_overtime_leave_balance_indicator");
+	},
+
+	apply_half_day_holiday(frm) {
+		if (frm.doc.docstatus !== 0 || !frm.doc.from_date || !frm.doc.to_date) {
+			return;
+		}
+
+		const from_date = frm.doc.from_date;
+		const to_date = frm.doc.to_date;
+
+		frappe.call({
+			method: "hr_addon.overrides.custom_leave_application.get_half_day_holiday_in_leave",
+			args: {
+				from_date,
+				to_date,
+				employee: frm.doc.employee,
+				leave_type: frm.doc.leave_type,
+			},
+			callback(r) {
+				if (!r.message || frm.doc.from_date !== from_date || frm.doc.to_date !== to_date) {
+					return;
+				}
+				const holiday_date = r.message;
+				const set_half_day_date = () => {
+					if (frm.doc.from_date === frm.doc.to_date || frm.doc.half_day_date === holiday_date) {
+						return;
+					}
+					frm.set_value("half_day_date", holiday_date);
+				};
+				// Changing From/To Date clears Half Day Date. Set it again for this range.
+				if (frm.doc.half_day) {
+					set_half_day_date();
+					return;
+				}
+				frm.set_value("half_day", 1).then(set_half_day_date);
+			},
+		});
 	},
 
 	update_overtime_leave_balance_indicator(frm) {
