@@ -2,14 +2,18 @@ name: Workday Unit Tests
 
 on:
   push:
-    branches: [main, develop, version-15, automated-testing, suncycle-version-15]
+    branches: [main, develop, version-15, automated-testing, suncycle-version-15, suncycle_version_15_1]
     paths:
       - "hr_addon/hr_addon/doctype/workday/**"
+      - "hr_addon/tests/**"
+      - "hr_addon/overrides/custom_leave_application.py"
       - ".github/workflows/workday-tests.yml"
   pull_request:
-    branches: [main, develop, version-15, suncycle-version-15]
+    branches: [main, develop, version-15, suncycle-version-15, suncycle_version_15_1]
     paths:
       - "hr_addon/hr_addon/doctype/workday/**"
+      - "hr_addon/tests/**"
+      - "hr_addon/overrides/custom_leave_application.py"
       - ".github/workflows/workday-tests.yml"
 
 permissions:
@@ -129,6 +133,9 @@ jobs:
           bench --site test.localhost run-tests \
             --app hr_addon \
             --module hr_addon.hr_addon.doctype.workday.test_workday
+          bench --site test.localhost run-tests \
+            --app hr_addon \
+            --module hr_addon.tests.test_custom_leave_application
         env:
           CI: true
 
@@ -138,3 +145,4 @@ jobs:
           echo "## Workday unit tests" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Module: \`hr_addon.hr_addon.doctype.workday.test_workday\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Module: \`hr_addon.tests.test_custom_leave_application\`" >> "$GITHUB_STEP_SUMMARY"
