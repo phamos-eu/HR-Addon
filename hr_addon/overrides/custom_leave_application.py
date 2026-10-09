@@ -45,6 +45,12 @@ def get_first_half_day_holiday(from_date, to_date, employee=None, leave_type=Non
 	return dates[0] if dates else None
 
 
+@frappe.whitelist()
+def get_half_day_holiday_in_leave(from_date, to_date, employee=None, leave_type=None):
+	"""Same as get_first_half_day_holiday. Kept so an already open form can call it."""
+	return get_first_half_day_holiday(from_date, to_date, employee, leave_type)
+
+
 def reduce_leave_days_for_half_day_holidays(
 	number_of_days, employee, leave_type, from_date, to_date, half_day=None, half_day_date=None
 ):
