@@ -23,3 +23,8 @@ hr_addon = ["*.json", "*.md", "*.txt", "*.js", "*.css", "*.html", "patches/**/*.
 
 [project.urls]
 Homepage = "https://github.com/phamos-eu/HR-Addon"
+
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0,<16.0.0"
+erpnext = ">=15.0.0,<16.0.0"
+hrms = ">=15.0.0,<16.0.0"
