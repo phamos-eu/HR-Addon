@@ -1,10 +1,17 @@
-from setuptools import setup, find_packages
+import re
+from pathlib import Path
+
+from setuptools import find_packages, setup
 
 with open("requirements.txt") as f:
-	install_requires = f.read().strip().split("\n")
+	install_requires = [
+		line.strip()
+		for line in f.read().splitlines()
+		if line.strip() and not line.strip().startswith("#")
+	]
 
-# get version from __version__ variable in hr_addon/__init__.py
-from hr_addon import __version__ as version
+version_file = Path("hr_addon/__init__.py").read_text()
+version = re.search(r"^__version__\s*=\s*['\"]([^'\"]+)['\"]", version_file, re.M).group(1)
 
 setup(
 	name="hr_addon",
@@ -15,5 +22,5 @@ setup(
 	packages=find_packages(),
 	zip_safe=False,
 	include_package_data=True,
-	install_requires=install_requires
+	install_requires=install_requires,
 )
