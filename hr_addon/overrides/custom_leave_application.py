@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from frappe.utils import cint, flt, getdate
 from erpnext.buying.doctype.supplier_scorecard.supplier_scorecard import daterange
 from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
@@ -80,15 +81,47 @@ class HrAddonLeaveApplication(LeaveApplication):
 	def validate(self):
 		self.set_first_half_day_holiday()
 		super().validate()
-		self.total_leave_days = reduce_leave_days_for_half_day_holidays(
-			self.total_leave_days,
-			self.employee,
-			self.leave_type,
-			self.from_date,
-			self.to_date,
-			self.half_day,
-			self.half_day_date,
-		)
+
+	def validate_balance_leaves(self):
+		"""Check the balance against Total Leave Days, including every half-day holiday."""
+		from hrms.hr.doctype.leave_application.leave_application import get_leave_balance_on, is_lwp
+
+		precision = cint(frappe.db.get_single_value("System Settings", "float_precision")) or 2
+
+		if self.from_date and self.to_date:
+			self.total_leave_days = get_total_leave_days(
+				self.employee,
+				self.leave_type,
+				self.from_date,
+				self.to_date,
+				self.half_day,
+				self.half_day_date,
+			)
+
+			if self.total_leave_days <= 0:
+				frappe.throw(
+					_(
+						"The day(s) on which you are applying for leave are holidays. You need not apply for leave."
+					)
+				)
+
+			if not is_lwp(self.leave_type):
+				leave_balance = get_leave_balance_on(
+					self.employee,
+					self.leave_type,
+					self.from_date,
+					self.to_date,
+					consider_all_leaves_in_the_allocation_period=True,
+					for_consumption=True,
+				)
+				leave_balance_for_consumption = flt(
+					leave_balance.get("leave_balance_for_consumption"), precision
+				)
+				if self.status != "Rejected" and (
+					leave_balance_for_consumption < self.total_leave_days
+					or not leave_balance_for_consumption
+				):
+					self.show_insufficient_balance_message(leave_balance_for_consumption)
 
 	def set_first_half_day_holiday(self):
 		"""Store the first Half Day Holiday in Half Day Date. Other half days stay in the day count."""

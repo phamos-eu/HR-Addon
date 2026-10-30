@@ -6,7 +6,10 @@ from unittest.mock import patch
 
 from frappe.tests.utils import FrappeTestCase
 
+from hrms.hr.doctype.leave_application.leave_application import InsufficientLeaveBalanceError
+
 from hr_addon.overrides.custom_leave_application import (
+	HrAddonLeaveApplication,
 	get_first_half_day_holiday,
 	reduce_leave_days_for_half_day_holidays,
 )
@@ -55,6 +58,68 @@ class TestHalfDayHolidayLeaveDays(FrappeTestCase):
 			get_first_half_day_holiday("2026-12-24", "2026-12-31"),
 			date(2026, 12, 24),
 		)
+
+	def _leave_application(self):
+		doc = HrAddonLeaveApplication.__new__(HrAddonLeaveApplication)
+		doc.employee = "HR-EMP-00001"
+		doc.leave_type = "Annual Leave"
+		doc.from_date = "2026-12-24"
+		doc.to_date = "2026-12-31"
+		doc.half_day = 1
+		doc.half_day_date = "2026-12-24"
+		doc.status = "Open"
+		doc.leave_balance = 4
+		return doc
+
+	# HRMS days are 4.5. After the second half-day holiday the request is 4, which matches the balance.
+	@patch("hr_addon.overrides.custom_leave_application.frappe.db.get_single_value", return_value=2)
+	@patch(
+		"hrms.hr.doctype.leave_application.leave_application.is_lwp",
+		return_value=False,
+	)
+	@patch(
+		"hrms.hr.doctype.leave_application.leave_application.get_leave_balance_on",
+		return_value={"leave_balance_for_consumption": 4},
+	)
+	@patch(
+		"hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days",
+		return_value=4.5,
+	)
+	@patch(
+		"hr_addon.overrides.custom_leave_application.get_half_day_holiday_dates",
+		return_value=[date(2026, 12, 24), date(2026, 12, 31)],
+	)
+	def test_exact_balance_allows_reduced_half_day_holiday_total(self, *args):
+		doc = self._leave_application()
+		doc.validate_balance_leaves()
+		self.assertEqual(doc.total_leave_days, 4)
+
+	# A request still above the balance after half-day holidays stays blocked.
+	@patch(
+		"hrms.hr.doctype.leave_application.leave_application.frappe.db.get_value",
+		return_value=0,
+	)
+	@patch("hr_addon.overrides.custom_leave_application.frappe.db.get_single_value", return_value=2)
+	@patch(
+		"hrms.hr.doctype.leave_application.leave_application.is_lwp",
+		return_value=False,
+	)
+	@patch(
+		"hrms.hr.doctype.leave_application.leave_application.get_leave_balance_on",
+		return_value={"leave_balance_for_consumption": 3},
+	)
+	@patch(
+		"hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days",
+		return_value=4.5,
+	)
+	@patch(
+		"hr_addon.overrides.custom_leave_application.get_half_day_holiday_dates",
+		return_value=[date(2026, 12, 24), date(2026, 12, 31)],
+	)
+	def test_balance_below_reduced_total_stays_blocked(self, *args):
+		doc = self._leave_application()
+		with self.assertRaises(InsufficientLeaveBalanceError):
+			doc.validate_balance_leaves()
 
 	# No half-day holiday leaves the HRMS day count unchanged.
 	@patch(
