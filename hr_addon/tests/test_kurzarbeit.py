@@ -10,6 +10,7 @@ from hr_addon.hr_addon.kurzarbeit import (
 	apply_kurzarbeit_to_workday,
 	kurzarbeit_submit_block_reason,
 )
+from hr_addon.overrides.custom_leave_application import HrAddonLeaveApplication
 
 
 def _workday(**kwargs):
@@ -108,6 +109,12 @@ class TestKurzarbeit(FrappeTestCase):
 			leave_type="Kurzarbeit", _action="submit", half_day=1, to_date="2026-10-31"
 		)
 		self.assertIn("Half Day", kurzarbeit_submit_block_reason(doc))
+
+	@patch("hr_addon.hr_addon.kurzarbeit.is_kurzarbeit_leave_type", return_value=True)
+	def test_existing_attendance_does_not_block_kurzarbeit(self, _is_ka):
+		doc = HrAddonLeaveApplication.__new__(HrAddonLeaveApplication)
+		doc.leave_type = "Kurzarbeit"
+		doc.validate_attendance()
 
 	@patch("hr_addon.hr_addon.kurzarbeit.is_kurzarbeit_leave_type", return_value=True)
 	def test_draft_save_is_not_blocked(self, _is_ka):
