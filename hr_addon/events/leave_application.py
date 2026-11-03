@@ -13,7 +13,12 @@ def validate_leave_application(doc, method=None):
 	"""
 	Validate Leave Application before submission.
 	Check if employee has sufficient overtime balance for leave types that deduct from overtime.
+	Kurzarbeit can be submitted only after the To Date, and not as a half day.
 	"""
+	from hr_addon.hr_addon.kurzarbeit import validate_kurzarbeit_leave
+
+	validate_kurzarbeit_leave(doc)
+
 	if frappe.flags.get("skip_overtime_leave_validation"):
 		return
 

@@ -79,7 +79,12 @@ def reduce_leave_days_for_half_day_holidays(
 
 class HrAddonLeaveApplication(LeaveApplication):
 	def validate(self):
-		self.set_first_half_day_holiday()
+		from hr_addon.hr_addon.kurzarbeit import is_kurzarbeit_leave_type
+
+		# Kurzarbeit is not a half-day leave. A half-day holiday in the range
+		# still halves that day's contractual target on the Workday.
+		if not is_kurzarbeit_leave_type(self.leave_type):
+			self.set_first_half_day_holiday()
 		super().validate()
 
 	def validate_balance_leaves(self):
