@@ -1,12 +1,13 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:WD-{YYYY}-{#####}",
+ "autoname": "naming_series:",
  "creation": "2022-05-06 15:25:52.037042",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "naming_series",
   "employee",
   "employee_name",
   "attendance",
@@ -143,14 +144,21 @@
    "fieldtype": "Data",
    "label": "Employee Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "naming_series",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-03-25 16:03:45.327857",
+ "modified": "2026-07-17 23:29:52.216468",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
- "naming_rule": "Expression",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
@@ -178,6 +186,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

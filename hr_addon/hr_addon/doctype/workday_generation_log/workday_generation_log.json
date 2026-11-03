@@ -1,11 +1,12 @@
 {
  "actions": [],
  "autoname": "format:WDL-{####}",
- "creation": "2025-12-04 12:00:00.000000",
+ "creation": "2025-12-04 12:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "naming_series",
   "execution_info_section",
   "execution_time",
   "execution_type",
@@ -122,15 +123,21 @@
    "fieldname": "error_log",
    "fieldtype": "Long Text",
    "label": "Error Log"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-04 12:00:00.000000",
+ "modified": "2026-07-17 23:31:15.503354",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday Generation Log",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -155,6 +162,7 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

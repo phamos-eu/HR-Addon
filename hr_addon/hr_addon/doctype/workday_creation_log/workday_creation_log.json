@@ -1,11 +1,12 @@
 {
  "actions": [],
- "autoname": "format:WCL-{####}",
- "creation": "2024-12-05 10:00:00.000000",
+ "autoname": "naming_series:",
+ "creation": "2024-12-05 10:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "naming_series",
   "employee",
   "log_date",
   "workday",
@@ -214,15 +215,21 @@
    "fieldtype": "Link",
    "label": "Workday",
    "options": "Workday"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-05 10:00:00.000000",
+ "modified": "2026-07-17 23:30:36.471189",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday Creation Log",
- "naming_rule": "Expression",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
@@ -247,6 +254,7 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
