@@ -87,6 +87,14 @@ class HrAddonLeaveApplication(LeaveApplication):
 			self.set_first_half_day_holiday()
 		super().validate()
 
+	def validate_attendance(self):
+		"""Kurzarbeit is applied after Workdays exist, so Present attendance must not block it."""
+		from hr_addon.hr_addon.kurzarbeit import is_kurzarbeit_leave_type
+
+		if is_kurzarbeit_leave_type(self.leave_type):
+			return
+		super().validate_attendance()
+
 	def validate_balance_leaves(self):
 		"""Check the balance against Total Leave Days, including every half-day holiday."""
 		from hrms.hr.doctype.leave_application.leave_application import get_leave_balance_on, is_lwp
