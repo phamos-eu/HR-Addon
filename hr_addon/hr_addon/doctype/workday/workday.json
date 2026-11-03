@@ -19,6 +19,7 @@
   "target_hours",
   "hours_worked",
   "actual_working_hours",
+  "kurzarbeit_hours",
   "column_break_5",
   "expected_break_hours",
   "break_hours",
@@ -131,6 +132,15 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "description": "Hours added so Actual Working Hours reach the contractual target while an approved Kurzarbeit leave covers this day.",
+   "fieldname": "kurzarbeit_hours",
+   "fieldtype": "Float",
+   "label": "Kurzarbeit Hours",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
    "fieldname": "expected_break_hours",
    "fieldtype": "Float",
    "label": "Expected Break Hours",
@@ -146,7 +156,7 @@
   }
  ],
  "links": [],
- "modified": "2025-03-25 16:03:45.327857",
+ "modified": "2026-11-03 15:20:00.000000",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "Workday",
