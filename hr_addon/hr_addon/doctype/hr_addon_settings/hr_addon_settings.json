@@ -37,7 +37,10 @@
   "enable_overtime_ledger_feature",
   "overtime_frozen",
   "select_employees",
-  "repost_all_oles"
+  "repost_all_oles",
+  "kurzarbeit_tab",
+  "kurzarbeit_leave_type",
+  "kurzarbeit_explanation"
  ],
  "fields": [
   {
@@ -248,12 +251,29 @@
    "fieldname": "enable_overtime_ledger_feature",
    "fieldtype": "Check",
    "label": "Enable Overtime Ledger Feature"
+  },
+  {
+   "fieldname": "kurzarbeit_tab",
+   "fieldtype": "Tab Break",
+   "label": "Kurzarbeit"
+  },
+  {
+   "fieldname": "kurzarbeit_leave_type",
+   "fieldtype": "Link",
+   "label": "Kurzarbeit Leave Type",
+   "options": "Leave Type",
+   "description": "Leave type used for Kurzarbeit. On submit, each past working day is raised so Target Hours and Actual Working Hours equal the contractual hours from Weekly Working Hours. Only hours above that target go to the overtime ledger. The added hours are stored on the Workday and can be exported."
+  },
+  {
+   "fieldname": "kurzarbeit_explanation",
+   "fieldtype": "HTML",
+   "label": "Kurzarbeit Explanation"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-03 17:49:33.500324",
+ "modified": "2026-11-03 15:20:00.000000",
  "modified_by": "Administrator",
  "module": "HR Addon",
  "name": "HR Addon Settings",

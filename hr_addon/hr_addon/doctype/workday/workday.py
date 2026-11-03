@@ -14,6 +14,10 @@ from hr_addon.events.attendance import (
 	get_effective_ole_target_hours,
 	get_ole_hour_variance_for_attendance,
 )
+from hr_addon.hr_addon.kurzarbeit import (
+	apply_kurzarbeit_to_workday,
+	is_kurzarbeit_leave_type,
+)
 import traceback
 
 MECHANISM_MINIMUM_BREAK_RULE = "Break Hours from Minimum Break Rule"
@@ -30,11 +34,14 @@ class Workday(Document):
 		self.validate_duplicate_workday()
 		self.set_status_for_leave_application()
 		self.update_status()
-		if not self.is_new():
-			create_attendace_record(self)
 
 	def before_save(self):
 		self.set_half_day_holiday()
+		apply_kurzarbeit_to_workday(self)
+		# Existing rows: attendance is written after Kurzarbeit hours are final.
+		# New rows are written in after_insert, once the Workday exists.
+		if not self.is_new():
+			create_attendace_record(self)
 
 	def after_insert(self):
 		"""Show a concise message after creating a Workday, indicating its status."""
@@ -110,8 +117,15 @@ class Workday(Document):
 	def set_status_for_leave_application(self):
 		leave_application = self._get_submitted_leave_application_name()
 		if leave_application:
-			half_day, half_day_date = frappe.db.get_value("Leave Application", leave_application, ["half_day", "half_day_date"])
-			
+			half_day, half_day_date, leave_type = frappe.db.get_value(
+				"Leave Application",
+				leave_application,
+				["half_day", "half_day_date", "leave_type"],
+			)
+			# Kurzarbeit keeps contractual target hours. apply_kurzarbeit_to_workday fills the shortfall.
+			if is_kurzarbeit_leave_type(leave_type):
+				return
+
 			# Apply half-day logic only if this specific date is the half day
 			# For single-day leaves, half_day_date is None
 			is_half_day_for_this_date = half_day and (not half_day_date or getdate(half_day_date) == getdate(self.log_date))
@@ -1527,6 +1541,13 @@ def bulk_process_workdays(data,flag):
 	}
 
 
+def _kurzarbeit_leave_info(doc):
+	"""Approved Kurzarbeit leave for this workday, used to mark Present attendance."""
+	from hr_addon.hr_addon.kurzarbeit import get_approved_kurzarbeit_leave
+
+	return get_approved_kurzarbeit_leave(doc.employee, doc.log_date)
+
+
 def is_leave_type_ot_deduct(leave_type):
 	if not leave_type:
 		return False
@@ -1617,12 +1638,18 @@ def create_attendace_record(doc, method=None):
         actual_for_att = flt(doc.actual_working_hours or 0)
         if doc.status == "Half Day":
             leave_info = get_submitted_leave_application(doc.employee, doc.log_date)
+        else:
+            leave_info = _kurzarbeit_leave_info(doc)
     elif doc.status == "On Leave":
         leave_info = get_submitted_leave_application(doc.employee, doc.log_date)
         if not leave_info:
             return
         att_status = "On Leave"
-        if is_leave_type_ot_deduct(leave_info.leave_type):
+        if is_kurzarbeit_leave_type(leave_info.leave_type):
+            # Day with no check-ins: actual and target are already the contractual hours.
+            target_for_att = flt(doc.target_hours or 0)
+            actual_for_att = flt(doc.actual_working_hours or 0)
+        elif is_leave_type_ot_deduct(leave_info.leave_type):
             edwh = get_employee_default_work_hour(
                 doc.employee, doc.log_date, skip_workday_if_no_weekly_hours=True
             )
@@ -1759,6 +1786,9 @@ def _update_existing_attendance(
     if leave_info:
         update_fields["leave_application"] = leave_info.name
         update_fields["leave_type"] = leave_info.leave_type
+    elif is_kurzarbeit_leave_type(getattr(attendance, "leave_type", None)):
+        update_fields["leave_application"] = None
+        update_fields["leave_type"] = None
 
     frappe.db.set_value(
         "Attendance",
