@@ -40,8 +40,12 @@ doc_events = {
 		"on_cancel": [
 			"hr_addon.hr_addon.doctype.hr_addon_settings.hr_addon_settings.export_calendar",
 			"hr_addon.events.leave_application.restore_overtime_on_leave_cancel",
+			"hr_addon.hr_addon.kurzarbeit.restore_workdays_on_kurzarbeit_cancel",
 		],
-		"on_submit": "hr_addon.events.leave_application.reduce_overtime_on_leave_submit",
+		"on_submit": [
+			"hr_addon.events.leave_application.reduce_overtime_on_leave_submit",
+			"hr_addon.hr_addon.kurzarbeit.apply_kurzarbeit_on_leave_submit",
+		],
 	},
 	"Attendance": {
 		"on_submit": "hr_addon.events.attendance.create_overtime_ledger_entry_on_attendance_submit",

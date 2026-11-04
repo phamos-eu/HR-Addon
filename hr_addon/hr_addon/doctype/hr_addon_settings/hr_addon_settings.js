@@ -14,6 +14,7 @@ frappe.ui.form.on('HR Addon Settings', {
         });
 		// Update break calculation logic explanation on form load
 		update_break_calculation_logic(frm);
+		update_kurzarbeit_explanation(frm);
 		
 		// Listen for theme changes and update the HTML field
 		if (!frm._theme_observer) {
@@ -21,6 +22,7 @@ frappe.ui.form.on('HR Addon Settings', {
 				mutations.forEach(function(mutation) {
 					if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
 						update_break_calculation_logic(frm);
+						update_kurzarbeit_explanation(frm);
 					}
 				});
 			});
@@ -34,6 +36,7 @@ frappe.ui.form.on('HR Addon Settings', {
 				frm._theme_media_query = window.matchMedia('(prefers-color-scheme: dark)');
 				frm._theme_media_query.addListener(function() {
 					update_break_calculation_logic(frm);
+					update_kurzarbeit_explanation(frm);
 				});
 			}
 		}
@@ -325,6 +328,38 @@ function get_break_calculation_logic_html(mechanism, swapEnabled = false) {
 
 	const defaultMsg = `<div style="padding: 15px; color: ${theme.textSecondary};">Please select a break calculation mechanism to see the logic explanation.</div>`;
 	return logicContent[mechanism] || defaultMsg;
+}
+
+function update_kurzarbeit_explanation(frm) {
+	const htmlField = frm.fields_dict.kurzarbeit_explanation;
+	if (!htmlField || !htmlField.$wrapper) {
+		return;
+	}
+	const isDark = document.documentElement.getAttribute("data-theme") === "dark"
+		|| document.body.classList.contains("dark");
+	const text = isDark ? "#e8e8e8" : "#1f272e";
+	const muted = isDark ? "#b5b5b5" : "#6c7680";
+	const bg = isDark ? "#1c2126" : "#f4f5f6";
+	const border = isDark ? "#4aa3df" : "#2490ef";
+	htmlField.$wrapper.html(`
+		<div style="padding: 15px; background-color: ${bg}; border-left: 4px solid ${border}; margin: 10px 0; border-radius: 4px;">
+			<h4 style="margin-top: 0; color: ${text}; font-size: 14px; font-weight: 600;">What Kurzarbeit does</h4>
+			<p style="margin-bottom: 8px; color: ${text}; line-height: 1.6;">
+				Select the Leave Type employees use for short-time work. When that leave is submitted, each working day in the period is treated as a full contractual day from Weekly Working Hours.
+			</p>
+			<ul style="margin: 8px 0; padding-left: 20px; color: ${text}; line-height: 1.6;">
+				<li><strong>Target Hours</strong> stay at the contractual hours for that date (they are not set to 0).</li>
+				<li><strong>Actual Working Hours</strong> are raised up to those target hours when check-ins are missing or short. Hours already above the target stay as they are.</li>
+				<li>The hours added are stored as <strong>Kurzarbeit Hours</strong> and can be exported. They are not credited to the overtime ledger.</li>
+				<li>Only time worked above the target creates an overtime ledger entry. An existing shortfall deduction for that day is cleared.</li>
+				<li>The leave can be submitted only after the To Date, so check-ins for the period are already final. If a Workday already exists, it is recalculated.</li>
+				<li>On the attendance calendar, a day with check-ins shows <strong>P/</strong> plus the leave abbreviation (for example P/KU). A day with no check-ins shows the leave abbreviation only.</li>
+			</ul>
+			<p style="margin-bottom: 0; color: ${muted}; font-size: 12px; line-height: 1.5;">
+				Use a Leave Type that does not consume annual leave and is not deducted from the overtime ledger. Half Day is not allowed.
+			</p>
+		</div>
+	`);
 }
 
 function update_break_calculation_logic(frm) {
