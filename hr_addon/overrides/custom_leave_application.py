@@ -6,6 +6,7 @@ from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 from hrms.hr.utils import get_holiday_dates_for_employee
 
 
+@frappe.whitelist()
 def get_half_day_holiday_dates(from_date, to_date, employee=None, leave_type=None):
 	"""Half Day Holidays in the leave range that are not already full holidays."""
 	if not from_date or not to_date:

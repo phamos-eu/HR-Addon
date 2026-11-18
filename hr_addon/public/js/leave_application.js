@@ -17,6 +17,7 @@ frappe.ui.form.on("Leave Application", {
 
 	employee(frm) {
 		set_unfiltered_leave_type_query(frm);
+		frm.trigger("set_first_half_day_holiday");
 		frm.trigger("update_overtime_leave_balance_indicator");
 	},
 
@@ -33,6 +34,7 @@ frappe.ui.form.on("Leave Application", {
 	},
 
 	leave_type(frm) {
+		frm.trigger("set_first_half_day_holiday");
 		if (frm.doc.leave_type) {
 			frappe.call({
 				method: "frappe.client.get_value",
@@ -63,6 +65,7 @@ frappe.ui.form.on("Leave Application", {
 	},
 
 	set_first_half_day_holiday(frm) {
+		frm.trigger("show_half_day_holiday_note");
 		if (frm.doc.docstatus !== 0 || !frm.doc.from_date || !frm.doc.to_date) {
 			return;
 		}
@@ -96,6 +99,54 @@ frappe.ui.form.on("Leave Application", {
 					return;
 				}
 				frm.set_value("half_day", 1).then(set_half_day_date);
+			},
+		});
+	},
+
+	show_half_day_holiday_note(frm) {
+		if (!frm.doc.from_date || !frm.doc.to_date) {
+			frm.set_df_property("half_day_date", "description", "");
+			return;
+		}
+
+		const from_date = frm.doc.from_date;
+		const to_date = frm.doc.to_date;
+		const employee = frm.doc.employee;
+		const leave_type = frm.doc.leave_type;
+
+		frappe.call({
+			method: "hr_addon.overrides.custom_leave_application.get_half_day_holiday_dates",
+			args: {
+				from_date,
+				to_date,
+				employee,
+				leave_type,
+			},
+			callback(r) {
+				if (
+					frm.doc.from_date !== from_date ||
+					frm.doc.to_date !== to_date ||
+					frm.doc.employee !== employee ||
+					frm.doc.leave_type !== leave_type
+				) {
+					return;
+				}
+				const dates = r.message || [];
+				if (dates.length < 2) {
+					frm.set_df_property("half_day_date", "description", "");
+					return;
+				}
+				const formatted = dates
+					.map((d) => frappe.datetime.str_to_user(d))
+					.join(", ");
+				frm.set_df_property(
+					"half_day_date",
+					"description",
+					__(
+						"Half-day holidays in this leave: {0}. Each counts as 0.5.",
+						[formatted]
+					)
+				);
 			},
 		});
 	},
