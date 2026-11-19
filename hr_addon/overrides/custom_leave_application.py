@@ -29,6 +29,36 @@ def get_half_day_holiday_dates(from_date, to_date, employee=None, leave_type=Non
 	return sorted(dates)
 
 
+def configured_half_day_holiday_dates():
+	"""Every Half Day Holiday from HR Addon Settings."""
+	rows = frappe.get_all(
+		"Half Day Holidays",
+		filters={
+			"parent": "HR Addon Settings",
+			"parenttype": "HR Addon Settings",
+			"parentfield": "half_day_holidays",
+		},
+		pluck="holiday_date",
+	)
+	return {getdate(d) for d in rows if d}
+
+
+def leave_day_is_half(day, half_day=0, half_day_date=None, single_day=False, half_day_holidays=None):
+	"""True when this leave day is a half day.
+
+	Half Day Date counts, and so does every other Half Day Holiday in the leave.
+	A one-day leave marked half day counts even when Half Day Date is empty.
+	"""
+	day = getdate(day)
+	if half_day_holidays and day in {getdate(d) for d in half_day_holidays}:
+		return True
+	if not cint(half_day):
+		return False
+	if half_day_date:
+		return getdate(half_day_date) == day
+	return bool(single_day)
+
+
 @frappe.whitelist()
 def get_total_leave_days(employee, leave_type, from_date, to_date, half_day=None, half_day_date=None):
 	"""HRMS leave days, then 0.5 for each other Half Day Holiday."""
