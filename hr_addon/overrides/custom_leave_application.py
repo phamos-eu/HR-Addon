@@ -6,6 +6,7 @@ from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 from hrms.hr.utils import get_holiday_dates_for_employee
 
 
+@frappe.whitelist()
 def get_half_day_holiday_dates(from_date, to_date, employee=None, leave_type=None):
 	"""Half Day Holidays in the leave range that are not already full holidays."""
 	if not from_date or not to_date:
@@ -26,6 +27,36 @@ def get_half_day_holiday_dates(from_date, to_date, employee=None, leave_type=Non
 		full_holidays = {getdate(d) for d in get_holiday_dates_for_employee(employee, from_date, to_date)}
 		dates = [d for d in dates if d not in full_holidays]
 	return sorted(dates)
+
+
+def configured_half_day_holiday_dates():
+	"""Every Half Day Holiday from HR Addon Settings."""
+	rows = frappe.get_all(
+		"Half Day Holidays",
+		filters={
+			"parent": "HR Addon Settings",
+			"parenttype": "HR Addon Settings",
+			"parentfield": "half_day_holidays",
+		},
+		pluck="holiday_date",
+	)
+	return {getdate(d) for d in rows if d}
+
+
+def leave_day_is_half(day, half_day=0, half_day_date=None, single_day=False, half_day_holidays=None):
+	"""True when this leave day is a half day.
+
+	Half Day Date counts, and so does every other Half Day Holiday in the leave.
+	A one-day leave marked half day counts even when Half Day Date is empty.
+	"""
+	day = getdate(day)
+	if half_day_holidays and day in {getdate(d) for d in half_day_holidays}:
+		return True
+	if not cint(half_day):
+		return False
+	if half_day_date:
+		return getdate(half_day_date) == day
+	return bool(single_day)
 
 
 @frappe.whitelist()
