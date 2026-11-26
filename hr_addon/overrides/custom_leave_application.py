@@ -60,11 +60,15 @@ def leave_day_is_half(day, half_day=0, half_day_date=None, single_day=False, hal
 
 
 @frappe.whitelist()
-def get_total_leave_days(employee, leave_type, from_date, to_date, half_day=None, half_day_date=None):
+def get_total_leave_days(
+	employee, leave_type, from_date, to_date, half_day=None, half_day_date=None, holiday_list=None
+):
 	"""HRMS leave days, then 0.5 for each other Half Day Holiday."""
 	from hrms.hr.doctype.leave_application.leave_application import get_number_of_leave_days
 
-	days = get_number_of_leave_days(employee, leave_type, from_date, to_date, half_day, half_day_date)
+	days = get_number_of_leave_days(
+		employee, leave_type, from_date, to_date, half_day, half_day_date, holiday_list=holiday_list
+	)
 	return reduce_leave_days_for_half_day_holidays(
 		days, employee, leave_type, from_date, to_date, half_day, half_day_date
 	)
@@ -166,6 +170,103 @@ class HrAddonLeaveApplication(LeaveApplication):
 					or not leave_balance_for_consumption
 				):
 					self.show_insufficient_balance_message(leave_balance_for_consumption)
+
+	def create_separate_ledger_entries(self, alloc_on_from_date, alloc_on_to_date, submit, lwp):
+		"""Same split as HRMS, counted with every half-day holiday."""
+		from frappe.utils import add_days, get_link_to_form
+		from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
+		from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
+
+		if (
+			submit
+			and alloc_on_from_date
+			and alloc_on_to_date
+			and add_days(alloc_on_from_date.to_date, 1) != alloc_on_to_date.from_date
+		):
+			frappe.throw(
+				_(
+					"Leave Application period cannot be across two non-consecutive leave allocations {0} and {1}."
+				).format(
+					get_link_to_form("Leave Allocation", alloc_on_from_date.name),
+					get_link_to_form("Leave Allocation", alloc_on_to_date),
+				)
+			)
+
+		raise_exception = False if frappe.flags.in_patch else True
+
+		if alloc_on_from_date:
+			first_alloc_end = alloc_on_from_date.to_date
+			second_alloc_start = add_days(alloc_on_from_date.to_date, 1)
+		else:
+			first_alloc_end = add_days(alloc_on_to_date.from_date, -1)
+			second_alloc_start = alloc_on_to_date.from_date
+
+		leaves_in_first_alloc = get_total_leave_days(
+			self.employee,
+			self.leave_type,
+			self.from_date,
+			first_alloc_end,
+			self.half_day,
+			self.half_day_date,
+		)
+		leaves_in_second_alloc = get_total_leave_days(
+			self.employee,
+			self.leave_type,
+			second_alloc_start,
+			self.to_date,
+			self.half_day,
+			self.half_day_date,
+		)
+
+		args = dict(
+			is_lwp=lwp,
+			holiday_list=get_holiday_list_for_employee(self.employee, raise_exception=raise_exception) or "",
+		)
+
+		if leaves_in_first_alloc:
+			args.update(
+				dict(from_date=self.from_date, to_date=first_alloc_end, leaves=leaves_in_first_alloc * -1)
+			)
+			create_leave_ledger_entry(self, args, submit)
+
+		if leaves_in_second_alloc:
+			args.update(
+				dict(from_date=second_alloc_start, to_date=self.to_date, leaves=leaves_in_second_alloc * -1)
+			)
+			create_leave_ledger_entry(self, args, submit)
+
+	def create_ledger_entry_for_intermediate_allocation_expiry(self, expiry_date, submit, lwp):
+		"""Carry-forward expiry split, counted with every half-day holiday."""
+		from frappe.utils import add_days, getdate
+		from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
+		from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
+
+		raise_exception = False if frappe.flags.in_patch else True
+
+		leaves = get_total_leave_days(
+			self.employee, self.leave_type, self.from_date, expiry_date, self.half_day, self.half_day_date
+		)
+
+		if leaves:
+			args = dict(
+				from_date=self.from_date,
+				to_date=expiry_date,
+				leaves=leaves * -1,
+				is_lwp=lwp,
+				holiday_list=get_holiday_list_for_employee(self.employee, raise_exception=raise_exception)
+				or "",
+			)
+			create_leave_ledger_entry(self, args, submit)
+
+		if getdate(expiry_date) != getdate(self.to_date):
+			start_date = add_days(expiry_date, 1)
+			leaves = get_total_leave_days(
+				self.employee, self.leave_type, start_date, self.to_date, self.half_day, self.half_day_date
+			)
+
+			if leaves:
+				args.update(dict(from_date=start_date, to_date=self.to_date, leaves=leaves * -1))
+				create_leave_ledger_entry(self, args, submit)
 
 	def set_first_half_day_holiday(self):
 		"""Store the first Half Day Holiday in Half Day Date. Other half days stay in the day count."""
@@ -302,3 +403,87 @@ class HrAddonLeaveApplication(LeaveApplication):
 			doc = frappe.get_doc("Attendance", row.name)
 			doc.flags.ignore_permissions = True
 			doc.cancel()
+
+
+def get_leaves_for_period_with_half_day_holidays(
+	employee, leave_type, from_date, to_date, skip_expired_leaves=True
+):
+	"""Used Leaves, with every Half Day Holiday counted as 0.5.
+
+	HRMS recounts from the dates and a single Half Day Date. A whole ledger
+	amount also drops that half day. This uses the same count as Total Leave Days.
+	"""
+	from hrms.hr.doctype.leave_application.leave_application import get_leave_entries
+
+	leave_entries = get_leave_entries(employee, leave_type, from_date, to_date)
+	leave_days = 0
+
+	for leave_entry in leave_entries:
+		inclusive_period = leave_entry.from_date >= getdate(from_date) and leave_entry.to_date <= getdate(
+			to_date
+		)
+
+		if inclusive_period and leave_entry.transaction_type == "Leave Encashment":
+			leave_days += leave_entry.leaves
+
+		elif (
+			inclusive_period
+			and leave_entry.transaction_type == "Leave Allocation"
+			and leave_entry.is_expired
+			and not skip_expired_leaves
+		):
+			leave_days += leave_entry.leaves
+
+		elif leave_entry.transaction_type == "Leave Application":
+			if leave_entry.from_date < getdate(from_date):
+				leave_entry.from_date = from_date
+			if leave_entry.to_date > getdate(to_date):
+				leave_entry.to_date = to_date
+
+			half_day, half_day_date = _half_day_for_balance(leave_entry)
+			leave_days += (
+				get_total_leave_days(
+					employee,
+					leave_type,
+					leave_entry.from_date,
+					leave_entry.to_date,
+					half_day,
+					half_day_date,
+					holiday_list=leave_entry.holiday_list,
+				)
+				* -1
+			)
+
+	return leave_days
+
+
+def _half_day_for_balance(leave_entry):
+	"""Half Day fields from the application. Fall back to a fractional ledger amount."""
+	half_day = 0
+	half_day_date = None
+	if leave_entry.transaction_name:
+		application = frappe.db.get_value(
+			"Leave Application",
+			leave_entry.transaction_name,
+			["half_day", "half_day_date"],
+			as_dict=True,
+		)
+		if application:
+			half_day = application.half_day
+			half_day_date = application.half_day_date
+	if not cint(half_day) and leave_entry.leaves % 1:
+		half_day = 1
+	return half_day, half_day_date
+
+
+def install_half_day_holiday_balance_count():
+	"""Point Used Leaves at the half-day holiday count. Leave the HRMS day counter alone."""
+	import hrms.hr.doctype.leave_application.leave_application as hrms_leave_application
+
+	if getattr(hrms_leave_application.get_leaves_for_period, "_counts_half_day_holidays", False):
+		return
+	get_leaves_for_period_with_half_day_holidays._counts_half_day_holidays = True
+	hrms_leave_application.get_leaves_for_period = get_leaves_for_period_with_half_day_holidays
+
+
+install_half_day_holiday_balance_count()
