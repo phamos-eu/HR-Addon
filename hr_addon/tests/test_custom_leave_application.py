@@ -4,7 +4,9 @@
 from datetime import date
 from unittest.mock import patch
 
+import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import getdate
 
 from hrms.hr.doctype.leave_application.leave_application import InsufficientLeaveBalanceError
 
@@ -120,6 +122,76 @@ class TestHalfDayHolidayLeaveDays(FrappeTestCase):
 		doc = self._leave_application()
 		with self.assertRaises(InsufficientLeaveBalanceError):
 			doc.validate_balance_leaves()
+
+	# Used Leaves keeps the stored 4 when the ledger still has the one-half-day amount 4.5.
+	@patch(
+		"hr_addon.overrides.custom_leave_application.get_total_leave_days",
+		return_value=4,
+	)
+	@patch(
+		"hr_addon.overrides.custom_leave_application.frappe.db.get_value",
+		return_value=frappe._dict(half_day=1, half_day_date="2026-12-24"),
+	)
+	@patch("hrms.hr.doctype.leave_application.leave_application.get_leave_entries")
+	def test_used_leaves_uses_total_leave_days_for_a_fractional_ledger(self, mock_entries, _half, mock_days):
+		from hrms.hr.doctype.leave_application.leave_application import get_leaves_for_period
+
+		mock_entries.return_value = [
+			frappe._dict(
+				from_date=getdate("2026-12-24"),
+				to_date=getdate("2026-12-31"),
+				leaves=-4.5,
+				transaction_name="HR-LAP-2026-00002",
+				transaction_type="Leave Application",
+				holiday_list="Annual Leave Half Day Test",
+			)
+		]
+		self.assertEqual(
+			get_leaves_for_period("HR-EMP-00003", "Annual Leave", "2026-01-01", "2026-12-31"),
+			-4,
+		)
+		self.assertEqual(mock_days.call_args.args[4], 1)
+		self.assertEqual(mock_days.call_args.args[5], "2026-12-24")
+
+	# A whole ledger amount still passes Half Day Date, so 31.12 is not counted as a full day.
+	@patch(
+		"hr_addon.overrides.custom_leave_application.get_total_leave_days",
+		return_value=4,
+	)
+	@patch(
+		"hr_addon.overrides.custom_leave_application.frappe.db.get_value",
+		return_value=frappe._dict(half_day=1, half_day_date="2026-12-24"),
+	)
+	@patch("hrms.hr.doctype.leave_application.leave_application.get_leave_entries")
+	def test_used_leaves_keeps_half_day_when_ledger_is_a_whole_number(self, mock_entries, _half, _days):
+		from hrms.hr.doctype.leave_application.leave_application import get_leaves_for_period
+
+		mock_entries.return_value = [
+			frappe._dict(
+				from_date=getdate("2026-12-24"),
+				to_date=getdate("2026-12-31"),
+				leaves=-4,
+				transaction_name="HR-LAP-2026-00002",
+				transaction_type="Leave Application",
+				holiday_list="Annual Leave Half Day Test",
+			)
+		]
+		self.assertEqual(
+			get_leaves_for_period("HR-EMP-00003", "Annual Leave", "2026-01-01", "2026-12-31"),
+			-4,
+		)
+
+	# Carry-forward expiry writes the reduced total, not the single half-day count.
+	@patch("hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry.create_leave_ledger_entry")
+	@patch("erpnext.setup.doctype.employee.employee.get_holiday_list_for_employee", return_value="HL")
+	@patch(
+		"hr_addon.overrides.custom_leave_application.get_total_leave_days",
+		return_value=4,
+	)
+	def test_carry_forward_expiry_ledger_uses_total_leave_days(self, _days, _holiday_list, mock_ledger):
+		doc = self._leave_application()
+		doc.create_ledger_entry_for_intermediate_allocation_expiry("2026-12-31", True, 0)
+		self.assertEqual(mock_ledger.call_args.args[1]["leaves"], -4)
 
 	# No half-day holiday leaves the HRMS day count unchanged.
 	@patch(
