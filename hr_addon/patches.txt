@@ -4,3 +4,4 @@
 hr_addon.patches.v1_0.migrate_overtime_doctypes_to_hr_addon_module
 hr_addon.patches.v1_0.remove_legacy_suncycle_ole_custom_fields
 hr_addon.patches.v1_0.remove_duplicate_overtime_ledger_doctype_links
+hr_addon.patches.v15_0.set_workday_monthly_naming_series
